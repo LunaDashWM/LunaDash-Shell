@@ -49,6 +49,20 @@ export global Wallpapers {
         Shared.set-string("wallpaper-pick", "folder");
         Files.choose(@tr("Choose a wallpaper folder"), "", true, Prefs.wallpaper-dir);
     }
+    // LunaDash's wallpaper library folder (Super+W), rescanned right away.
+    public function set-library(path: string) {
+        if root.managed && path != "" {
+            Compositor.set-preference-string("wallpaperDirectory", path);
+            Compositor.command("wallpaper-refresh", "");
+        }
+    }
+    public function pick-library() {
+        Shared.set-string("wallpaper-pick", "library");
+        Files.choose(@tr("Choose the wallpaper library folder"), "", true, Compositor.wallpaper-directory);
+    }
+    public function set-favorite(path: string, favorite: bool) {
+        Compositor.command("wallpaper-favorite", (favorite ? "add:" : "remove:") + path);
+    }
     // A picked or typed path: folders are browsed, images and videos become the wallpaper.
     public function open(path: string) {
         if Files.kind(path) == "directory" {
@@ -74,8 +88,12 @@ export component Wallpaper inherits PanelWindow {
     property <int> chosen-serial: Files.chosen-serial;
     changed chosen-serial => {
         if UI.primary && Shared.get-string("wallpaper-pick", "", Shared.revision) != "" {
+            if Shared.get-string("wallpaper-pick", "", Shared.revision) == "library" {
+                Wallpapers.set-library(Files.chosen);
+            } else {
+                Wallpapers.open(Files.chosen);
+            }
             Shared.set-string("wallpaper-pick", "");
-            Wallpapers.open(Files.chosen);
         }
     }
 
@@ -85,25 +103,36 @@ export component Wallpaper inherits PanelWindow {
         width: parent.width;
         height: parent.height;
         source: Wallpapers.current();
-        image-fit: cover;
+        image-fit: Prefs.wallpaper-fit == "contain" ? ImageFit.contain : Prefs.wallpaper-fit == "fill" ? ImageFit.fill : ImageFit.cover;
     }
-    if Prefs.desktop-clock: VerticalLayout {
-        x: 56px;
-        y: parent.height - self.preferred-height - 96px;
+    if Prefs.wallpaper-dim > 0: Rectangle { background: #000000.with-alpha(Prefs.wallpaper-dim / 100); }
+    if Prefs.desktop-clock: clock := VerticalLayout {
+        property <float> size: Prefs.desktop-clock-size == "small" ? 0.5 : Prefs.desktop-clock-size == "medium" ? 0.75 : 1.0;
+        property <bool> at-right: Prefs.desktop-clock-position == "bottom-right";
+        property <bool> at-center: Prefs.desktop-clock-position == "center";
+        property <bool> at-top: Prefs.desktop-clock-position == "top-left";
+        // Centred and right-aligned clocks span the width and align their text.
+        x: self.at-center || self.at-right ? 0px : 56px;
+        width: self.at-center ? parent.width : self.at-right ? parent.width - 56px : self.preferred-width;
+        height: self.preferred-height;
+        y: self.at-center ? (parent.height - self.preferred-height) / 2
+            : self.at-top ? Style.panel-height + 56px : parent.height - self.preferred-height - 96px;
         spacing: 0px;
         Text {
             text: Time.clock;
             color: #ffffff;
-            font-size: 96px;
+            font-size: 96px * clock.size;
             font-weight: 200;
             stroke: #00000030;
             stroke-width: 1px;
+            horizontal-alignment: clock.at-right ? TextHorizontalAlignment.right : clock.at-center ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
         }
-        Text {
+        if Prefs.desktop-clock-date: Text {
             text: Time.long-date;
             color: #ffffffd8;
-            font-size: 22px;
+            font-size: 22px * max(0.7, clock.size);
             font-weight: 500;
+            horizontal-alignment: clock.at-right ? TextHorizontalAlignment.right : clock.at-center ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
         }
     }
 }

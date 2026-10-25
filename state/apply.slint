@@ -2,6 +2,7 @@
 
 import { Theme, Idle, Session, Notifications, I18n, Compositor, Store } from "@slintlu";
 import { Prefs } from "prefs.slint";
+import { Style } from "../style/style.slint";
 
 // Applies the stored preferences to the shell-wide services (once, from the primary screen).
 export global Apply {
@@ -18,6 +19,29 @@ export global Apply {
         Notifications.set-default-timeout(Prefs.toast-seconds * 1s);
         root.language();
     }
+    // "auto", "dark" or "light", for the shell and, on LunaDash, the whole desktop (portal
+    // colour scheme, application themes).
+    public function set-theme-mode(mode: string) {
+        Store.set-string("theme-mode", mode);
+        Theme.set-mode(mode);
+        if Compositor.has-commands {
+            Compositor.set-preference-string("themeMode", mode);
+        }
+    }
+    // An accent from Style.accents (-1: the palette's own); LunaDash uses it too.
+    public function set-accent(index: int) {
+        Store.set-number("accent", index);
+        if Compositor.has-commands && index >= 0 && index < Style.accent-hex.length {
+            Compositor.set-preference-string("accent", Style.accent-hex[index]);
+        }
+    }
+    public function set-animations(on: bool) {
+        Store.set-bool("animations", on);
+        if Compositor.has-commands {
+            Compositor.set-preference-bool("animations", on);
+        }
+    }
+
     // LunaDash's desktop language when the compositor has one ("en_US" means the untranslated
     // English texts), else the shell's own choice.
     public function language() {

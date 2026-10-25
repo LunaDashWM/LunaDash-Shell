@@ -8,25 +8,26 @@ import { UI } from "../state/ui.slint";
 import { Icon } from "../components/icon.slint";
 
 component DockItem inherits Rectangle {
+    in property <length> size: 52px;
     in property <image> icon;
     in property <int> windows;
     in property <bool> focused;
     in property <bool> urgent;
     callback clicked();
     callback right-clicked();
-    width: 52px;
-    height: 52px;
+    width: root.size;
+    height: root.size;
     border-radius: Style.radius-medium;
     background: root.focused ? Style.accent-soft : touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
     animate background { duration: Style.motion-fast; }
     Image {
         source: root.icon;
-        width: touch.pressed ? 34px : touch.has-hover ? 40px : 38px;
+        width: root.size * (touch.pressed ? 0.65 : touch.has-hover ? 0.8 : 0.73);
         height: self.width;
         image-fit: contain;
         animate width { duration: Style.motion-fast; easing: ease-out; }
     }
-    if root.icon.width == 0: Icon { name: "apps"; width: 28px; height: 28px; color: Style.muted; }
+    if root.icon.width == 0: Icon { name: "apps"; width: root.size * 0.54; height: self.width; color: Style.muted; }
     // Running indicator: one dot per window, up to three.
     HorizontalLayout {
         y: parent.height - 6px;
@@ -54,9 +55,21 @@ component DockItem inherits Rectangle {
 export component Dock inherits PanelWindow {
     namespace: "lunadash-dock";
     anchor-bottom: true;
-    margin-bottom: 8px;
+    // Above a panel at the bottom edge.
+    margin-bottom: Prefs.panel-bottom ? Style.panel-height + 12px : 8px;
     shown: Prefs.dock;
     default-font-family: Style.font;
+
+    property <length> item-size: Prefs.dock-size == "small" ? 40px : Prefs.dock-size == "large" ? 64px : 52px;
+    property <length> full-height: root.item-size + 16px;
+    // Auto-hide keeps a thin strip at the edge; reaching it brings the dock back.
+    property <bool> hovered;
+    property <bool> revealed: !Prefs.dock-autohide || root.hovered || UI.overlay == "launcher";
+    hide-timer := Timer {
+        interval: 600ms;
+        running: Prefs.dock-autohide && !hover.has-hover && root.hovered;
+        triggered => { root.hovered = false; }
+    }
 
     // Mentioning Apps.all regroups once the background scan has found the applications;
     // before that, pinned entries had no desktop file to launch.
@@ -132,52 +145,66 @@ export component Dock inherits PanelWindow {
         }
     }
 
-    preferred-height: 68px;
+    preferred-height: root.revealed ? root.full-height : 6px;
     preferred-width: row.preferred-width;
 
-    Rectangle {
-        border-radius: Style.radius-large;
-        background: Style.glass;
-        border-width: 1px;
-        border-color: Style.hairline;
-        row := HorizontalLayout {
-            padding: 8px;
-            spacing: 4px;
-            Rectangle {
-                width: 52px;
-                height: 52px;
-                border-radius: Style.radius-medium;
-                background: UI.overlay == "launcher" ? Style.accent : launcher-touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
-                Icon { name: "apps"; width: 24px; height: 24px; color: UI.overlay == "launcher" ? Style.accent-ink : Style.text; }
-                launcher-touch := TouchArea { clicked => { UI.toggle-overlay("launcher"); } }
+    hover := TouchArea {
+        changed has-hover => {
+            if self.has-hover {
+                root.hovered = true;
             }
-            if root.items.length > 0: Rectangle {
-                width: 1px;
-                background: Style.hairline;
-            }
-            for item in root.items: DockItem {
-                icon: item.app.icon;
-                windows: item.windows.length;
-                focused: item.focused;
-                urgent: item.urgent;
-                clicked => {
-                    if item.windows.length == 0 {
-                        Apps.launch(item.app.id);
-                    } else if item.focused && item.windows.length > 1 {
-                        // The focused window comes first: move on to the next one.
-                        Workspaces.focus-window(item.windows[1]);
-                    } else {
-                        Workspaces.focus-window(item.windows[0]);
-                    }
+        }
+        Rectangle {
+            y: root.revealed ? 0px : root.full-height;
+            height: root.full-height;
+            animate y { duration: Style.motion; easing: ease-out; }
+            border-radius: Style.radius-large;
+            drop-shadow-blur: 18px;
+            drop-shadow-color: Style.shadow;
+            drop-shadow-offset-y: 4px;
+            background: Style.glass;
+            border-width: 1px;
+            border-color: Style.hairline;
+            row := HorizontalLayout {
+                padding: 8px;
+                spacing: 4px;
+                if Prefs.dock-launcher: Rectangle {
+                    width: root.item-size;
+                    height: root.item-size;
+                    border-radius: Style.radius-medium;
+                    background: UI.overlay == "launcher" ? Style.accent : launcher-touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
+                    Icon { name: "apps"; width: root.item-size * 0.46; height: self.width; color: UI.overlay == "launcher" ? Style.accent-ink : Style.text; }
+                    launcher-touch := TouchArea { clicked => { UI.toggle-overlay("launcher"); } }
                 }
-                right-clicked => {
-                    if item.app.id == "" {
-                        return;
+                if Prefs.dock-launcher && root.items.length > 0: Rectangle {
+                    width: 1px;
+                    background: Style.hairline;
+                }
+                for item in root.items: DockItem {
+                    size: root.item-size;
+                    icon: item.app.icon;
+                    windows: item.windows.length;
+                    focused: item.focused;
+                    urgent: item.urgent;
+                    clicked => {
+                        if item.windows.length == 0 {
+                            Apps.launch(item.app.id);
+                        } else if item.focused && item.windows.length > 1 {
+                            // The focused window comes first: move on to the next one.
+                            Workspaces.focus-window(item.windows[1]);
+                        } else {
+                            Workspaces.focus-window(item.windows[0]);
+                        }
                     }
-                    if item.pinned {
-                        Store.list-remove("dock-pinned", item.app.id);
-                    } else {
-                        Store.list-add("dock-pinned", item.app.id);
+                    right-clicked => {
+                        if item.app.id == "" {
+                            return;
+                        }
+                        if item.pinned {
+                            Store.list-remove("dock-pinned", item.app.id);
+                        } else {
+                            Store.list-add("dock-pinned", item.app.id);
+                        }
                     }
                 }
             }

@@ -6,10 +6,13 @@ import { Icon } from "icon.slint";
 // A translucent capsule grouping panel items.
 export component Pill inherits Rectangle {
     height: Style.pill-height;
-    border-radius: self.height / 2;
-    background: Style.glass;
+    border-radius: min(self.height / 2, Style.radius);
+    background: @linear-gradient(180deg, Style.glass.brighter(0.06) 0%, Style.glass 100%);
     border-width: 1px;
     border-color: Style.hairline;
+    drop-shadow-blur: 12px;
+    drop-shadow-color: Style.shadow.with-alpha(0.25);
+    drop-shadow-offset-y: 2px;
 }
 
 // A round button with an icon, optionally highlighted.
@@ -229,7 +232,7 @@ export component Reveal inherits Rectangle {
 // A rounded card on popups and the dashboard.
 export component Card inherits Rectangle {
     border-radius: Style.radius-medium;
-    background: Style.surface;
+    background: @linear-gradient(180deg, Style.surface.brighter(0.04) 0%, Style.surface 100%);
     border-width: 1px;
     border-color: Style.hairline;
 }
@@ -237,12 +240,117 @@ export component Card inherits Rectangle {
 // The frame of popups and overlays.
 export component Surface inherits Rectangle {
     border-radius: Style.radius;
-    background: Style.glass-strong;
+    background: @linear-gradient(180deg, Style.glass-strong.brighter(0.05) 0%, Style.glass-strong 40%);
     border-width: 1px;
     border-color: Style.border;
-    drop-shadow-blur: 24px;
-    drop-shadow-color: #00000055;
-    drop-shadow-offset-y: 6px;
+    drop-shadow-blur: 32px;
+    drop-shadow-color: Style.shadow;
+    drop-shadow-offset-y: 10px;
+    // A thin light along the top edge.
+    Rectangle {
+        x: parent.border-radius;
+        y: 1px;
+        width: parent.width - 2 * parent.border-radius;
+        height: 1px;
+        background: Style.sheen;
+    }
+}
+
+// A slider with a label and value that applies when released (or on scroll), so dragging does
+// not send a command per pixel.
+export component RangeSlider inherits Rectangle {
+    in property <float> minimum: 0;
+    in property <float> maximum: 100;
+    in property <float> step: 1;
+    in property <float> value;
+    in property <string> unit;
+    in property <length> track-width: 220px;
+    callback committed(value: float);
+    property <float> live: root.value;
+    property <bool> dragging;
+    property <float> shown: root.dragging ? root.live : root.value;
+    property <float> ratio: clamp((root.shown - root.minimum) / max(0.0001, root.maximum - root.minimum), 0, 1);
+    function snap(raw: float) -> float {
+        return clamp(Math.round(raw / root.step) * root.step, root.minimum, root.maximum);
+    }
+    height: 32px;
+    width: root.track-width + 60px;
+    HorizontalLayout {
+        spacing: 12px;
+        track := Rectangle {
+            width: root.track-width;
+            Rectangle {
+                height: 6px;
+                border-radius: 3px;
+                background: Style.elevated;
+                Rectangle {
+                    x: 0;
+                    width: parent.width * root.ratio;
+                    border-radius: 3px;
+                    background: Style.accent;
+                }
+            }
+            Rectangle {
+                width: root.dragging || touch.has-hover ? 20px : 16px;
+                height: self.width;
+                border-radius: self.width / 2;
+                x: (parent.width - self.width) * root.ratio;
+                background: Style.accent;
+                border-width: 3px;
+                border-color: Style.base;
+                drop-shadow-blur: 6px;
+                drop-shadow-color: Style.shadow;
+                animate width { duration: Style.motion-fast; }
+            }
+            touch := TouchArea {
+                pointer-event(event) => {
+                    if event.kind == PointerEventKind.down {
+                        root.dragging = true;
+                    }
+                    if root.dragging && (event.kind == PointerEventKind.down || event.kind == PointerEventKind.move) {
+                        root.live = root.snap(root.minimum + clamp(self.mouse-x / self.width, 0, 1) * (root.maximum - root.minimum));
+                    }
+                    if event.kind == PointerEventKind.up && root.dragging {
+                        root.dragging = false;
+                        root.committed(root.live);
+                    }
+                }
+                scroll-event(event) => {
+                    root.committed(root.snap(root.value + (event.delta-y > 0 ? root.step : -root.step)));
+                    accept
+                }
+            }
+        }
+        Text {
+            width: 48px;
+            text: Math.round(root.shown) + root.unit;
+            color: Style.muted;
+            font-size: Style.font-small;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// A row of round colour choices; `selected` -1 for none.
+export component Swatches inherits HorizontalLayout {
+    in property <[color]> colors;
+    in property <int> selected: -1;
+    callback chosen(index: int);
+    spacing: 8px;
+    alignment: end;
+    for c[i] in root.colors: Rectangle {
+        width: 26px;
+        height: 26px;
+        y: (parent.height - self.height) / 2;
+        border-radius: 13px;
+        background: c;
+        border-width: i == root.selected ? 3px : touch.has-hover ? 2px : 0;
+        border-color: i == root.selected ? Style.text : Style.border;
+        animate border-width { duration: Style.motion-fast; }
+        if i == root.selected: Icon { name: "check"; width: 14px; height: 14px; color: #1c2028; }
+        touch := TouchArea { clicked => { root.chosen(i); } }
+    }
 }
 
 // A small heading inside popups and pages.
@@ -265,6 +373,17 @@ export component ListRow inherits Rectangle {
     height: 48px;
     border-radius: Style.radius-small;
     background: root.selected ? Style.accent-soft : touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
+    animate background { duration: Style.motion-fast; }
+    // The selected row carries an accent bar on its leading edge.
+    Rectangle {
+        x: 2px;
+        y: (parent.height - self.height) / 2;
+        width: 3px;
+        height: root.selected ? parent.height * 0.5 : 0px;
+        border-radius: 2px;
+        background: Style.accent;
+        animate height { duration: Style.motion; easing: ease-out; }
+    }
     HorizontalLayout {
         padding-left: 10px;
         padding-right: 10px;

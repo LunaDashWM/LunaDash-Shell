@@ -4,6 +4,7 @@
 import { PanelWindow, Layer, KeyboardMode, ExclusiveMode } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
+import { Prefs } from "../state/prefs.slint";
 import { Surface } from "controls.slint";
 
 export component Overlay inherits PanelWindow {
@@ -42,7 +43,11 @@ export component Overlay inherits PanelWindow {
         }
         Surface {
             x: (parent.width - self.width) / 2;
-            y: max(Style.panel-height + 20px, (parent.height - self.height) / 2) + (1 - root.entrance) * 18px;
+            // Centred, clear of the panel whichever edge it is on.
+            y: (Prefs.panel-bottom
+                    ? min(parent.height - Style.panel-height - 20px - self.height, (parent.height - self.height) / 2)
+                    : max(Style.panel-height + 20px, (parent.height - self.height) / 2))
+                + (1 - root.entrance) * 18px;
             opacity: 0.4 + 0.6 * root.entrance;
             width: min(root.content-width, parent.width - 40px);
             height: min(root.content-height, parent.height - Style.panel-height - 40px);

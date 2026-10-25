@@ -6,7 +6,7 @@ import { Shared, Shell, Workspaces } from "@slintlu";
 export global UI {
     // "calendar", "audio", "network", "clipboard", "tray" or "".
     out property <string> popup: Shared.get-string("popup", "", Shared.revision);
-    // "launcher", "dashboard", "settings", "gallery", "power" or "".
+    // "launcher", "dashboard", "settings", "wallpapers", "gallery", "power" or "".
     out property <string> overlay: Shared.get-string("overlay", "", Shared.revision);
     out property <int> dashboard-tab: Shared.get-number("dashboard-tab", 0, Shared.revision);
     out property <string> settings-page: Shared.get-string("settings-page", "appearance", Shared.revision);
@@ -36,7 +36,8 @@ export global UI {
     }
     public function open-settings(page: string) {
         Shared.set-string("settings-page",
-            page == "wallpaper" || page == "panel" || page == "notifications" || page == "power"
+            page == "wallpaper" || page == "panel" || page == "dock" || page == "windows"
+                || page == "display" || page == "notifications" || page == "power"
                 || page == "language" || page == "about" ? page : "appearance");
         root.open-overlay("settings");
     }

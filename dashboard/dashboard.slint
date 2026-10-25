@@ -100,7 +100,12 @@ component OverviewTab inherits HorizontalLayout {
             alignment: end;
             padding: Style.spacing-xl;
             spacing: 2px;
-            Text { text: "LunaDash"; color: #ffffff; font-size: 34px; font-weight: 700; }
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: start;
+                Image { source: @image-url("../assets/lunadash.png"); width: 46px; height: 46px; image-fit: contain; }
+                Text { text: "LunaDash"; color: #ffffff; font-size: 34px; font-weight: 700; vertical-alignment: center; }
+            }
             Text { text: @tr("A modern Wayland desktop"); color: #ffffffdd; }
             Text { text: System.os + " · " + Shell.compositor + " · SlintLu " + Shell.version; color: #ffffffaa; font-size: Style.font-small; }
         }

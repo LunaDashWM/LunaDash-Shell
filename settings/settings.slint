@@ -1,4 +1,5 @@
-// Settings: appearance, wallpaper, panel & dock, notifications, power, language and about.
+// Settings: appearance, wallpaper, panel, dock, windows, display, notifications, power,
+// language and about. Pages group their settings in cards.
 
 import { Theme, Store, Idle, Session, Notifications, I18n, Shell, System, Compositor } from "@slintlu";
 import { Style } from "../style/style.slint";
@@ -6,10 +7,9 @@ import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
-import { Switch, SectionTitle, IconButton, TextButton, ListRow, Card, Reveal } from "../components/controls.slint";
+import { Switch, SectionTitle, IconButton, TextButton, ListRow, Card, Reveal, RangeSlider, Swatches } from "../components/controls.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
 import { Apply } from "../state/apply.slint";
-
 
 component Segmented inherits Rectangle {
     in property <[string]> labels;
@@ -41,14 +41,16 @@ component Segmented inherits Rectangle {
 component Setting inherits Rectangle {
     in property <string> title;
     in property <string> description;
-    min-height: 60px;
+    min-height: 58px;
     HorizontalLayout {
+        padding-top: 8px;
+        padding-bottom: 8px;
         spacing: Style.spacing-md;
         VerticalLayout {
             alignment: center;
             horizontal-stretch: 1;
             spacing: 2px;
-            Text { text: root.title; color: Style.text; }
+            Text { text: root.title; color: Style.text; font-size: Style.font-size; }
             if root.description != "": Text { text: root.description; color: Style.muted; font-size: Style.font-small; wrap: word-wrap; }
         }
         HorizontalLayout {
@@ -66,70 +68,155 @@ component Divider inherits Rectangle {
     background: Style.hairline;
 }
 
+// A titled card of settings.
+component Group inherits VerticalLayout {
+    in property <string> title;
+    spacing: Style.spacing-sm;
+    padding-bottom: Style.spacing-lg;
+    if root.title != "": SectionTitle { text: root.title; }
+    Card {
+        VerticalLayout {
+            padding-left: Style.spacing-lg;
+            padding-right: Style.spacing-lg;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            @children
+        }
+    }
+}
+
 component Page inherits VerticalLayout {
     in property <string> title;
+    in property <string> subtitle;
     spacing: 2px;
     alignment: start;
-    Text { text: root.title; color: Style.text; font-size: 22px; font-weight: 600; }
-    Rectangle { height: Style.spacing-md; }
+    Text { text: root.title; color: Style.text; font-size: Style.font-display; font-weight: 600; }
+    if root.subtitle != "": Text { text: root.subtitle; color: Style.muted; font-size: Style.font-small; wrap: word-wrap; }
+    Rectangle { height: Style.spacing-lg; }
     @children
 }
 
 component AppearancePage inherits Page {
     title: @tr("Appearance");
-    Setting {
-        title: @tr("Mode");
-        description: @tr("Follow the desktop, or always use the dark or light palette.");
-        Segmented {
-            labels: [@tr("Auto"), @tr("Dark"), @tr("Light")];
-            selected: Prefs.theme-mode == "dark" ? 1 : Prefs.theme-mode == "light" ? 2 : 0;
-            chosen(i) => {
-                Store.set-string("theme-mode", i == 1 ? "dark" : i == 2 ? "light" : "auto");
-                Theme.set-mode(Prefs.theme-mode);
+    subtitle: @tr("Colours, glass and the feel of the whole desktop.");
+    Group {
+        title: @tr("THEME");
+        Setting {
+            title: @tr("Mode");
+            description: @tr("Follow the desktop, or always use the dark or light palette.");
+            Segmented {
+                labels: [@tr("Auto"), @tr("Dark"), @tr("Light")];
+                selected: Prefs.theme-mode == "dark" ? 1 : Prefs.theme-mode == "light" ? 2 : 0;
+                chosen(i) => { Apply.set-theme-mode(i == 1 ? "dark" : i == 2 ? "light" : "auto"); }
+            }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Accent colour");
+            description: Prefs.accent < 0 ? @tr("The palette's own accent.") : @tr("Used by the shell and, on LunaDash, the whole desktop.");
+            HorizontalLayout {
+                spacing: Style.spacing-sm;
+                Swatches { colors: Style.accents; selected: Prefs.accent; chosen(i) => { Apply.set-accent(i); } }
+                IconButton { icon: "reboot"; size: 28px; y: (parent.height - self.height) / 2; clicked => { Apply.set-accent(-1); } }
+            }
+        }
+        if Compositor.has-commands: Divider { }
+        if Compositor.has-commands: Setting {
+            title: @tr("Colours from the wallpaper");
+            description: @tr("LunaDash derives its palette from the current wallpaper.");
+            Switch {
+                on: Compositor.preference-bool("wallpaperColors", true, Compositor.preferences-revision);
+                toggled => { Compositor.set-preference-bool("wallpaperColors", !self.on); }
             }
         }
     }
-    Divider { }
-    Setting { title: @tr("Transparency"); description: @tr("Translucent panels and popups."); Switch { on: Prefs.transparency; toggled => { Store.set-bool("transparency", !Prefs.transparency); } } }
-    Divider { }
-    Setting { title: @tr("Animations"); Switch { on: Prefs.animations; toggled => { Store.set-bool("animations", !Prefs.animations); } } }
-    Divider { }
-    Rectangle { height: Style.spacing-md; }
-    SectionTitle { text: @tr("PALETTE · {}", Theme.name); }
-    Rectangle { height: Style.spacing-sm; }
-    // The whole page scrolls; a nested fixed-height list hid palettes behind an invisible edge.
-    VerticalLayout {
-            spacing: 2px;
-            ListRow {
-                icon: "palette";
-                title: @tr("LunaDash");
-                subtitle: @tr("The default dark and light palettes");
-                selected: Prefs.palette == "";
-                clicked => {
-                    Store.remove("palette");
-                    Theme.set-palette(Theme.dark ? "lunadash-dark" : "lunadash-light");
+    Group {
+        title: @tr("GLASS AND SHAPE");
+        Setting {
+            title: @tr("Transparency");
+            description: @tr("Translucent panels and popups.");
+            Switch { on: Prefs.transparency; toggled => { Store.set-bool("transparency", !Prefs.transparency); } }
+        }
+        if Prefs.transparency: Divider { }
+        if Prefs.transparency: Setting {
+            title: @tr("Glass opacity");
+            RangeSlider { minimum: 50; maximum: 100; step: 2; unit: "%"; value: Prefs.glass-opacity; committed(v) => { Store.set-number("glass-opacity", v); } }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Corners");
+            Segmented {
+                labels: [@tr("Compact"), @tr("Default"), @tr("Round")];
+                selected: Prefs.corners == "compact" ? 0 : Prefs.corners == "round" ? 2 : 1;
+                chosen(i) => { Store.set-string("corners", i == 0 ? "compact" : i == 2 ? "round" : "default"); }
+            }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Text size");
+            Segmented {
+                labels: ["90%", "100%", "110%", "125%"];
+                selected: Prefs.text-scale == 90 ? 0 : Prefs.text-scale == 110 ? 2 : Prefs.text-scale == 125 ? 3 : 1;
+                chosen(i) => { Store.set-number("text-scale", i == 0 ? 90 : i == 2 ? 110 : i == 3 ? 125 : 100); }
+            }
+        }
+    }
+    Group {
+        title: @tr("MOTION");
+        Setting {
+            title: @tr("Animations");
+            description: @tr("Shell transitions and, on LunaDash, window animations.");
+            Switch { on: Prefs.animations; toggled => { Apply.set-animations(!Prefs.animations); } }
+        }
+        if Prefs.animations: Divider { }
+        if Prefs.animations: Setting {
+            title: @tr("Animation speed");
+            Segmented {
+                labels: [@tr("Fast"), @tr("Normal"), @tr("Relaxed")];
+                selected: Prefs.animation-speed == "fast" ? 0 : Prefs.animation-speed == "relaxed" ? 2 : 1;
+                chosen(i) => {
+                    Store.set-string("animation-speed", i == 0 ? "fast" : i == 2 ? "relaxed" : "normal");
+                    if Compositor.has-commands {
+                        Compositor.set-preference-number("animationDuration", i == 0 ? 140 : i == 2 ? 340 : 220);
+                    }
                 }
             }
-            for name in Theme.palettes: ListRow {
-                icon: "palette";
-                title: name;
-                selected: Prefs.palette == name;
-                clicked => {
-                    Store.set-string("palette", name);
-                    Theme.set-palette(name);
-                }
+        }
+    }
+    Group {
+        title: @tr("PALETTE · {}", Theme.name);
+        ListRow {
+            icon: "palette";
+            title: @tr("LunaDash");
+            subtitle: @tr("The default dark and light palettes");
+            selected: Prefs.palette == "";
+            clicked => {
+                Store.remove("palette");
+                Theme.set-palette(Theme.dark ? "lunadash-dark" : "lunadash-light");
             }
+        }
+        for name in Theme.palettes: ListRow {
+            icon: "palette";
+            title: name;
+            selected: Prefs.palette == name;
+            clicked => {
+                Store.set-string("palette", name);
+                Theme.set-palette(name);
+            }
+        }
     }
 }
 
 component WallpaperPage inherits Page {
     title: @tr("Wallpaper");
+    subtitle: @tr("Images and videos behind everything, and the clock on top of them.");
     Rectangle {
         height: 220px;
         border-radius: Style.radius-medium;
         clip: true;
         background: Style.elevated;
         Image { width: parent.width; height: parent.height; source: Wallpapers.current(); image-fit: cover; }
+        Rectangle { background: #000000.with-alpha(Prefs.wallpaper-dim / 100); }
         if Wallpapers.video: Rectangle {
             x: parent.width - self.width - 12px;
             y: 12px;
@@ -151,46 +238,217 @@ component WallpaperPage inherits Page {
         font-size: Style.font-small;
         wrap: word-wrap;
     }
-    Rectangle { height: Style.spacing-md; }
-    Setting {
-        title: @tr("Choose a wallpaper");
-        description: @tr("Browse your folders, or pick an image or video file.");
-        HorizontalLayout {
-            spacing: Style.spacing-sm;
-            TextButton { icon: "file"; text: @tr("Choose file…"); clicked => { Wallpapers.pick-file(); } }
-            TextButton { icon: "image"; text: @tr("Browse"); primary: true; clicked => { UI.open-overlay("gallery"); } }
+    Rectangle { height: Style.spacing-lg; }
+    Group {
+        title: @tr("CHOOSE");
+        Setting {
+            title: @tr("Wallpaper library");
+            description: Wallpapers.managed ? @tr("Your library and LunaDash's own wallpapers (Super+W).") : @tr("Browse your folders, or pick an image or video file.");
+            HorizontalLayout {
+                spacing: Style.spacing-sm;
+                TextButton { icon: "file"; text: @tr("Choose file…"); clicked => { Wallpapers.pick-file(); } }
+                TextButton { icon: "image"; text: @tr("Open library"); primary: true; clicked => { UI.open-overlay(Wallpapers.managed ? "wallpapers" : "gallery"); } }
+            }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Browse folders");
+            description: Prefs.wallpaper-dir;
+            HorizontalLayout {
+                spacing: Style.spacing-sm;
+                TextButton { icon: "folder"; text: @tr("Change folder…"); clicked => { Wallpapers.pick-folder(); } }
+                TextButton { icon: "grid"; text: @tr("Browse"); clicked => { UI.open-overlay("gallery"); } }
+            }
+        }
+        if Wallpapers.managed: Divider { }
+        if Wallpapers.managed: Setting {
+            title: @tr("Random wallpaper");
+            description: @tr("Picks another image from the LunaDash wallpaper library.");
+            TextButton { icon: "reboot"; text: @tr("Shuffle"); clicked => { Compositor.command("wallpaper-random", ""); } }
         }
     }
-    Divider { }
-    Setting {
-        title: @tr("Wallpaper folder");
-        description: Prefs.wallpaper-dir;
-        TextButton { icon: "folder"; text: @tr("Change folder…"); clicked => { Wallpapers.pick-folder(); } }
+    Group {
+        title: @tr("DISPLAY");
+        Setting {
+            title: @tr("Fit");
+            Segmented {
+                labels: [@tr("Fill screen"), @tr("Whole image"), @tr("Stretch")];
+                selected: Prefs.wallpaper-fit == "contain" ? 1 : Prefs.wallpaper-fit == "fill" ? 2 : 0;
+                chosen(i) => { Store.set-string("wallpaper-fit", i == 1 ? "contain" : i == 2 ? "fill" : "cover"); }
+            }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Dim");
+            description: @tr("Darkens the wallpaper so text and windows stand out.");
+            RangeSlider { minimum: 0; maximum: 60; step: 5; unit: "%"; value: Prefs.wallpaper-dim; committed(v) => { Store.set-number("wallpaper-dim", v); } }
+        }
     }
-    if Wallpapers.managed: Divider { }
-    if Wallpapers.managed: Setting {
-        title: @tr("Random wallpaper");
-        description: @tr("Picks another image from the LunaDash wallpaper library.");
-        TextButton { icon: "reboot"; text: @tr("Shuffle"); clicked => { Compositor.command("wallpaper-random", ""); } }
+    Group {
+        title: @tr("DESKTOP CLOCK");
+        Setting { title: @tr("Desktop clock"); description: @tr("A large clock on the wallpaper."); Switch { on: Prefs.desktop-clock; toggled => { Store.set-bool("desktop-clock", !Prefs.desktop-clock); } } }
+        if Prefs.desktop-clock: Divider { }
+        if Prefs.desktop-clock: Setting {
+            title: @tr("Position");
+            Segmented {
+                labels: [@tr("Bottom left"), @tr("Bottom right"), @tr("Top left"), @tr("Centre")];
+                selected: Prefs.desktop-clock-position == "bottom-right" ? 1 : Prefs.desktop-clock-position == "top-left" ? 2 : Prefs.desktop-clock-position == "center" ? 3 : 0;
+                chosen(i) => { Store.set-string("desktop-clock-position", i == 1 ? "bottom-right" : i == 2 ? "top-left" : i == 3 ? "center" : "bottom-left"); }
+            }
+        }
+        if Prefs.desktop-clock: Divider { }
+        if Prefs.desktop-clock: Setting {
+            title: @tr("Size");
+            Segmented {
+                labels: [@tr("Small"), @tr("Medium"), @tr("Large")];
+                selected: Prefs.desktop-clock-size == "small" ? 0 : Prefs.desktop-clock-size == "medium" ? 1 : 2;
+                chosen(i) => { Store.set-string("desktop-clock-size", i == 0 ? "small" : i == 1 ? "medium" : "large"); }
+            }
+        }
+        if Prefs.desktop-clock: Divider { }
+        if Prefs.desktop-clock: Setting { title: @tr("Show the date"); Switch { on: Prefs.desktop-clock-date; toggled => { Store.set-bool("desktop-clock-date", !Prefs.desktop-clock-date); } } }
     }
-    Divider { }
-    Setting { title: @tr("Desktop clock"); description: @tr("A large clock on the wallpaper."); Switch { on: Prefs.desktop-clock; toggled => { Store.set-bool("desktop-clock", !Prefs.desktop-clock); } } }
 }
 
 component PanelPage inherits Page {
-    title: @tr("Panel & dock");
-    Setting { title: @tr("Show the dock"); Switch { on: Prefs.dock; toggled => { Store.set-bool("dock", !Prefs.dock); } } }
-    Divider { }
-    Setting { title: @tr("24-hour clock"); Switch { on: Prefs.clock-24h; toggled => { Store.set-bool("clock-24h", !Prefs.clock-24h); } } }
-    Divider { }
-    Setting { title: @tr("Show seconds"); Switch { on: Prefs.clock-seconds; toggled => { Store.set-bool("clock-seconds", !Prefs.clock-seconds); } } }
-    Divider { }
-    Setting { title: @tr("Weeks start on Monday"); Switch { on: Prefs.week-starts-monday; toggled => { Store.set-bool("week-starts-monday", !Prefs.week-starts-monday); } } }
-    Divider { }
-    Setting {
-        title: @tr("Pinned applications");
-        description: @tr("{} pinned. Right-click an application in the launcher or dock to pin or unpin it.", Prefs.pinned.length);
-        TextButton { text: @tr("Unpin all"); enabled: Prefs.pinned.length > 0; clicked => { Store.remove("dock-pinned"); } }
+    title: @tr("Panel");
+    subtitle: @tr("The bar with your workspaces, clock and status.");
+    Group {
+        title: @tr("LAYOUT");
+        Setting {
+            title: @tr("Position");
+            Segmented {
+                labels: [@tr("Top"), @tr("Bottom")];
+                selected: Prefs.panel-bottom ? 1 : 0;
+                chosen(i) => { Store.set-string("panel-position", i == 1 ? "bottom" : "top"); }
+            }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Workspace indicator");
+            Segmented {
+                labels: [@tr("Dots"), @tr("Numbers")];
+                selected: Prefs.workspace-style == "numbers" ? 1 : 0;
+                chosen(i) => { Store.set-string("workspace-style", i == 1 ? "numbers" : "dots"); }
+            }
+        }
+        Divider { }
+        Setting { title: @tr("Window title"); description: @tr("Show the focused window's title."); Switch { on: Prefs.window-title; toggled => { Store.set-bool("window-title", !Prefs.window-title); } } }
+    }
+    Group {
+        title: @tr("CLOCK");
+        Setting { title: @tr("24-hour clock"); Switch { on: Prefs.clock-24h; toggled => { Store.set-bool("clock-24h", !Prefs.clock-24h); } } }
+        Divider { }
+        Setting { title: @tr("Show seconds"); Switch { on: Prefs.clock-seconds; toggled => { Store.set-bool("clock-seconds", !Prefs.clock-seconds); } } }
+        Divider { }
+        Setting { title: @tr("Show the date"); Switch { on: Prefs.clock-date; toggled => { Store.set-bool("clock-date", !Prefs.clock-date); } } }
+        Divider { }
+        Setting { title: @tr("Weeks start on Monday"); Switch { on: Prefs.week-starts-monday; toggled => { Store.set-bool("week-starts-monday", !Prefs.week-starts-monday); } } }
+    }
+}
+
+component DockPage inherits Page {
+    title: @tr("Dock");
+    subtitle: @tr("Pinned applications and running windows.");
+    Group {
+        Setting { title: @tr("Show the dock"); Switch { on: Prefs.dock; toggled => { Store.set-bool("dock", !Prefs.dock); } } }
+        if Prefs.dock: Divider { }
+        if Prefs.dock: Setting { title: @tr("Hide automatically"); description: @tr("Slides away until the pointer reaches the bottom edge."); Switch { on: Prefs.dock-autohide; toggled => { Store.set-bool("dock-autohide", !Prefs.dock-autohide); } } }
+        if Prefs.dock: Divider { }
+        if Prefs.dock: Setting {
+            title: @tr("Icon size");
+            Segmented {
+                labels: [@tr("Small"), @tr("Medium"), @tr("Large")];
+                selected: Prefs.dock-size == "small" ? 0 : Prefs.dock-size == "large" ? 2 : 1;
+                chosen(i) => { Store.set-string("dock-size", i == 0 ? "small" : i == 2 ? "large" : "medium"); }
+            }
+        }
+        if Prefs.dock: Divider { }
+        if Prefs.dock: Setting { title: @tr("Launcher button"); Switch { on: Prefs.dock-launcher; toggled => { Store.set-bool("dock-launcher", !Prefs.dock-launcher); } } }
+    }
+    Group {
+        title: @tr("PINNED");
+        Setting {
+            title: @tr("Pinned applications");
+            description: @tr("{} pinned. Right-click an application in the launcher or dock to pin or unpin it.", Prefs.pinned.length);
+            TextButton { text: @tr("Unpin all"); enabled: Prefs.pinned.length > 0; clicked => { Store.remove("dock-pinned"); } }
+        }
+    }
+}
+
+component WindowsPage inherits Page {
+    title: @tr("Windows");
+    subtitle: @tr("How LunaDash arranges and draws application windows.");
+    property <int> revision: Compositor.preferences-revision;
+    property <bool> scroll: Compositor.preference-string("tilingMode", "fill", root.revision) == "scroll";
+    Group {
+        title: @tr("LAYOUT");
+        Setting {
+            title: @tr("Tiling");
+            description: root.scroll
+                ? @tr("Normal: windows keep their width in columns that scroll sideways, like niri. Super+Shift+Space switches.")
+                : @tr("Fill: windows split the screen between them and fill it. Super+Shift+Space switches.");
+            Segmented {
+                labels: [@tr("Fill"), @tr("Normal")];
+                selected: root.scroll ? 1 : 0;
+                chosen(i) => { Compositor.set-preference-string("tilingMode", i == 1 ? "scroll" : "fill"); }
+            }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Gaps");
+            RangeSlider { minimum: 4; maximum: 32; step: 2; unit: "px"; value: Compositor.preference-number("gap", 12, root.revision); committed(v) => { Compositor.set-preference-number("gap", v); } }
+        }
+    }
+    Group {
+        title: @tr("LOOK");
+        Setting {
+            title: @tr("Window opacity");
+            description: @tr("Unfocused content shows the blurred wallpaper through it.");
+            RangeSlider { minimum: 60; maximum: 100; step: 5; unit: "%"; value: Compositor.preference-number("windowOpacity", 90, root.revision); committed(v) => { Compositor.set-preference-number("windowOpacity", v); } }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Blur");
+            Switch { on: Compositor.preference-bool("blur", true, root.revision); toggled => { Compositor.set-preference-bool("blur", !self.on); } }
+        }
+        if Compositor.preference-bool("blur", true, root.revision): Divider { }
+        if Compositor.preference-bool("blur", true, root.revision): Setting {
+            title: @tr("Blur strength");
+            RangeSlider { minimum: 0; maximum: 32; step: 2; unit: "px"; value: Compositor.preference-number("blurRadius", 18, root.revision); committed(v) => { Compositor.set-preference-number("blurRadius", v); } }
+        }
+    }
+}
+
+component DisplayPage inherits Page {
+    title: @tr("Display");
+    subtitle: @tr("Night light and the pointer.");
+    property <int> revision: Compositor.preferences-revision;
+    Group {
+        title: @tr("NIGHT LIGHT");
+        Setting {
+            title: @tr("Night light");
+            description: @tr("Warmer colours that are easier on the eyes in the evening (Super+N).");
+            Switch { on: Compositor.preference-bool("eyeCare", false, root.revision); toggled => { Compositor.set-preference-bool("eyeCare", !self.on); } }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Colour temperature");
+            RangeSlider { minimum: 2500; maximum: 6500; step: 100; unit: "K"; track-width: 200px; value: Compositor.preference-number("eyeCareTemperature", 4500, root.revision); committed(v) => { Compositor.set-preference-number("eyeCareTemperature", v); } }
+        }
+    }
+    Group {
+        title: @tr("POINTER");
+        Setting {
+            title: @tr("Cursor size");
+            description: @tr("Takes effect after signing in again.");
+            Segmented {
+                property <int> size: Compositor.preference-number("cursorSize", 24, root.revision);
+                labels: ["24", "32", "48"];
+                selected: self.size >= 48 ? 2 : self.size >= 32 ? 1 : 0;
+                chosen(i) => { Compositor.set-preference-number("cursorSize", i == 2 ? 48 : i == 1 ? 32 : 24); }
+            }
+        }
     }
 }
 
@@ -201,18 +459,40 @@ component NotificationsPage inherits Page {
         color: Style.warning;
         wrap: word-wrap;
     }
-    Setting { title: @tr("Pop-ups"); description: @tr("Show new notifications in the corner."); Switch { on: Prefs.toasts; toggled => { Store.set-bool("toasts", !Prefs.toasts); } } }
-    Divider { }
-    Setting { title: @tr("Do not disturb"); description: @tr("Only critical notifications pop up."); Switch { on: Notifications.do-not-disturb; toggled => { Notifications.set-do-not-disturb(!Notifications.do-not-disturb); } } }
-    Divider { }
-    Setting {
-        title: @tr("Pop-up duration");
-        Segmented {
-            labels: ["3 s", "5 s", "10 s"];
-            selected: Prefs.toast-seconds == 3 ? 0 : Prefs.toast-seconds == 10 ? 2 : 1;
-            chosen(i) => {
-                Store.set-number("toast-seconds", i == 0 ? 3 : i == 2 ? 10 : 5);
-                Notifications.set-default-timeout(Prefs.toast-seconds * 1s);
+    Group {
+        Setting { title: @tr("Pop-ups"); description: @tr("Show new notifications in the corner."); Switch { on: Prefs.toasts; toggled => { Store.set-bool("toasts", !Prefs.toasts); } } }
+        Divider { }
+        Setting { title: @tr("Do not disturb"); description: @tr("Only critical notifications pop up."); Switch { on: Notifications.do-not-disturb; toggled => { Notifications.set-do-not-disturb(!Notifications.do-not-disturb); } } }
+        Divider { }
+        Setting {
+            title: @tr("Position");
+            Segmented {
+                labels: [@tr("Top right"), @tr("Top centre"), @tr("Bottom right")];
+                selected: Prefs.toast-position == "top-center" ? 1 : Prefs.toast-position == "bottom-right" ? 2 : 0;
+                chosen(i) => { Store.set-string("toast-position", i == 1 ? "top-center" : i == 2 ? "bottom-right" : "top-right"); }
+            }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Pop-up duration");
+            Segmented {
+                labels: ["3 s", "5 s", "10 s"];
+                selected: Prefs.toast-seconds == 3 ? 0 : Prefs.toast-seconds == 10 ? 2 : 1;
+                chosen(i) => {
+                    Store.set-number("toast-seconds", i == 0 ? 3 : i == 2 ? 10 : 5);
+                    Notifications.set-default-timeout(Prefs.toast-seconds * 1s);
+                }
+            }
+        }
+    }
+    Group {
+        title: @tr("LAUNCHER");
+        Setting {
+            title: @tr("Launcher layout");
+            Segmented {
+                labels: [@tr("Comfortable"), @tr("Compact")];
+                selected: Prefs.launcher-density == "compact" ? 1 : 0;
+                chosen(i) => { Store.set-string("launcher-density", i == 1 ? "compact" : "comfortable"); }
             }
         }
     }
@@ -220,77 +500,98 @@ component NotificationsPage inherits Page {
 
 component PowerPage inherits Page {
     title: @tr("Power & lock");
-    Setting {
-        title: @tr("Lock after inactivity");
-        Segmented {
-            labels: [@tr("Never"), "5 min", "10 min", "30 min"];
-            selected: Prefs.lock-after-minutes == 0 ? 0 : Prefs.lock-after-minutes == 5 ? 1 : Prefs.lock-after-minutes == 30 ? 3 : 2;
-            chosen(i) => {
-                Store.set-number("lock-after-minutes", i == 0 ? 0 : i == 1 ? 5 : i == 3 ? 30 : 10);
-                Idle.set-lock-after(Prefs.lock-after-minutes * 60s);
+    Group {
+        Setting {
+            title: @tr("Lock after inactivity");
+            Segmented {
+                labels: [@tr("Never"), "5 min", "10 min", "30 min"];
+                selected: Prefs.lock-after-minutes == 0 ? 0 : Prefs.lock-after-minutes == 5 ? 1 : Prefs.lock-after-minutes == 30 ? 3 : 2;
+                chosen(i) => {
+                    Store.set-number("lock-after-minutes", i == 0 ? 0 : i == 1 ? 5 : i == 3 ? 30 : 10);
+                    Idle.set-lock-after(Prefs.lock-after-minutes * 60s);
+                }
             }
         }
-    }
-    Divider { }
-    Setting {
-        title: @tr("Lock before sleep");
-        Switch {
-            on: Prefs.lock-before-sleep;
-            toggled => {
-                Store.set-bool("lock-before-sleep", !Prefs.lock-before-sleep);
-                Session.set-lock-before-sleep(Prefs.lock-before-sleep);
+        Divider { }
+        Setting {
+            title: @tr("Lock before sleep");
+            Switch {
+                on: Prefs.lock-before-sleep;
+                toggled => {
+                    Store.set-bool("lock-before-sleep", !Prefs.lock-before-sleep);
+                    Session.set-lock-before-sleep(Prefs.lock-before-sleep);
+                }
             }
         }
+        Divider { }
+        Setting { title: @tr("Keep the screen awake"); description: @tr("Until LunaDash restarts."); Switch { on: Idle.inhibited; toggled => { Idle.set-inhibited(!Idle.inhibited); } } }
+        Divider { }
+        Setting { title: @tr("Lock now"); TextButton { icon: "lock"; text: @tr("Lock"); clicked => { UI.close-all(); Session.lock(); } } }
     }
-    Divider { }
-    Setting { title: @tr("Keep the screen awake"); description: @tr("Until LunaDash restarts."); Switch { on: Idle.inhibited; toggled => { Idle.set-inhibited(!Idle.inhibited); } } }
-    Divider { }
-    Setting { title: @tr("Lock now"); TextButton { icon: "lock"; text: @tr("Lock"); clicked => { UI.close-all(); Session.lock(); } } }
 }
 
 component LanguagePage inherits Page {
     title: @tr("Language");
-    ListRow {
-        icon: "language";
-        title: I18n.language-name("");
-        selected: I18n.language == "";
-        clicked => { Apply.choose-language(""); }
-    }
-    for language in I18n.languages: ListRow {
-        icon: "language";
-        title: I18n.language-name(language);
-        subtitle: language;
-        selected: I18n.language == language;
-        clicked => { Apply.choose-language(language); }
+    Group {
+        ListRow {
+            icon: "language";
+            title: I18n.language-name("");
+            selected: I18n.language == "";
+            clicked => { Apply.choose-language(""); }
+        }
+        for language in I18n.languages: ListRow {
+            icon: "language";
+            title: I18n.language-name(language);
+            subtitle: language;
+            selected: I18n.language == language;
+            clicked => { Apply.choose-language(language); }
+        }
     }
 }
 
 component AboutPage inherits Page {
     title: @tr("About");
-    HorizontalLayout {
-        spacing: Style.spacing-lg;
-        Image { source: @image-url("../assets/lunadash.png"); width: 72px; height: 72px; image-fit: contain; }
-        VerticalLayout {
-            alignment: center;
-            Text { text: "LunaDash"; color: Style.text; font-size: 26px; font-weight: 700; }
-            Text { text: @tr("Desktop shell written in Slint, running on SlintLu {}", Shell.version); color: Style.muted; }
+    Card {
+        height: 132px;
+        clip: true;
+        Rectangle {
+            background: @linear-gradient(120deg, Style.accent.with-alpha(0.22) 0%, transparent 70%);
+        }
+        HorizontalLayout {
+            padding: Style.spacing-xl;
+            spacing: Style.spacing-lg;
+            Image {
+                source: @image-url("../assets/lunadash.png");
+                width: 84px;
+                height: 84px;
+                y: (parent.height - self.height) / 2;
+                image-fit: contain;
+            }
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+                Text { text: "LunaDash"; color: Style.text; font-size: 28px; font-weight: 700; }
+                Text { text: @tr("Desktop shell written in Slint, running on SlintLu {}", Shell.version); color: Style.muted; wrap: word-wrap; }
+            }
         }
     }
     Rectangle { height: Style.spacing-lg; }
-    for row in [
-        { label: @tr("System"), value: System.os },
-        { label: @tr("Kernel"), value: System.kernel },
-        { label: @tr("Host"), value: System.hostname },
-        { label: @tr("Compositor"), value: Compositor.name },
-        { label: @tr("Renderer"), value: Shell.renderer },
-        { label: @tr("Memory"), value: System.memory-text },
-        { label: @tr("Uptime"), value: System.uptime },
-    ]: HorizontalLayout {
-        height: 34px;
-        Text { text: row.label; color: Style.muted; width: 160px; vertical-alignment: center; }
-        Text { text: row.value; color: Style.text; vertical-alignment: center; overflow: elide; }
+    Group {
+        title: @tr("SYSTEM");
+        for row in [
+            { label: @tr("System"), value: System.os },
+            { label: @tr("Kernel"), value: System.kernel },
+            { label: @tr("Host"), value: System.hostname },
+            { label: @tr("Compositor"), value: Compositor.name },
+            { label: @tr("Renderer"), value: Shell.renderer },
+            { label: @tr("Memory"), value: System.memory-text },
+            { label: @tr("Uptime"), value: System.uptime },
+        ]: HorizontalLayout {
+            height: 36px;
+            Text { text: row.label; color: Style.muted; width: 160px; vertical-alignment: center; }
+            Text { text: row.value; color: Style.text; vertical-alignment: center; overflow: elide; }
+        }
     }
-    Rectangle { height: Style.spacing-lg; }
     HorizontalLayout {
         spacing: Style.spacing-sm;
         alignment: start;
@@ -302,17 +603,20 @@ component AboutPage inherits Page {
 export component Settings inherits Overlay {
     name: "settings";
     namespace: "lunadash-settings";
-    content-width: 940px;
-    content-height: 640px;
+    content-width: 1000px;
+    content-height: 700px;
 
-    property <[{id: string, icon: string, label: string}]> pages: [
-        { id: "appearance", icon: "palette", label: @tr("Appearance") },
-        { id: "wallpaper", icon: "image", label: @tr("Wallpaper") },
-        { id: "panel", icon: "panel", label: @tr("Panel & dock") },
-        { id: "notifications", icon: "bell", label: @tr("Notifications") },
-        { id: "power", icon: "power", label: @tr("Power & lock") },
-        { id: "language", icon: "language", label: @tr("Language") },
-        { id: "about", icon: "info", label: @tr("About") },
+    property <[{id: string, icon: string, label: string, lunadash: bool}]> pages: [
+        { id: "appearance", icon: "palette", label: @tr("Appearance"), lunadash: false },
+        { id: "wallpaper", icon: "image", label: @tr("Wallpaper"), lunadash: false },
+        { id: "panel", icon: "panel", label: @tr("Panel"), lunadash: false },
+        { id: "dock", icon: "dock", label: @tr("Dock"), lunadash: false },
+        { id: "windows", icon: "window", label: @tr("Windows"), lunadash: true },
+        { id: "display", icon: "monitor", label: @tr("Display"), lunadash: true },
+        { id: "notifications", icon: "bell", label: @tr("Notifications"), lunadash: false },
+        { id: "power", icon: "power", label: @tr("Power & lock"), lunadash: false },
+        { id: "language", icon: "language", label: @tr("Language"), lunadash: false },
+        { id: "about", icon: "info", label: @tr("About"), lunadash: false },
     ];
 
     HorizontalLayout {
@@ -328,11 +632,12 @@ export component Settings inherits Overlay {
                 HorizontalLayout {
                     padding-bottom: Style.spacing-lg;
                     spacing: 10px;
-                    Icon { name: "settings"; width: 22px; height: 22px; color: Style.accent; }
+                    Image { source: @image-url("../assets/lunadash.png"); width: 28px; height: 28px; image-fit: contain; }
                     Text { text: @tr("Settings"); color: Style.text; font-size: Style.font-title; font-weight: 600; vertical-alignment: center; }
                 }
                 for page in root.pages: ListRow {
-                    height: 42px;
+                    visible: !page.lunadash || Compositor.has-commands;
+                    height: self.visible ? 42px : 0px;
                     icon: page.icon;
                     title: page.label;
                     selected: UI.settings-page == page.id;
@@ -349,6 +654,9 @@ export component Settings inherits Overlay {
                 if UI.settings-page == "appearance": Reveal { AppearancePage { } }
                 if UI.settings-page == "wallpaper": Reveal { WallpaperPage { } }
                 if UI.settings-page == "panel": Reveal { PanelPage { } }
+                if UI.settings-page == "dock": Reveal { DockPage { } }
+                if UI.settings-page == "windows": Reveal { WindowsPage { } }
+                if UI.settings-page == "display": Reveal { DisplayPage { } }
                 if UI.settings-page == "notifications": Reveal { NotificationsPage { } }
                 if UI.settings-page == "power": Reveal { PowerPage { } }
                 if UI.settings-page == "language": Reveal { LanguagePage { } }

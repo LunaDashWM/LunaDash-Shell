@@ -1,4 +1,4 @@
-// Notification pop-ups in the top-right corner.
+// Notification pop-ups in a corner (or top centre) of the screen.
 
 import { PanelWindow, Layer, ExclusiveMode, Notifications } from "@slintlu";
 import { Style } from "../style/style.slint";
@@ -11,9 +11,11 @@ export component Toasts inherits PanelWindow {
     namespace: "lunadash-notifications";
     layer: Layer.overlay;
     exclusive-mode: ExclusiveMode.normal;
-    anchor-top: true;
-    anchor-right: true;
+    anchor-top: Prefs.toast-position != "bottom-right";
+    anchor-bottom: Prefs.toast-position == "bottom-right";
+    anchor-right: Prefs.toast-position != "top-center";
     margin-top: 8px;
+    margin-bottom: Prefs.dock ? 96px : 12px;
     margin-right: 10px;
     shown: Prefs.toasts && Notifications.popups.length > 0 && UI.on-active-screen && UI.overlay == "";
     preferred-width: 380px;

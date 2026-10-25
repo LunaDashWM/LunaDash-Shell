@@ -8,6 +8,7 @@ import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
 
 component AppTile inherits Rectangle {
+    in property <length> icon-size: 52px;
     in property <image> icon;
     in property <string> name;
     in property <bool> selected;
@@ -25,8 +26,8 @@ component AppTile inherits Rectangle {
         alignment: center;
         Image {
             source: root.icon;
-            width: 52px;
-            height: 52px;
+            width: root.icon-size;
+            height: root.icon-size;
             x: (parent.width - self.width) / 2;
             image-fit: contain;
         }
@@ -64,9 +65,11 @@ export component Launcher inherits Overlay {
 
     property <string> query;
     property <int> selected: 0;
-    property <int> columns: 6;
+    // Compact fits more, smaller tiles.
+    property <bool> compact: Prefs.launcher-density == "compact";
+    property <int> columns: root.compact ? 8 : 6;
     // Mentioning Apps.all refreshes the results when the background scan finishes.
-    property <[AppInfo]> results: Apps.all.length >= 0 ? Apps.search(root.query, 48) : [];
+    property <[AppInfo]> results: Apps.all.length >= 0 ? Apps.search(root.query, root.compact ? 64 : 48) : [];
 
     function launch(id: string) {
         Apps.launch(id);
@@ -165,6 +168,7 @@ export component Launcher inherits Overlay {
                 width: parent.tile - 6px;
                 height: parent.tile - 6px;
                 icon: app.icon;
+                icon-size: root.compact ? 40px : 52px;
                 name: app.name;
                 selected: i == root.selected;
                 pinned: root.is-pinned(app.id);

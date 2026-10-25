@@ -3,19 +3,22 @@
 import { PanelWindow, Layer, KeyboardMode, ExclusiveMode } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
+import { Prefs } from "../state/prefs.slint";
 import { Surface } from "../components/controls.slint";
 
-// A popup hanging under the panel. Set `name` to the UI.popup value that opens it.
+// A popup next to the panel (under it, or above it when the panel is at the bottom). Set `name` to the UI.popup value that opens it.
 export component PanelPopup inherits PanelWindow {
     in property <string> name;
     in property <bool> left-side;
     layer: Layer.overlay;
     keyboard-mode: KeyboardMode.on-demand;
     exclusive-mode: ExclusiveMode.ignore;
-    anchor-top: true;
+    anchor-top: !Prefs.panel-bottom;
+    anchor-bottom: Prefs.panel-bottom;
     anchor-right: !root.left-side;
     anchor-left: root.left-side;
     margin-top: Style.panel-height + 10px;
+    margin-bottom: Style.panel-height + 10px;
     margin-right: 8px;
     margin-left: 8px;
     shown: UI.popup == root.name && UI.on-active-screen;
@@ -39,7 +42,7 @@ export component PanelPopup inherits PanelWindow {
     }
 }
 
-// Covers the screen below the panel while a popup is open; a click closes the popup.
+// Covers the screen beside the panel while a popup is open; a click closes the popup.
 export component PopupDismisser inherits PanelWindow {
     namespace: "lunadash-dismiss";
     layer: Layer.top;
@@ -48,7 +51,8 @@ export component PopupDismisser inherits PanelWindow {
     anchor-bottom: true;
     anchor-left: true;
     anchor-right: true;
-    margin-top: Style.panel-height + 8px;
+    margin-top: Prefs.panel-bottom ? 0px : Style.panel-height + 8px;
+    margin-bottom: Prefs.panel-bottom ? Style.panel-height + 8px : 0px;
     shown: UI.popup != "" && UI.on-active-screen;
     TouchArea { clicked => { UI.close-all(); } }
 }

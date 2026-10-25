@@ -1,47 +1,61 @@
 // LunaDash design tokens on top of SlintLu's Theme (which follows theme.json and the desktop's
-// light / dark preference).
+// light / dark preference) and the appearance preferences.
 
 import { Theme } from "@slintlu";
 import { Prefs } from "../state/prefs.slint";
 
 export global Style {
+    // Accent choices offered in Settings; `accent-hex` is what LunaDash's compositor stores.
+    out property <[color]> accents: [#9ccbfb, #c4b5fd, #f5a9c8, #7dcccf, #a6e3a1, #efcd8c, #f4a77c, #e2e5ed];
+    out property <[string]> accent-hex: ["#9ccbfb", "#c4b5fd", "#f5a9c8", "#7dcccf", "#a6e3a1", "#efcd8c", "#f4a77c", "#e2e5ed"];
+
     // Surfaces
+    out property <float> glass-alpha: Prefs.transparency ? clamp(Prefs.glass-opacity, 50, 100) / 100 : 1.0;
     out property <color> base: Theme.background;
-    out property <color> glass: Theme.background.with-alpha(Prefs.transparency ? 0.86 : 1.0);
-    out property <color> glass-strong: Theme.background.with-alpha(Prefs.transparency ? 0.95 : 1.0);
+    out property <color> glass: Theme.background.with-alpha(root.glass-alpha);
+    out property <color> glass-strong: Theme.background.with-alpha(min(1.0, root.glass-alpha + 0.09));
     out property <color> surface: Theme.surface;
     out property <color> elevated: Theme.surface-alt;
     out property <color> hover: Theme.surface-alt.brighter(Theme.dark ? 0.12 : -0.06);
     out property <color> border: Theme.border.with-alpha(0.55);
     out property <color> hairline: Theme.border.with-alpha(0.3);
+    // A soft light along the top edge of raised surfaces.
+    out property <color> sheen: Theme.dark ? #ffffff10 : #ffffff80;
     out property <color> scrim: #060a14.with-alpha(0.45);
+    out property <color> shadow: Theme.dark ? #00000070 : #1b2a4430;
     // Content
     out property <color> text: Theme.text;
     out property <color> muted: Theme.text-muted;
-    out property <color> accent: Theme.accent;
-    out property <color> accent-soft: Theme.accent.with-alpha(0.18);
+    out property <color> accent: Prefs.accent >= 0 && Prefs.accent < root.accents.length
+        ? (Theme.dark ? root.accents[Prefs.accent] : root.accents[Prefs.accent].darker(0.45))
+        : Theme.accent;
+    out property <color> accent-soft: root.accent.with-alpha(0.18);
     out property <color> accent-ink: Theme.dark ? Theme.background : #ffffff;
     out property <color> danger: Theme.red;
     out property <color> success: Theme.green;
     out property <color> warning: Theme.yellow;
     // Typography
+    out property <float> text-scale: clamp(Prefs.text-scale, 80, 140) / 100;
     out property <string> font: Theme.font-family;
-    out property <length> font-size: Theme.font-size;
-    out property <length> font-small: Theme.font-size - 1.5px;
-    out property <length> font-title: Theme.font-size + 4px;
+    out property <length> font-size: Theme.font-size * root.text-scale;
+    out property <length> font-small: (Theme.font-size - 1.5px) * root.text-scale;
+    out property <length> font-title: (Theme.font-size + 4px) * root.text-scale;
+    out property <length> font-display: 22px * root.text-scale;
     // Geometry
+    out property <float> corner-scale: Prefs.corners == "compact" ? 0.5 : Prefs.corners == "round" ? 1.35 : 1.0;
     out property <length> spacing-xs: 4px;
     out property <length> spacing-sm: 8px;
     out property <length> spacing-md: 12px;
     out property <length> spacing-lg: 18px;
     out property <length> spacing-xl: 24px;
-    out property <length> radius-small: 10px;
-    out property <length> radius-medium: 16px;
-    out property <length> radius: 24px;
-    out property <length> radius-large: 30px;
+    out property <length> radius-small: 10px * root.corner-scale;
+    out property <length> radius-medium: 16px * root.corner-scale;
+    out property <length> radius: 24px * root.corner-scale;
+    out property <length> radius-large: 30px * root.corner-scale;
     out property <length> panel-height: 40px;
     out property <length> pill-height: 32px;
     // Motion
-    out property <duration> motion: Prefs.animations ? 220ms : 0ms;
-    out property <duration> motion-fast: Prefs.animations ? 120ms : 0ms;
+    out property <float> motion-scale: Prefs.animation-speed == "fast" ? 0.6 : Prefs.animation-speed == "relaxed" ? 1.6 : 1.0;
+    out property <duration> motion: Prefs.animations ? 220ms * root.motion-scale : 0ms;
+    out property <duration> motion-fast: Prefs.animations ? 120ms * root.motion-scale : 0ms;
 }

@@ -9,21 +9,69 @@ export global Prefs {
     out property <string> wallpaper-dir: Store.get-string("wallpaper-dir",
         Shell.env("LUNADASH_WALLPAPER_DIR") != "" ? Shell.env("LUNADASH_WALLPAPER_DIR") : "~/Pictures/Wallpapers",
         Store.revision);
-    out property <bool> dock: Store.get-bool("dock", true, Store.revision);
-    out property <[string]> pinned: Store.get-list("dock-pinned", Store.revision);
+    // "cover", "contain" or "fill".
+    out property <string> wallpaper-fit: Store.get-string("wallpaper-fit", "cover", Store.revision);
+    // Darkens the wallpaper, 0–60 %.
+    out property <int> wallpaper-dim: Store.get-number("wallpaper-dim", 0, Store.revision);
+
+    // Panel
+    // "top" or "bottom".
+    out property <string> panel-position: Store.get-string("panel-position", "top", Store.revision);
+    out property <bool> panel-bottom: root.panel-position == "bottom";
+    // "dots" or "numbers".
+    out property <string> workspace-style: Store.get-string("workspace-style", "dots", Store.revision);
+    out property <bool> window-title: Store.get-bool("window-title", true, Store.revision);
+    out property <bool> clock-date: Store.get-bool("clock-date", true, Store.revision);
     out property <bool> clock-24h: Store.get-bool("clock-24h", true, Store.revision);
     out property <bool> clock-seconds: Store.get-bool("clock-seconds", false, Store.revision);
-    out property <bool> desktop-clock: Store.get-bool("desktop-clock", true, Store.revision);
-    out property <bool> animations: Store.get-bool("animations", true, Store.revision);
-    out property <bool> transparency: Store.get-bool("transparency", true, Store.revision);
-    out property <bool> toasts: Store.get-bool("toasts", true, Store.revision);
     out property <bool> week-starts-monday: Store.get-bool("week-starts-monday", false, Store.revision);
-    out property <int> lock-after-minutes: Store.get-number("lock-after-minutes", 10, Store.revision);
+
+    // Dock
+    out property <bool> dock: Store.get-bool("dock", true, Store.revision);
+    out property <[string]> pinned: Store.get-list("dock-pinned", Store.revision);
+    out property <bool> dock-autohide: Store.get-bool("dock-autohide", false, Store.revision);
+    // "small", "medium" or "large".
+    out property <string> dock-size: Store.get-string("dock-size", "medium", Store.revision);
+    out property <bool> dock-launcher: Store.get-bool("dock-launcher", true, Store.revision);
+
+    // Desktop clock on the wallpaper
+    out property <bool> desktop-clock: Store.get-bool("desktop-clock", true, Store.revision);
+    // "bottom-left", "bottom-right", "top-left" or "center".
+    out property <string> desktop-clock-position: Store.get-string("desktop-clock-position", "bottom-left", Store.revision);
+    // "small", "medium" or "large".
+    out property <string> desktop-clock-size: Store.get-string("desktop-clock-size", "large", Store.revision);
+    out property <bool> desktop-clock-date: Store.get-bool("desktop-clock-date", true, Store.revision);
+
+    // Appearance
+    out property <bool> animations: Store.get-bool("animations", true, Store.revision);
+    // "fast", "normal" or "relaxed".
+    out property <string> animation-speed: Store.get-string("animation-speed", "normal", Store.revision);
+    out property <bool> transparency: Store.get-bool("transparency", true, Store.revision);
+    // Opacity of panels and popups while transparency is on, 50–100 %.
+    out property <int> glass-opacity: Store.get-number("glass-opacity", 86, Store.revision);
+    // "compact", "default" or "round".
+    out property <string> corners: Store.get-string("corners", "default", Store.revision);
+    // Interface text size in percent: 90, 100, 110 or 125.
+    out property <int> text-scale: Store.get-number("text-scale", 100, Store.revision);
+    // An accent from Style.accents, or -1 for the palette's own.
+    out property <int> accent: Store.get-number("accent", -1, Store.revision);
     // "auto", "dark" or "light", and a palette name ("" for the LunaDash palettes).
     out property <string> theme-mode: Store.get-string("theme-mode", "auto", Store.revision);
     out property <string> palette: Store.get-string("palette", "", Store.revision);
-    out property <string> language: Store.get-string("language", "", Store.revision);
+
+    // Notifications
+    out property <bool> toasts: Store.get-bool("toasts", true, Store.revision);
     out property <int> toast-seconds: Store.get-number("toast-seconds", 5, Store.revision);
+    // "top-right", "top-center" or "bottom-right".
+    out property <string> toast-position: Store.get-string("toast-position", "top-right", Store.revision);
+
+    // Launcher
+    // "comfortable" or "compact".
+    out property <string> launcher-density: Store.get-string("launcher-density", "comfortable", Store.revision);
+
+    // Session
+    out property <string> language: Store.get-string("language", "", Store.revision);
+    out property <int> lock-after-minutes: Store.get-number("lock-after-minutes", 10, Store.revision);
     out property <bool> lock-before-sleep: Store.get-bool("lock-before-sleep", true, Store.revision);
     out property <bool> welcome-done: Store.get-bool("welcome-done", false, Store.revision);
 }

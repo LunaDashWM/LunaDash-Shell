@@ -11,18 +11,28 @@ import { Icon } from "../components/icon.slint";
 import { Pill, IconButton } from "../components/controls.slint";
 
 component WorkspaceDots inherits HorizontalLayout {
-    spacing: 6px;
+    property <bool> numbers: Prefs.workspace-style == "numbers";
+    spacing: root.numbers ? 4px : 6px;
     alignment: center;
     for ws in Workspaces.all: Rectangle {
         // Only this screen's workspaces; every workspace when the compositor has one output name.
         visible: ws.output == "" || ws.output == Shell.screen.name;
         y: (parent.height - self.height) / 2;
-        width: ws.active ? 34px : ws.windows > 0 ? 18px : 14px;
-        height: 10px;
-        border-radius: 5px;
-        background: ws.active ? Style.accent : ws.urgent ? Style.danger : touch.has-hover ? Style.hover : Style.elevated;
+        width: root.numbers ? (ws.active ? 30px : 22px) : ws.active ? 34px : ws.windows > 0 ? 18px : 14px;
+        height: root.numbers ? 22px : 10px;
+        border-radius: self.height / 2;
+        background: ws.active ? Style.accent : ws.urgent ? Style.danger : touch.has-hover ? Style.hover
+            : root.numbers && ws.windows == 0 ? transparent : Style.elevated;
         opacity: ws.active || ws.windows > 0 ? 1 : 0.7;
         animate width, background { duration: Style.motion; easing: ease-out; }
+        if root.numbers: Text {
+            text: ws.index;
+            color: ws.active ? Style.accent-ink : Style.text;
+            font-size: Style.font-small;
+            font-weight: ws.active ? 700 : 500;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
         touch := TouchArea { clicked => { Workspaces.focus(ws.id); } }
     }
 }
@@ -74,7 +84,8 @@ component StatusIcon inherits Rectangle {
 
 export component TopPanel inherits PanelWindow {
     namespace: "lunadash-panel";
-    anchor-top: true;
+    anchor-top: !Prefs.panel-bottom;
+    anchor-bottom: Prefs.panel-bottom;
     anchor-left: true;
     anchor-right: true;
     preferred-height: Style.panel-height + 8px;
@@ -95,7 +106,7 @@ export component TopPanel inherits PanelWindow {
         } else if Compositor.request == "settings" {
             UI.open-settings(Compositor.request-argument == "" ? "appearance" : Compositor.request-argument);
         } else if Compositor.request == "wallpaper-picker" {
-            UI.toggle-overlay("gallery");
+            UI.toggle-overlay("wallpapers");
         } else if Compositor.request == "control-center" {
             UI.toggle-overlay("dashboard");
         } else if Compositor.request == "clipboard" {
@@ -126,8 +137,8 @@ export component TopPanel inherits PanelWindow {
     HorizontalLayout {
         padding-left: 8px;
         padding-right: 8px;
-        padding-top: 6px;
-        padding-bottom: 2px;
+        padding-top: Prefs.panel-bottom ? 2px : 6px;
+        padding-bottom: Prefs.panel-bottom ? 6px : 2px;
         spacing: 8px;
 
         // Left: workspaces and the session menu.
@@ -161,7 +172,7 @@ export component TopPanel inherits PanelWindow {
         }
         Text {
             horizontal-stretch: 1;
-            text: Workspaces.focused-window.title;
+            text: Prefs.window-title ? Workspaces.focused-window.title : "";
             color: Style.muted;
             font-size: Style.font-small;
             vertical-alignment: center;
@@ -187,10 +198,19 @@ export component TopPanel inherits PanelWindow {
                     height: 30px;
                     y: (parent.height - self.height) / 2;
                     border-radius: 15px;
-                    background: UI.overlay == "dashboard" ? Style.accent : luna.has-hover ? Style.hover : Style.elevated;
-                    border-width: 1px;
-                    border-color: Style.accent.with-alpha(0.6);
-                    Icon { name: "luna"; width: 18px; height: 18px; color: UI.overlay == "dashboard" ? Style.accent-ink : Style.accent; }
+                    background: transparent;
+                    border-width: UI.overlay == "dashboard" ? 2px : luna.has-hover ? 1px : 0px;
+                    border-color: Style.accent;
+                    drop-shadow-blur: UI.overlay == "dashboard" || luna.has-hover ? 10px : 0px;
+                    drop-shadow-color: Style.accent.with-alpha(0.5);
+                    animate border-width, drop-shadow-blur { duration: Style.motion-fast; }
+                    Image {
+                        source: @image-url("../assets/lunadash.png");
+                        width: luna.pressed ? 24px : 28px;
+                        height: self.width;
+                        image-fit: contain;
+                        animate width { duration: Style.motion-fast; }
+                    }
                     luna := TouchArea { clicked => { UI.toggle-overlay("dashboard"); } }
                 }
                 IconButton {
@@ -217,8 +237,8 @@ export component TopPanel inherits PanelWindow {
                 padding-right: 14px;
                 spacing: 8px;
                 Text { text: Time.clock; color: Style.text; font-size: Style.font-size; font-weight: 700; vertical-alignment: center; }
-                Rectangle { width: 1px; height: 14px; y: (parent.height - self.height) / 2; background: Style.border; }
-                Text { text: Time.short-date; color: Style.muted; font-size: Style.font-small; vertical-alignment: center; }
+                if Prefs.clock-date: Rectangle { width: 1px; height: 14px; y: (parent.height - self.height) / 2; background: Style.border; }
+                if Prefs.clock-date: Text { text: Time.short-date; color: Style.muted; font-size: Style.font-small; vertical-alignment: center; }
             }
             TouchArea { clicked => { UI.toggle-popup("calendar"); } }
         }
