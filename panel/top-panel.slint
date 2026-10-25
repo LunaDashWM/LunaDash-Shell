@@ -105,6 +105,13 @@ export component TopPanel inherits PanelWindow {
         }
     }
 
+    property <string> desktop-language: Compositor.language;
+    changed desktop-language => {
+        if UI.primary {
+            Apply.language();
+        }
+    }
+
     ready => {
         // Shell-wide settings are applied once, from the primary screen.
         if UI.primary {

@@ -14,7 +14,7 @@ msgstr "現代化的 Wayland 桌面"
 msgid "Charging"
 msgstr "充電中"
 
-#: dashboard/dashboard.slint:120 settings/settings.slint:259
+#: dashboard/dashboard.slint:120 settings/settings.slint:260
 msgid "Uptime"
 msgstr "運作時間"
 
@@ -22,7 +22,7 @@ msgstr "運作時間"
 msgid "CPU"
 msgstr "處理器"
 
-#: dashboard/dashboard.slint:128 settings/settings.slint:258
+#: dashboard/dashboard.slint:128 settings/settings.slint:259
 msgid "Memory"
 msgstr "記憶體"
 
@@ -46,7 +46,7 @@ msgstr "離線"
 msgid "Temperature"
 msgstr "溫度"
 
-#: dashboard/dashboard.slint:142 settings/settings.slint:304 welcome/welcome.slint:60
+#: dashboard/dashboard.slint:142 settings/settings.slint:305 welcome/welcome.slint:60
 msgid "Settings"
 msgstr "設定"
 
@@ -74,7 +74,7 @@ msgstr "關閉"
 msgid "Bluetooth"
 msgstr "藍牙"
 
-#: dashboard/dashboard.slint:174 dashboard/dashboard.slint:325 settings/settings.slint:172
+#: dashboard/dashboard.slint:174 dashboard/dashboard.slint:325 settings/settings.slint:179
 msgid "Do not disturb"
 msgstr "勿擾模式"
 
@@ -82,19 +82,19 @@ msgstr "勿擾模式"
 msgid "Keep awake"
 msgstr "保持喚醒"
 
-#: dashboard/dashboard.slint:189 settings/settings.slint:83
+#: dashboard/dashboard.slint:189 settings/settings.slint:84
 msgid "Dark"
 msgstr "深色"
 
-#: dashboard/dashboard.slint:189 settings/settings.slint:83
+#: dashboard/dashboard.slint:189 settings/settings.slint:84
 msgid "Light"
 msgstr "淺色"
 
-#: dashboard/dashboard.slint:190 settings/settings.slint:78 settings/settings.slint:281
+#: dashboard/dashboard.slint:190 settings/settings.slint:79 settings/settings.slint:282
 msgid "Appearance"
 msgstr "外觀"
 
-#: dashboard/dashboard.slint:196 settings/settings.slint:128 settings/settings.slint:282
+#: dashboard/dashboard.slint:196 settings/settings.slint:129 settings/settings.slint:283
 msgid "Wallpaper"
 msgstr "桌布"
 
@@ -174,29 +174,29 @@ msgstr "媒體"
 msgid "Performance"
 msgstr "效能"
 
-#: dashboard/dashboard.slint:389 settings/settings.slint:164 settings/settings.slint:284
+#: dashboard/dashboard.slint:389 settings/settings.slint:171 settings/settings.slint:285
 msgid "Notifications"
 msgstr "通知"
 
-#: launcher/launcher.slint:143
+#: launcher/launcher.slint:146
 msgid "Search applications"
 msgstr "搜尋應用程式"
 
-#: launcher/launcher.slint:151
+#: launcher/launcher.slint:154
 msgid "Frequently used"
 msgstr "常用"
 
-#: launcher/launcher.slint:151
+#: launcher/launcher.slint:154
 #, c-format
 msgid "{} results"
 msgstr "{} 個結果"
 
-#: launcher/launcher.slint:179
+#: launcher/launcher.slint:182
 #, c-format
 msgid "No applications match “{}”"
 msgstr "沒有符合「{}」的應用程式"
 
-#: launcher/launcher.slint:184
+#: launcher/launcher.slint:187
 msgid "Enter to open · right-click to pin to the dock · Esc to close"
 msgstr "Enter 開啟 · 右鍵釘選到 Dock · Esc 關閉"
 
@@ -339,7 +339,7 @@ msgstr "再按一次"
 msgid "Power"
 msgstr "電源"
 
-#: session/power-menu.slint:72 settings/settings.slint:214
+#: session/power-menu.slint:72 settings/settings.slint:221
 msgid "Lock"
 msgstr "鎖定"
 
@@ -359,178 +359,190 @@ msgstr "重新啟動"
 msgid "Shut down"
 msgstr "關機"
 
-#: settings/settings.slint:80
+#: settings/settings.slint:81
 msgid "Mode"
 msgstr "模式"
 
-#: settings/settings.slint:81
+#: settings/settings.slint:82
 msgid "Follow the desktop, or always use the dark or light palette."
 msgstr "跟隨桌面設定，或固定使用深色或淺色配色。"
 
-#: settings/settings.slint:83
+#: settings/settings.slint:84
 msgid "Auto"
 msgstr "自動"
 
-#: settings/settings.slint:92
+#: settings/settings.slint:93
 msgid "Transparency"
 msgstr "透明效果"
 
-#: settings/settings.slint:92
+#: settings/settings.slint:93
 msgid "Translucent panels and popups."
 msgstr "半透明的面板與彈出視窗。"
 
-#: settings/settings.slint:94
+#: settings/settings.slint:95
 msgid "Animations"
 msgstr "動畫"
 
-#: settings/settings.slint:97
+#: settings/settings.slint:98
 #, c-format
 msgid "PALETTE · {}"
 msgstr "配色 · {}"
 
-#: settings/settings.slint:106
+#: settings/settings.slint:107
 msgid "LunaDash"
 msgstr "LunaDash"
 
-#: settings/settings.slint:107
+#: settings/settings.slint:108
 msgid "The default dark and light palettes"
 msgstr "預設的深色與淺色配色"
 
-#: settings/settings.slint:138
+#: settings/settings.slint:139
 msgid "Wallpaper folder"
 msgstr "桌布資料夾"
 
-#: settings/settings.slint:140
+#: settings/settings.slint:141
 msgid "Choose wallpaper"
 msgstr "選擇桌布"
 
-#: settings/settings.slint:143
+#: settings/settings.slint:145
+msgid "Random wallpaper"
+msgstr "隨機桌布"
+
+#: settings/settings.slint:146
+msgid "Picks another image from the LunaDash wallpaper library."
+msgstr "從 LunaDash 桌布庫中挑選另一張圖片。"
+
+#: settings/settings.slint:147
+msgid "Shuffle"
+msgstr "隨機挑選"
+
+#: settings/settings.slint:150
 msgid "Desktop clock"
 msgstr "桌面時鐘"
 
-#: settings/settings.slint:143
+#: settings/settings.slint:150
 msgid "A large clock on the wallpaper."
 msgstr "在桌布上顯示大型時鐘。"
 
-#: settings/settings.slint:147 settings/settings.slint:283
+#: settings/settings.slint:154 settings/settings.slint:284
 msgid "Panel & dock"
 msgstr "面板與 Dock"
 
-#: settings/settings.slint:148
+#: settings/settings.slint:155
 msgid "Show the dock"
 msgstr "顯示 Dock"
 
-#: settings/settings.slint:150
+#: settings/settings.slint:157
 msgid "24-hour clock"
 msgstr "24 小時制"
 
-#: settings/settings.slint:152
+#: settings/settings.slint:159
 msgid "Show seconds"
 msgstr "顯示秒數"
 
-#: settings/settings.slint:154
+#: settings/settings.slint:161
 msgid "Weeks start on Monday"
 msgstr "每週從星期一開始"
 
-#: settings/settings.slint:157
+#: settings/settings.slint:164
 msgid "Pinned applications"
 msgstr "釘選的應用程式"
 
-#: settings/settings.slint:158
+#: settings/settings.slint:165
 #, c-format
 msgid "{} pinned. Right-click an application in the launcher or dock to pin or unpin it."
 msgstr "已釘選 {} 個。在啟動器或 Dock 中以右鍵點選應用程式即可釘選或取消釘選。"
 
-#: settings/settings.slint:159
+#: settings/settings.slint:166
 msgid "Unpin all"
 msgstr "全部取消釘選"
 
-#: settings/settings.slint:166
+#: settings/settings.slint:173
 msgid "Another notification daemon is running. Stop it to use LunaDash notifications."
 msgstr "另一個通知服務正在執行。請停止它以使用 LunaDash 通知。"
 
-#: settings/settings.slint:170
+#: settings/settings.slint:177
 msgid "Pop-ups"
 msgstr "彈出通知"
 
-#: settings/settings.slint:170
+#: settings/settings.slint:177
 msgid "Show new notifications in the corner."
 msgstr "在角落顯示新通知。"
 
-#: settings/settings.slint:172
+#: settings/settings.slint:179
 msgid "Only critical notifications pop up."
 msgstr "只彈出緊急通知。"
 
-#: settings/settings.slint:175
+#: settings/settings.slint:182
 msgid "Pop-up duration"
 msgstr "彈出時間"
 
-#: settings/settings.slint:188 settings/settings.slint:285
+#: settings/settings.slint:195 settings/settings.slint:286
 msgid "Power & lock"
 msgstr "電源與鎖定"
 
-#: settings/settings.slint:190
+#: settings/settings.slint:197
 msgid "Lock after inactivity"
 msgstr "閒置後鎖定"
 
-#: settings/settings.slint:192
+#: settings/settings.slint:199
 msgid "Never"
 msgstr "永不"
 
-#: settings/settings.slint:202
+#: settings/settings.slint:209
 msgid "Lock before sleep"
 msgstr "睡眠前鎖定"
 
-#: settings/settings.slint:212
+#: settings/settings.slint:219
 msgid "Keep the screen awake"
 msgstr "保持螢幕喚醒"
 
-#: settings/settings.slint:212
+#: settings/settings.slint:219
 msgid "Until LunaDash restarts."
 msgstr "直到 LunaDash 重新啟動。"
 
-#: settings/settings.slint:214
+#: settings/settings.slint:221
 msgid "Lock now"
 msgstr "立即鎖定"
 
-#: settings/settings.slint:218 settings/settings.slint:286
+#: settings/settings.slint:225 settings/settings.slint:287
 msgid "Language"
 msgstr "語言"
 
-#: settings/settings.slint:241 settings/settings.slint:287
+#: settings/settings.slint:242 settings/settings.slint:288
 msgid "About"
 msgstr "關於"
 
-#: settings/settings.slint:248
+#: settings/settings.slint:249
 #, c-format
 msgid "Desktop shell written in Slint, running on SlintLu {}"
 msgstr "以 Slint 撰寫的桌面殼層，執行於 SlintLu {}"
 
-#: settings/settings.slint:253
+#: settings/settings.slint:254
 msgid "System"
 msgstr "系統"
 
-#: settings/settings.slint:254
+#: settings/settings.slint:255
 msgid "Kernel"
 msgstr "核心"
 
-#: settings/settings.slint:255
+#: settings/settings.slint:256
 msgid "Host"
 msgstr "主機"
 
-#: settings/settings.slint:256
+#: settings/settings.slint:257
 msgid "Compositor"
 msgstr "合成器"
 
-#: settings/settings.slint:257
+#: settings/settings.slint:258
 msgid "Renderer"
 msgstr "渲染器"
 
-#: settings/settings.slint:269
+#: settings/settings.slint:270
 msgid "Show welcome"
 msgstr "顯示歡迎畫面"
 
-#: settings/settings.slint:270
+#: settings/settings.slint:271
 msgid "Reload shell"
 msgstr "重新載入殼層"
 

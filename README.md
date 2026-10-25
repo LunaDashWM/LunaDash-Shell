@@ -6,8 +6,11 @@ screen and settings. It is written entirely in [Slint](https://slint.dev) and ru
 layer-shell windows and provides the desktop services (audio, network, notifications, MPRIS,
 tray, polkit, PAM, idle, clipboard, …). There is no C++, QML or JavaScript in this repository.
 
-It works best on the LunaDash compositor, which sends it keyboard shortcuts (launcher,
-settings, wallpaper picker, power menu, …), and also runs on niri, Hyprland and Sway.
+It works best on the LunaDash compositor, which starts it as the session shell and sends it
+keyboard shortcuts (launcher, settings, wallpaper picker, power menu, …). On LunaDash the
+wallpaper and the language are the desktop's own: choosing them in the shell changes them for
+LunaDash, and changes made in LunaDash show up in the shell. It also runs on niri, Hyprland and
+Sway, where it keeps its own settings.
 
 ## Features
 
@@ -85,7 +88,8 @@ slintlu --config .
 - `scripts/headless-check.sh` runs the shell in a private headless Sway, opens every overlay
   and popup and fails if it dies (`SHOTS=dir` keeps screenshots). CI runs it on every push.
 - `scripts/extract-tr.py` updates `i18n/*.po` after changing `@tr("…")` texts.
-- `scripts/gen-icons.py` regenerates `components/icon.slint` from `assets/icons`.
+- Icons come from SlintLu's shared set (`Icon` in `@slintlu`, see SlintLu's `res/`); only the
+  LunaDash mark lives here (`assets/luna.svg`).
 
 Layout: `panel/` (panel and its popups), `dashboard/`, `launcher/`, `dock/`, `wallpaper/`,
 `session/` (lock screen, power menu, polkit), `feedback/` (notifications, OSD), `settings/`,

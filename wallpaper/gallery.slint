@@ -111,8 +111,8 @@ export component Gallery inherits Overlay {
                 height: parent.tile-height - 10px;
                 image: Wallpapers.default;
                 label: @tr("LunaDash default");
-                selected: Prefs.wallpaper == "";
-                clicked => { Store.remove("wallpaper"); }
+                selected: Wallpapers.path == "";
+                clicked => { Wallpapers.choose-default(); }
             }
             for entry[i] in root.entries: Thumb {
                 x: Math.mod(i + 1, root.columns) * parent.tile-width;
@@ -122,13 +122,13 @@ export component Gallery inherits Overlay {
                 image: entry.is-dir ? Files.thumbnail("", 0, 0) : Files.thumbnail(entry.path, 320, Files.revision);
                 label: entry.name;
                 folder: entry.is-dir;
-                selected: entry.path == Prefs.wallpaper;
+                selected: entry.path == Wallpapers.path;
                 clicked => {
                     if entry.is-dir {
                         Store.set-string("wallpaper-dir", entry.path);
                         folder.text = entry.path;
                     } else {
-                        Store.set-string("wallpaper", entry.path);
+                        Wallpapers.choose(entry.path);
                     }
                 }
             }

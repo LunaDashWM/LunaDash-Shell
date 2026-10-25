@@ -1,6 +1,6 @@
 // Applies the stored preferences to SlintLu's shell-wide services.
 
-import { Theme, Idle, Session, Notifications, I18n } from "@slintlu";
+import { Theme, Idle, Session, Notifications, I18n, Compositor, Store } from "@slintlu";
 import { Prefs } from "prefs.slint";
 
 // Applies the stored preferences to the shell-wide services (once, from the primary screen).
@@ -16,8 +16,28 @@ export global Apply {
         Idle.set-lock-after(Prefs.lock-after-minutes * 60s);
         Session.set-lock-before-sleep(Prefs.lock-before-sleep);
         Notifications.set-default-timeout(Prefs.toast-seconds * 1s);
-        if Prefs.language != "" {
+        root.language();
+    }
+    // LunaDash's desktop language when the compositor has one ("en_US" means the untranslated
+    // English texts), else the shell's own choice.
+    public function language() {
+        if Compositor.language != "" {
+            I18n.set-language(Compositor.language == "en_US" ? "" : Compositor.language);
+        } else if Prefs.language != "" {
             I18n.set-language(Prefs.language);
+        }
+    }
+    // Chooses a language ("" for English): on LunaDash for the whole desktop.
+    public function choose-language(language: string) {
+        if Compositor.has-commands {
+            Compositor.command("language", language == "" ? "en_US" : language);
+        } else {
+            if language == "" {
+                Store.remove("language");
+            } else {
+                Store.set-string("language", language);
+            }
+            I18n.set-language(language);
         }
     }
 }

@@ -1,6 +1,6 @@
 // The wallpaper, with an optional large clock in the corner.
 
-import { PanelWindow, Layer, ExclusiveMode, Files } from "@slintlu";
+import { PanelWindow, Layer, ExclusiveMode, Files, Compositor, Store } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { Time } from "../state/time.slint";
@@ -8,8 +8,26 @@ import { Time } from "../state/time.slint";
 export global Wallpapers {
     // The bundled default wallpaper.
     out property <image> default: @image-url("../assets/wallpapers/florist.png");
+    // On LunaDash the compositor owns the wallpaper (its settings, shortcuts and random
+    // wallpaper all change it); elsewhere the shell keeps its own choice.
+    out property <bool> managed: Compositor.has-commands;
+    out property <string> path: root.managed ? Compositor.wallpaper : Prefs.wallpaper;
     public pure function current() -> image {
-        Prefs.wallpaper != "" && Files.exists(Prefs.wallpaper) ? Files.image(Prefs.wallpaper) : root.default
+        root.path != "" && Files.exists(root.path) ? Files.image(root.path) : root.default
+    }
+    public function choose(path: string) {
+        if root.managed {
+            Compositor.command("wallpaper-image", path);
+        } else {
+            Store.set-string("wallpaper", path);
+        }
+    }
+    public function choose-default() {
+        if root.managed {
+            Compositor.command("wallpaper-default", "");
+        } else {
+            Store.remove("wallpaper");
+        }
     }
 }
 

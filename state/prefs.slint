@@ -1,11 +1,14 @@
 // Persistent user preferences (SlintLu Store). Change them with Store.set-* and every window
 // follows.
 
-import { Store } from "@slintlu";
+import { Store, Shell } from "@slintlu";
 
 export global Prefs {
     out property <string> wallpaper: Store.get-string("wallpaper", "", Store.revision);
-    out property <string> wallpaper-dir: Store.get-string("wallpaper-dir", "~/Pictures/Wallpapers", Store.revision);
+    // LunaDash sets LUNADASH_WALLPAPER_DIR to its wallpaper library.
+    out property <string> wallpaper-dir: Store.get-string("wallpaper-dir",
+        Shell.env("LUNADASH_WALLPAPER_DIR") != "" ? Shell.env("LUNADASH_WALLPAPER_DIR") : "~/Pictures/Wallpapers",
+        Store.revision);
     out property <bool> dock: Store.get-bool("dock", true, Store.revision);
     out property <[string]> pinned: Store.get-list("dock-pinned", Store.revision);
     out property <bool> clock-24h: Store.get-bool("clock-24h", true, Store.revision);

@@ -35,7 +35,9 @@ export global UI {
         root.open-overlay("dashboard");
     }
     public function open-settings(page: string) {
-        Shared.set-string("settings-page", page);
+        Shared.set-string("settings-page",
+            page == "wallpaper" || page == "panel" || page == "notifications" || page == "power"
+                || page == "language" || page == "about" ? page : "appearance");
         root.open-overlay("settings");
     }
     public function close-all() {

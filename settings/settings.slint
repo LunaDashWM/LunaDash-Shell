@@ -8,6 +8,7 @@ import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
 import { Switch, SectionTitle, IconButton, TextButton, ListRow, Card } from "../components/controls.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
+import { Apply } from "../state/apply.slint";
 
 
 component Segmented inherits Rectangle {
@@ -139,6 +140,12 @@ component WallpaperPage inherits Page {
         description: Prefs.wallpaper-dir;
         TextButton { icon: "image"; text: @tr("Choose wallpaper"); primary: true; clicked => { UI.open-overlay("gallery"); } }
     }
+    if Wallpapers.managed: Divider { }
+    if Wallpapers.managed: Setting {
+        title: @tr("Random wallpaper");
+        description: @tr("Picks another image from the LunaDash wallpaper library.");
+        TextButton { icon: "reboot"; text: @tr("Shuffle"); clicked => { Compositor.command("wallpaper-random", ""); } }
+    }
     Divider { }
     Setting { title: @tr("Desktop clock"); description: @tr("A large clock on the wallpaper."); Switch { on: Prefs.desktop-clock; toggled => { Store.toggle("desktop-clock"); } } }
 }
@@ -220,20 +227,14 @@ component LanguagePage inherits Page {
         icon: "language";
         title: "English";
         selected: I18n.language == "";
-        clicked => {
-            Store.remove("language");
-            I18n.set-language("");
-        }
+        clicked => { Apply.choose-language(""); }
     }
     for language in I18n.languages: ListRow {
         icon: "language";
         title: language == "zh_TW" ? "繁體中文" : language;
         subtitle: language;
         selected: I18n.language == language;
-        clicked => {
-            Store.set-string("language", language);
-            I18n.set-language(language);
-        }
+        clicked => { Apply.choose-language(language); }
     }
 }
 

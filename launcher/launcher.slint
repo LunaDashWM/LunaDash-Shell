@@ -1,6 +1,6 @@
 // The application launcher: type to search, arrows to move, Enter to start.
 
-import { Apps, AppInfo, Store } from "@slintlu";
+import { Apps, AppInfo, Store, Compositor } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
 import { Prefs } from "../state/prefs.slint";
@@ -73,6 +73,9 @@ export component Launcher inherits Overlay {
         UI.close-all();
     }
     changed shown => {
+        if Compositor.has-commands && UI.primary {
+            Compositor.command("launcher-visible", self.shown ? "true" : "false");
+        }
         if self.shown {
             search.text = "";
             root.query = "";
