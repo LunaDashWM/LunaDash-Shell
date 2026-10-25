@@ -1,0 +1,148 @@
+// The window switcher (Alt+Tab: every window in the taskbar, across workspaces) and the
+// workspace switcher (Super+Tab). The compositor handles the keys; this draws its state, and
+// clicking an entry switches to it.
+
+import { PanelWindow, Layer, KeyboardMode, ExclusiveMode, Switcher, SwitcherEntry } from "@slintlu";
+import { Style } from "../style/style.slint";
+import { UI } from "../state/ui.slint";
+import { Icon } from "../components/icon.slint";
+import { Surface } from "../components/controls.slint";
+
+component WindowTile inherits Rectangle {
+    in property <SwitcherEntry> entry;
+    in property <bool> selected;
+    callback clicked();
+    border-radius: Style.radius-medium;
+    background: root.selected ? Style.accent-soft : touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
+    border-width: root.selected ? 2px : 0;
+    border-color: Style.accent;
+    animate background { duration: Style.motion-fast; }
+    VerticalLayout {
+        padding: Style.spacing-md;
+        spacing: Style.spacing-sm;
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                width: 56px;
+                height: 56px;
+                Image { source: root.entry.icon; width: 52px; height: 52px; image-fit: contain; opacity: root.entry.minimized ? 0.5 : 1; }
+                if root.entry.icon.width == 0: Icon { name: "window"; width: 36px; height: 36px; color: Style.muted; }
+            }
+        }
+        Text {
+            text: root.entry.title != "" ? root.entry.title : root.entry.app-id;
+            color: Style.text;
+            font-size: Style.font-small;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+        Text {
+            text: @tr("Workspace {}", root.entry.workspace + 1);
+            color: Style.muted;
+            font-size: Style.font-small - 1px;
+            horizontal-alignment: center;
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+component WorkspaceTile inherits Rectangle {
+    in property <SwitcherEntry> entry;
+    in property <bool> selected;
+    callback clicked();
+    border-radius: Style.radius-medium;
+    background: root.selected ? Style.accent-soft : touch.has-hover ? Style.hover.with-alpha(0.6) : Style.surface;
+    border-width: root.selected ? 2px : 1px;
+    border-color: root.selected ? Style.accent : Style.hairline;
+    animate background { duration: Style.motion-fast; }
+    VerticalLayout {
+        padding: Style.spacing-md;
+        spacing: Style.spacing-sm;
+        Text { text: @tr("Workspace {}", root.entry.id); color: Style.text; font-weight: 600; }
+        HorizontalLayout {
+            spacing: 4px;
+            alignment: start;
+            for icon[i] in root.entry.icons: Image {
+                visible: i < 6;
+                width: i < 6 ? 26px : 0px;
+                height: 26px;
+                source: icon;
+                image-fit: contain;
+            }
+            if root.entry.icons.length == 0: Text { text: @tr("Empty"); color: Style.muted; font-size: Style.font-small; }
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+export component WindowSwitcher inherits PanelWindow {
+    namespace: "lunadash-switcher";
+    layer: Layer.overlay;
+    // The compositor keeps the keyboard: Tab, arrows, Enter and Escape reach it directly.
+    keyboard-mode: KeyboardMode.none;
+    exclusive-mode: ExclusiveMode.ignore;
+    anchor-top: true;
+    anchor-bottom: true;
+    anchor-left: true;
+    anchor-right: true;
+    shown: Switcher.available && Switcher.active && UI.on-active-screen;
+    default-font-family: Style.font;
+
+    property <length> tile-width: Switcher.workspaces ? 200px : 150px;
+    property <length> tile-height: Switcher.workspaces ? 86px : 132px;
+    property <int> columns: max(1, min(Switcher.entries.length, Switcher.workspaces ? 5 : 6));
+    property <int> rows: Math.ceil(Switcher.entries.length / root.columns);
+    property <length> gap: Style.spacing-sm;
+
+    Rectangle {
+        background: Style.scrim;
+        TouchArea { clicked => { Switcher.cancel(); } }
+    }
+    Surface {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: min(root.width - 40px, root.columns * (root.tile-width + root.gap) - root.gap + 2 * Style.spacing-lg);
+        height: min(root.height - 80px, header.preferred-height + Style.spacing-md + grid.content-height + 2 * Style.spacing-lg);
+        TouchArea { }
+        VerticalLayout {
+            padding: Style.spacing-lg;
+            spacing: Style.spacing-md;
+            header := HorizontalLayout {
+                spacing: 10px;
+                Icon { name: Switcher.workspaces ? "workspace" : "window"; width: 18px; height: 18px; y: (parent.height - self.height) / 2; color: Style.accent; }
+                Text {
+                    text: Switcher.workspaces ? @tr("Workspaces") : @tr("Windows");
+                    color: Style.text;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                Text {
+                    text: Switcher.workspaces ? @tr("Super+Tab to move · Esc to cancel") : @tr("Alt+Tab to move · Esc to cancel");
+                    color: Style.muted;
+                    font-size: Style.font-small;
+                    vertical-alignment: center;
+                }
+            }
+            grid := Flickable {
+                content-height: root.rows * (root.tile-height + root.gap) - root.gap;
+                for entry[i] in Switcher.entries: Rectangle {
+                    x: Math.mod(i, root.columns) * (root.tile-width + root.gap);
+                    y: Math.floor(i / root.columns) * (root.tile-height + root.gap);
+                    width: root.tile-width;
+                    height: root.tile-height;
+                    if !Switcher.workspaces: WindowTile {
+                        entry: entry;
+                        selected: i == Switcher.index;
+                        clicked => { Switcher.choose(entry.id); }
+                    }
+                    if Switcher.workspaces: WorkspaceTile {
+                        entry: entry;
+                        selected: i == Switcher.index;
+                        clicked => { Switcher.choose(entry.id); }
+                    }
+                }
+            }
+        }
+    }
+}

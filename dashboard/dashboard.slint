@@ -1,6 +1,6 @@
 // The dashboard: overview cards, media, performance and notifications.
 
-import { Clock, System, Battery, Network, Audio, Brightness, Bluetooth, Notifications, Media, Idle, Theme, Compositor, Shell, Files } from "@slintlu";
+import { Clock, System, Battery, Network, Audio, Brightness, Bluetooth, Notifications, Media, Idle, Theme, Compositor, Shell, Files, Store } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -9,6 +9,7 @@ import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
 import { Card, QuickToggle, Slider, IconButton, TextButton, SectionTitle, Reveal } from "../components/controls.slint";
 import { DefaultApps } from "../state/apps.slint";
+import { Wallpapers } from "../wallpaper/wallpaper.slint";
 
 component Tab inherits Rectangle {
     in property <string> icon;
@@ -87,7 +88,7 @@ component OverviewTab inherits HorizontalLayout {
         Image {
             width: parent.width;
             height: parent.height;
-            source: Prefs.wallpaper != "" ? Files.image(Prefs.wallpaper) : @image-url("../assets/wallpapers/florist.png");
+            source: Wallpapers.current();
             image-fit: cover;
         }
         Rectangle {
@@ -192,7 +193,11 @@ component ControlsColumn inherits VerticalLayout {
                 label: Theme.dark ? @tr("Dark") : @tr("Light");
                 detail: @tr("Appearance");
                 on: Theme.dark;
-                clicked => { Theme.set-mode(Theme.dark ? "light" : "dark"); }
+                // Saved like the Appearance setting, so Settings agrees and it lasts.
+                clicked => {
+                    Store.set-string("theme-mode", Theme.dark ? "light" : "dark");
+                    Theme.set-mode(Prefs.theme-mode);
+                }
             }
             QuickToggle {
                 icon: "image";

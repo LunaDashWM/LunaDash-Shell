@@ -1,9 +1,10 @@
 // The wallpaper, with an optional large clock in the corner.
 
-import { PanelWindow, Layer, ExclusiveMode, Files, Compositor, Store } from "@slintlu";
+import { PanelWindow, Layer, ExclusiveMode, Files, Compositor, Store, Shared } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { Time } from "../state/time.slint";
+import { UI } from "../state/ui.slint";
 
 export global Wallpapers {
     // The bundled default wallpaper.
@@ -12,7 +13,17 @@ export global Wallpapers {
     // wallpaper all change it); elsewhere the shell keeps its own choice.
     out property <bool> managed: Compositor.has-commands;
     out property <string> path: root.managed ? Compositor.wallpaper : Prefs.wallpaper;
+    // Video wallpapers need the compositor: LunaDash plays them below the shell.
+    out property <bool> video: root.managed && Files.kind(root.path) == "video";
+    // The compositor is playing the video: the wallpaper window stays transparent.
+    out property <bool> live: root.video && Compositor.wallpaper-live;
+    // Files the gallery offers: videos only where they can play.
+    out property <string> extensions: root.managed ? "png,jpg,jpeg,webp,bmp,gif,mp4,webm,mkv,mov,m4v" : "png,jpg,jpeg,webp,bmp,gif";
+
     public pure function current() -> image {
+        if root.video {
+            return Compositor.wallpaper-poster != "" ? Files.image(Compositor.wallpaper-poster) : root.default;
+        }
         root.path != "" && Files.exists(root.path) ? Files.image(root.path) : root.default
     }
     public function choose(path: string) {
@@ -29,6 +40,24 @@ export global Wallpapers {
             Store.remove("wallpaper");
         }
     }
+    // Opens the desktop's file chooser; `Wallpaper` applies what the user picks.
+    public function pick-file() {
+        Shared.set-string("wallpaper-pick", "file");
+        Files.choose(@tr("Choose a wallpaper"), root.extensions, false, Prefs.wallpaper-dir);
+    }
+    public function pick-folder() {
+        Shared.set-string("wallpaper-pick", "folder");
+        Files.choose(@tr("Choose a wallpaper folder"), "", true, Prefs.wallpaper-dir);
+    }
+    // A picked or typed path: folders are browsed, images and videos become the wallpaper.
+    public function open(path: string) {
+        if Files.kind(path) == "directory" {
+            Store.set-string("wallpaper-dir", path);
+        } else if Files.kind(path) == "image" || (Files.kind(path) == "video" && root.managed) {
+            root.choose(path);
+            Store.set-string("wallpaper-dir", Files.parent(path));
+        }
+    }
 }
 
 export component Wallpaper inherits PanelWindow {
@@ -41,8 +70,18 @@ export component Wallpaper inherits PanelWindow {
     anchor-right: true;
     default-font-family: Style.font;
 
-    Rectangle { background: Style.base; }
-    Image {
+    // The file chooser answers asynchronously; one window applies the choice.
+    property <int> chosen-serial: Files.chosen-serial;
+    changed chosen-serial => {
+        if UI.primary && Shared.get-string("wallpaper-pick", "", Shared.revision) != "" {
+            Shared.set-string("wallpaper-pick", "");
+            Wallpapers.open(Files.chosen);
+        }
+    }
+
+    // A playing video wallpaper shows through.
+    Rectangle { background: Wallpapers.live ? transparent : Style.base; }
+    if !Wallpapers.live: Image {
         width: parent.width;
         height: parent.height;
         source: Wallpapers.current();

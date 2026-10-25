@@ -58,7 +58,9 @@ export component Dock inherits PanelWindow {
     shown: Prefs.dock;
     default-font-family: Style.font;
 
-    property <[AppWindows]> items: Apps.group-windows(Prefs.pinned, Workspaces.windows);
+    // Mentioning Apps.all regroups once the background scan has found the applications;
+    // before that, pinned entries had no desktop file to launch.
+    property <[AppWindows]> items: Apps.all.length >= 0 ? Apps.group-windows(Prefs.pinned, Workspaces.windows) : [];
 
     // The first time applications are known, pin one browser, file manager, terminal and
     // editor that are installed.

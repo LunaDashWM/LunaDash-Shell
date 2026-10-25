@@ -90,9 +90,9 @@ component AppearancePage inherits Page {
         }
     }
     Divider { }
-    Setting { title: @tr("Transparency"); description: @tr("Translucent panels and popups."); Switch { on: Prefs.transparency; toggled => { Store.toggle("transparency"); } } }
+    Setting { title: @tr("Transparency"); description: @tr("Translucent panels and popups."); Switch { on: Prefs.transparency; toggled => { Store.set-bool("transparency", !Prefs.transparency); } } }
     Divider { }
-    Setting { title: @tr("Animations"); Switch { on: Prefs.animations; toggled => { Store.toggle("animations"); } } }
+    Setting { title: @tr("Animations"); Switch { on: Prefs.animations; toggled => { Store.set-bool("animations", !Prefs.animations); } } }
     Divider { }
     Rectangle { height: Style.spacing-md; }
     SectionTitle { text: @tr("PALETTE · {}", Theme.name); }
@@ -130,12 +130,42 @@ component WallpaperPage inherits Page {
         clip: true;
         background: Style.elevated;
         Image { width: parent.width; height: parent.height; source: Wallpapers.current(); image-fit: cover; }
+        if Wallpapers.video: Rectangle {
+            x: parent.width - self.width - 12px;
+            y: 12px;
+            width: badge.preferred-width + 20px;
+            height: 28px;
+            border-radius: 14px;
+            background: #000000a0;
+            badge := HorizontalLayout {
+                alignment: center;
+                spacing: 6px;
+                Icon { name: "video"; width: 14px; height: 14px; y: (parent.height - self.height) / 2; color: #ffffff; }
+                Text { text: Wallpapers.live ? @tr("Video · playing") : @tr("Video"); color: #ffffff; font-size: Style.font-small; vertical-alignment: center; }
+            }
+        }
+    }
+    if Wallpapers.video && !Wallpapers.live: Text {
+        text: @tr("Video wallpapers play with mpvpaper. Install it to see this one move.");
+        color: Style.muted;
+        font-size: Style.font-small;
+        wrap: word-wrap;
     }
     Rectangle { height: Style.spacing-md; }
     Setting {
+        title: @tr("Choose a wallpaper");
+        description: @tr("Browse your folders, or pick an image or video file.");
+        HorizontalLayout {
+            spacing: Style.spacing-sm;
+            TextButton { icon: "file"; text: @tr("Choose file…"); clicked => { Wallpapers.pick-file(); } }
+            TextButton { icon: "image"; text: @tr("Browse"); primary: true; clicked => { UI.open-overlay("gallery"); } }
+        }
+    }
+    Divider { }
+    Setting {
         title: @tr("Wallpaper folder");
         description: Prefs.wallpaper-dir;
-        TextButton { icon: "image"; text: @tr("Choose wallpaper"); primary: true; clicked => { UI.open-overlay("gallery"); } }
+        TextButton { icon: "folder"; text: @tr("Change folder…"); clicked => { Wallpapers.pick-folder(); } }
     }
     if Wallpapers.managed: Divider { }
     if Wallpapers.managed: Setting {
@@ -144,18 +174,18 @@ component WallpaperPage inherits Page {
         TextButton { icon: "reboot"; text: @tr("Shuffle"); clicked => { Compositor.command("wallpaper-random", ""); } }
     }
     Divider { }
-    Setting { title: @tr("Desktop clock"); description: @tr("A large clock on the wallpaper."); Switch { on: Prefs.desktop-clock; toggled => { Store.toggle("desktop-clock"); } } }
+    Setting { title: @tr("Desktop clock"); description: @tr("A large clock on the wallpaper."); Switch { on: Prefs.desktop-clock; toggled => { Store.set-bool("desktop-clock", !Prefs.desktop-clock); } } }
 }
 
 component PanelPage inherits Page {
     title: @tr("Panel & dock");
-    Setting { title: @tr("Show the dock"); Switch { on: Prefs.dock; toggled => { Store.toggle("dock"); } } }
+    Setting { title: @tr("Show the dock"); Switch { on: Prefs.dock; toggled => { Store.set-bool("dock", !Prefs.dock); } } }
     Divider { }
-    Setting { title: @tr("24-hour clock"); Switch { on: Prefs.clock-24h; toggled => { Store.toggle("clock-24h"); } } }
+    Setting { title: @tr("24-hour clock"); Switch { on: Prefs.clock-24h; toggled => { Store.set-bool("clock-24h", !Prefs.clock-24h); } } }
     Divider { }
-    Setting { title: @tr("Show seconds"); Switch { on: Prefs.clock-seconds; toggled => { Store.toggle("clock-seconds"); } } }
+    Setting { title: @tr("Show seconds"); Switch { on: Prefs.clock-seconds; toggled => { Store.set-bool("clock-seconds", !Prefs.clock-seconds); } } }
     Divider { }
-    Setting { title: @tr("Weeks start on Monday"); Switch { on: Prefs.week-starts-monday; toggled => { Store.toggle("week-starts-monday"); } } }
+    Setting { title: @tr("Weeks start on Monday"); Switch { on: Prefs.week-starts-monday; toggled => { Store.set-bool("week-starts-monday", !Prefs.week-starts-monday); } } }
     Divider { }
     Setting {
         title: @tr("Pinned applications");
@@ -171,7 +201,7 @@ component NotificationsPage inherits Page {
         color: Style.warning;
         wrap: word-wrap;
     }
-    Setting { title: @tr("Pop-ups"); description: @tr("Show new notifications in the corner."); Switch { on: Prefs.toasts; toggled => { Store.toggle("toasts"); } } }
+    Setting { title: @tr("Pop-ups"); description: @tr("Show new notifications in the corner."); Switch { on: Prefs.toasts; toggled => { Store.set-bool("toasts", !Prefs.toasts); } } }
     Divider { }
     Setting { title: @tr("Do not disturb"); description: @tr("Only critical notifications pop up."); Switch { on: Notifications.do-not-disturb; toggled => { Notifications.set-do-not-disturb(!Notifications.do-not-disturb); } } }
     Divider { }
@@ -207,7 +237,7 @@ component PowerPage inherits Page {
         Switch {
             on: Prefs.lock-before-sleep;
             toggled => {
-                Store.toggle("lock-before-sleep");
+                Store.set-bool("lock-before-sleep", !Prefs.lock-before-sleep);
                 Session.set-lock-before-sleep(Prefs.lock-before-sleep);
             }
         }

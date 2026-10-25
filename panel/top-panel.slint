@@ -1,7 +1,7 @@
 // The top panel: workspaces and power on the left, LunaDash in the middle, clock and system
 // status on the right — capsules floating over the wallpaper.
 
-import { PanelWindow, Shell, Workspaces, Audio, Network, Bluetooth, Battery, Notifications, Tray, Compositor, ClipboardHistory } from "@slintlu";
+import { PanelWindow, Shell, Workspaces, Switcher, Audio, Network, Bluetooth, Battery, Notifications, Tray, Compositor, ClipboardHistory } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -138,6 +138,16 @@ export component TopPanel inherits PanelWindow {
                 padding-right: 10px;
                 spacing: 8px;
                 if Workspaces.available: WorkspaceDots { }
+                // Every open window, across workspaces (the same box as Alt+Tab).
+                if Switcher.available: IconButton {
+                    icon: "window";
+                    size: 24px;
+                    icon-size: 15px;
+                    y: (parent.height - self.height) / 2;
+                    active: Switcher.active;
+                    clicked => { Switcher.open(false); }
+                    right-clicked => { Switcher.open(true); }
+                }
                 if Workspaces.available: Rectangle { width: 1px; height: 16px; y: (parent.height - self.height) / 2; background: Style.border; }
                 IconButton {
                     icon: "power";

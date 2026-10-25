@@ -1,12 +1,13 @@
-// The wallpaper picker: the bundled wallpaper and every image in a folder.
+// The wallpaper picker: common folders on the side, the images (and on LunaDash the videos) of
+// the current folder in a grid. Folders open on click; the file chooser picks anything else.
 
-import { Files, FileEntry, Store } from "@slintlu";
+import { Files, FileEntry, Store, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
-import { TextButton, IconButton } from "../components/controls.slint";
+import { TextButton, IconButton, ListRow, SectionTitle } from "../components/controls.slint";
 import { Wallpapers } from "wallpaper.slint";
 
 component Thumb inherits Rectangle {
@@ -14,6 +15,7 @@ component Thumb inherits Rectangle {
     in property <string> label;
     in property <bool> selected;
     in property <bool> folder;
+    in property <bool> video;
     callback clicked();
     border-radius: Style.radius-medium;
     background: Style.elevated;
@@ -28,19 +30,32 @@ component Thumb inherits Rectangle {
         source: root.image;
         image-fit: cover;
     }
-    if root.image.width == 0: Icon { name: root.folder ? "folder" : "image"; width: 28px; height: 28px; color: Style.muted; }
+    if root.image.width == 0: Icon { name: root.folder ? "folder" : root.video ? "video" : "image"; width: 32px; height: 32px; color: Style.muted; }
+    if root.video && root.image.width > 0: Rectangle {
+        x: 10px;
+        y: 10px;
+        width: 26px;
+        height: 26px;
+        border-radius: 13px;
+        background: #000000a0;
+        Icon { name: "play"; width: 12px; height: 12px; color: #ffffff; }
+    }
     Rectangle {
         y: parent.height - 28px;
         height: 28px;
         background: #00000080;
-        Text {
-            x: 10px;
-            width: parent.width - 20px;
-            text: root.label;
-            color: #ffffff;
-            font-size: Style.font-small;
-            vertical-alignment: center;
-            overflow: elide;
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            spacing: 6px;
+            if root.folder: Icon { name: "folder"; width: 14px; height: 14px; y: (parent.height - self.height) / 2; color: #ffffff; }
+            Text {
+                text: root.label;
+                color: #ffffff;
+                font-size: Style.font-small;
+                vertical-alignment: center;
+                overflow: elide;
+            }
         }
     }
     if root.selected: Rectangle {
@@ -58,85 +73,145 @@ component Thumb inherits Rectangle {
 export component Gallery inherits Overlay {
     name: "gallery";
     namespace: "lunadash-gallery";
-    content-width: 980px;
-    content-height: 620px;
+    content-width: 1040px;
+    content-height: 660px;
 
-    property <[FileEntry]> entries: Files.list(Prefs.wallpaper-dir, "png,jpg,jpeg,webp,bmp");
-    property <int> columns: 4;
+    property <string> dir: Prefs.wallpaper-dir;
+    property <[FileEntry]> entries: Files.list(root.dir, Wallpapers.extensions);
+    property <string> library: Shell.env("LUNADASH_WALLPAPER_DIR");
+    property <[{icon: string, label: string, path: string}]> places: [
+        { icon: "image", label: @tr("LunaDash wallpapers"), path: root.library },
+        { icon: "image", label: @tr("Pictures"), path: Files.user-dir("pictures") },
+        { icon: "video", label: @tr("Videos"), path: Files.user-dir("videos") },
+        { icon: "download", label: @tr("Downloads"), path: Files.user-dir("downloads") },
+        { icon: "home", label: @tr("Home"), path: Files.user-dir("home") },
+    ];
 
-    changed shown => {
-        if self.shown {
-            folder.text = Prefs.wallpaper-dir;
+    function go(path: string) {
+        if path != "" {
+            Store.set-string("wallpaper-dir", path);
+            folder.text = path;
         }
     }
 
-    VerticalLayout {
-        padding: Style.spacing-xl;
-        spacing: Style.spacing-lg;
-        HorizontalLayout {
-            spacing: Style.spacing-md;
-            Text { text: @tr("Wallpaper"); color: Style.text; font-size: Style.font-title; font-weight: 600; vertical-alignment: center; }
-            Rectangle {
-                horizontal-stretch: 1;
-                height: 36px;
-                border-radius: 18px;
-                background: Style.elevated;
-                border-width: 1px;
-                border-color: folder.has-focus ? Style.accent.with-alpha(0.6) : Style.border;
+    changed shown => {
+        if self.shown {
+            folder.text = root.dir;
+        }
+    }
+    changed dir => { folder.text = root.dir; }
+
+    HorizontalLayout {
+        // Places
+        Rectangle {
+            width: 220px;
+            background: Style.surface.with-alpha(0.5);
+            border-top-left-radius: Style.radius;
+            border-bottom-left-radius: Style.radius;
+            VerticalLayout {
+                padding: Style.spacing-lg;
+                spacing: 2px;
+                alignment: start;
                 HorizontalLayout {
-                    padding-left: 14px;
-                    padding-right: 14px;
-                    spacing: 8px;
-                    Icon { name: "folder"; width: 16px; height: 16px; y: (parent.height - self.height) / 2; color: Style.muted; }
-                    folder := TextInput {
-                        vertical-alignment: center;
-                        color: Style.text;
-                        single-line: true;
-                        accepted => { Store.set-string("wallpaper-dir", self.text); }
+                    padding-bottom: Style.spacing-lg;
+                    spacing: 10px;
+                    Icon { name: "image"; width: 22px; height: 22px; color: Style.accent; }
+                    Text { text: @tr("Wallpaper"); color: Style.text; font-size: Style.font-title; font-weight: 600; vertical-alignment: center; }
+                }
+                SectionTitle { text: @tr("PLACES"); }
+                Rectangle { height: Style.spacing-xs; }
+                for place in root.places: ListRow {
+                    visible: place.path != "";
+                    height: place.path != "" ? 42px : 0px;
+                    icon: place.icon;
+                    title: place.label;
+                    selected: root.dir == place.path;
+                    clicked => { root.go(place.path); }
+                }
+                Rectangle { height: Style.spacing-md; }
+                TextButton { icon: "folder"; text: @tr("Other folder…"); clicked => { Wallpapers.pick-folder(); } }
+                Rectangle { height: Style.spacing-xs; }
+                TextButton { icon: "file"; text: @tr("Choose file…"); clicked => { Wallpapers.pick-file(); } }
+            }
+        }
+        Rectangle { width: 1px; background: Style.hairline; }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            padding: Style.spacing-xl;
+            spacing: Style.spacing-lg;
+            HorizontalLayout {
+                spacing: Style.spacing-sm;
+                IconButton {
+                    icon: "arrow-up";
+                    size: 36px;
+                    y: (parent.height - self.height) / 2;
+                    clicked => { root.go(Files.parent(root.dir)); }
+                }
+                Rectangle {
+                    horizontal-stretch: 1;
+                    height: 36px;
+                    border-radius: 18px;
+                    background: Style.elevated;
+                    border-width: 1px;
+                    border-color: folder.has-focus ? Style.accent.with-alpha(0.6) : Style.border;
+                    HorizontalLayout {
+                        padding-left: 14px;
+                        padding-right: 14px;
+                        spacing: 8px;
+                        Icon { name: "folder"; width: 16px; height: 16px; y: (parent.height - self.height) / 2; color: Style.muted; }
+                        // A folder to open, or an image / video to use directly.
+                        folder := TextInput {
+                            vertical-alignment: center;
+                            color: Style.text;
+                            single-line: true;
+                            accepted => { Wallpapers.open(self.text); }
+                        }
+                    }
+                }
+                IconButton { icon: "close"; size: 36px; y: (parent.height - self.height) / 2; clicked => { UI.close-all(); } }
+            }
+            Flickable {
+                vertical-stretch: 1;
+                property <int> columns: 4;
+                property <length> tile-width: self.width / self.columns;
+                property <length> tile-height: self.tile-width * 0.62;
+                property <int> count: root.entries.length + 1;
+                content-height: Math.ceil(self.count / self.columns) * self.tile-height;
+                Thumb {
+                    x: 0;
+                    y: 0;
+                    width: parent.tile-width - 10px;
+                    height: parent.tile-height - 10px;
+                    image: Wallpapers.default;
+                    label: @tr("LunaDash default");
+                    selected: Wallpapers.path == "";
+                    clicked => { Wallpapers.choose-default(); }
+                }
+                for entry[i] in root.entries: Thumb {
+                    x: Math.mod(i + 1, parent.columns) * parent.tile-width;
+                    y: Math.floor((i + 1) / parent.columns) * parent.tile-height;
+                    width: parent.tile-width - 10px;
+                    height: parent.tile-height - 10px;
+                    image: entry.is-dir ? Files.thumbnail("", 0, 0) : Files.thumbnail(entry.path, 320, Files.revision);
+                    label: entry.name;
+                    folder: entry.is-dir;
+                    video: !entry.is-dir && Files.kind(entry.path) == "video";
+                    selected: entry.path == Wallpapers.path;
+                    clicked => {
+                        if entry.is-dir {
+                            root.go(entry.path);
+                        } else {
+                            Wallpapers.choose(entry.path);
+                        }
                     }
                 }
             }
-            IconButton { icon: "close"; size: 36px; clicked => { UI.close-all(); } }
-        }
-        Flickable {
-            vertical-stretch: 1;
-            property <length> tile-width: self.width / root.columns;
-            property <length> tile-height: self.tile-width * 0.62;
-            property <int> count: root.entries.length + 1;
-            content-height: Math.ceil(self.count / root.columns) * self.tile-height;
-            Thumb {
-                x: 0;
-                y: 0;
-                width: parent.tile-width - 10px;
-                height: parent.tile-height - 10px;
-                image: Wallpapers.default;
-                label: @tr("LunaDash default");
-                selected: Wallpapers.path == "";
-                clicked => { Wallpapers.choose-default(); }
+            if root.entries.length == 0: Text {
+                text: @tr("No images in {}. Pick a place on the left or another folder.", root.dir);
+                color: Style.muted;
+                horizontal-alignment: center;
+                wrap: word-wrap;
             }
-            for entry[i] in root.entries: Thumb {
-                x: Math.mod(i + 1, root.columns) * parent.tile-width;
-                y: Math.floor((i + 1) / root.columns) * parent.tile-height;
-                width: parent.tile-width - 10px;
-                height: parent.tile-height - 10px;
-                image: entry.is-dir ? Files.thumbnail("", 0, 0) : Files.thumbnail(entry.path, 320, Files.revision);
-                label: entry.name;
-                folder: entry.is-dir;
-                selected: entry.path == Wallpapers.path;
-                clicked => {
-                    if entry.is-dir {
-                        Store.set-string("wallpaper-dir", entry.path);
-                        folder.text = entry.path;
-                    } else {
-                        Wallpapers.choose(entry.path);
-                    }
-                }
-            }
-        }
-        if root.entries.length == 0: Text {
-            text: @tr("No images in {}. Choose another folder above.", Prefs.wallpaper-dir);
-            color: Style.muted;
-            horizontal-alignment: center;
         }
     }
 }
