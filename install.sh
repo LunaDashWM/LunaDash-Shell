@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_url=https://github.com/LunaDash-DE/LunaDash-Shell.git
-slintlu_url=https://github.com/LunaDash-DE/SlintLu.git
+repo_url=https://github.com/LunaDashWM/LunaDash-Shell.git
+slintlu_url=https://github.com/LunaDashWM/SlintLu.git
 # Empty when the script is piped into bash: the source tree is downloaded below.
 script_source=${BASH_SOURCE[0]:-}
 script_dir=
@@ -25,7 +25,7 @@ By default, files go to ~/.local/share/lunadash/shell (or
 XDG_DATA_HOME/lunadash/shell when XDG_DATA_HOME is set) and ~/.local/bin.
 For a system install, use: sudo ./install.sh --prefix /usr
 
-The shell runs on SlintLu (https://github.com/LunaDash-DE/SlintLu).
+The shell runs on SlintLu (https://github.com/LunaDashWM/SlintLu).
   --install-slintlu  build and install SlintLu with cargo when it is missing
   --no-check         do not compile the shell with `slintlu check` first
 

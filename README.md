@@ -2,7 +2,7 @@
 
 The desktop interface of LunaDash: panel, dock, launcher, dashboard, notifications, lock
 screen and settings. It is written entirely in [Slint](https://slint.dev) and runs on
-[SlintLu](https://github.com/LunaDash-DE/SlintLu), which turns Slint files into Wayland
+[SlintLu](https://github.com/LunaDashWM/SlintLu), which turns Slint files into Wayland
 layer-shell windows and provides the desktop services (audio, network, notifications, MPRIS,
 tray, polkit, PAM, idle, clipboard, …). There is no C++, QML or JavaScript in this repository.
 
@@ -38,7 +38,7 @@ Settings are stored by SlintLu in `$XDG_STATE_HOME/slintlu`. The colours come fr
 ## Install
 
 ```sh
-git clone https://github.com/LunaDash-DE/LunaDash-Shell.git
+git clone https://github.com/LunaDashWM/LunaDash-Shell.git
 cd LunaDash-Shell
 ./install.sh --install-slintlu
 ```
@@ -55,7 +55,7 @@ For a system install use `sudo ./install.sh --prefix /usr`; packagers can add
 without cloning:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/LunaDash-DE/LunaDash-Shell/main/install.sh | bash -s -- --install-slintlu
+curl -fsSL https://raw.githubusercontent.com/LunaDashWM/LunaDash-Shell/main/install.sh | bash -s -- --install-slintlu
 ```
 
 ## Run
@@ -86,7 +86,8 @@ slintlu --config .
 
 - `slintlu check .` compiles everything and reports errors.
 - `scripts/headless-check.sh` runs the shell in a private headless Sway, opens every overlay
-  and popup and fails if it dies (`SHOTS=dir` keeps screenshots). CI runs it on every push.
+  and popup and fails if it dies (`SHOTS=dir` keeps screenshots). CI only builds, so run
+  it (and `scripts/extract-tr.py`) before pushing.
 - `scripts/extract-tr.py` updates `i18n/*.po` after changing `@tr("…")` texts.
 - Icons come from SlintLu's shared set (`Icon` in `@slintlu`, see SlintLu's `res/`); only the
   LunaDash mark lives here (`assets/luna.svg`).

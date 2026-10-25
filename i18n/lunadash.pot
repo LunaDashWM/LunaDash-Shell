@@ -6,175 +6,175 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: dashboard/dashboard.slint:100
+#: dashboard/dashboard.slint:103
 msgid "A modern Wayland desktop"
 msgstr ""
 
-#: dashboard/dashboard.slint:120
+#: dashboard/dashboard.slint:123
 msgid "Charging"
 msgstr ""
 
-#: dashboard/dashboard.slint:120 settings/settings.slint:260
+#: dashboard/dashboard.slint:123 settings/settings.slint:257
 msgid "Uptime"
 msgstr ""
 
-#: dashboard/dashboard.slint:127
+#: dashboard/dashboard.slint:130
 msgid "CPU"
 msgstr ""
 
-#: dashboard/dashboard.slint:128 settings/settings.slint:259
+#: dashboard/dashboard.slint:131 settings/settings.slint:256
 msgid "Memory"
 msgstr ""
 
-#: dashboard/dashboard.slint:135
+#: dashboard/dashboard.slint:138
 msgid "Network"
 msgstr ""
 
-#: dashboard/dashboard.slint:136 panel/network-popup.slint:20 panel/network-popup.slint:46
+#: dashboard/dashboard.slint:139 panel/network-popup.slint:20 panel/network-popup.slint:46
 msgid "Connected"
 msgstr ""
 
-#: dashboard/dashboard.slint:136
+#: dashboard/dashboard.slint:139
 msgid "Limited"
 msgstr ""
 
-#: dashboard/dashboard.slint:136
+#: dashboard/dashboard.slint:139
 msgid "Offline"
 msgstr ""
 
-#: dashboard/dashboard.slint:138
+#: dashboard/dashboard.slint:141
 msgid "Temperature"
 msgstr ""
 
-#: dashboard/dashboard.slint:142 settings/settings.slint:305 welcome/welcome.slint:60
+#: dashboard/dashboard.slint:145 settings/settings.slint:302 welcome/welcome.slint:60
 msgid "Settings"
 msgstr ""
 
-#: dashboard/dashboard.slint:143
+#: dashboard/dashboard.slint:146
 msgid "Files"
 msgstr ""
 
-#: dashboard/dashboard.slint:144
+#: dashboard/dashboard.slint:147
 msgid "Terminal"
 msgstr ""
 
-#: dashboard/dashboard.slint:156 panel/network-popup.slint:25
+#: dashboard/dashboard.slint:159 panel/network-popup.slint:25
 msgid "Wi-Fi"
 msgstr ""
 
-#: dashboard/dashboard.slint:157 dashboard/dashboard.slint:165 panel/network-popup.slint:26
+#: dashboard/dashboard.slint:160 dashboard/dashboard.slint:168 panel/network-popup.slint:26
 msgid "On"
 msgstr ""
 
-#: dashboard/dashboard.slint:157 dashboard/dashboard.slint:165 panel/network-popup.slint:26
+#: dashboard/dashboard.slint:160 dashboard/dashboard.slint:168 panel/network-popup.slint:26
 msgid "Off"
 msgstr ""
 
-#: dashboard/dashboard.slint:164 panel/network-popup.slint:37
+#: dashboard/dashboard.slint:167 panel/network-popup.slint:37
 msgid "Bluetooth"
 msgstr ""
 
-#: dashboard/dashboard.slint:174 dashboard/dashboard.slint:325 settings/settings.slint:179
+#: dashboard/dashboard.slint:177 dashboard/dashboard.slint:332 settings/settings.slint:176
 msgid "Do not disturb"
 msgstr ""
 
-#: dashboard/dashboard.slint:180
+#: dashboard/dashboard.slint:183
 msgid "Keep awake"
 msgstr ""
 
-#: dashboard/dashboard.slint:189 settings/settings.slint:84
+#: dashboard/dashboard.slint:192 settings/settings.slint:84
 msgid "Dark"
 msgstr ""
 
-#: dashboard/dashboard.slint:189 settings/settings.slint:84
+#: dashboard/dashboard.slint:192 settings/settings.slint:84
 msgid "Light"
 msgstr ""
 
-#: dashboard/dashboard.slint:190 settings/settings.slint:79 settings/settings.slint:282
+#: dashboard/dashboard.slint:193 settings/settings.slint:79 settings/settings.slint:279
 msgid "Appearance"
 msgstr ""
 
-#: dashboard/dashboard.slint:196 settings/settings.slint:129 settings/settings.slint:283
+#: dashboard/dashboard.slint:199 settings/settings.slint:126 settings/settings.slint:280
 msgid "Wallpaper"
 msgstr ""
 
-#: dashboard/dashboard.slint:221
+#: dashboard/dashboard.slint:227
 msgid "Nothing is playing"
 msgstr ""
 
-#: dashboard/dashboard.slint:255
+#: dashboard/dashboard.slint:261
 msgid "PLAYERS"
 msgstr ""
 
-#: dashboard/dashboard.slint:272
+#: dashboard/dashboard.slint:278
 #, c-format
 msgid "PROCESSOR · {}%"
 msgstr ""
 
-#: dashboard/dashboard.slint:293
+#: dashboard/dashboard.slint:299
 msgid "MEMORY"
 msgstr ""
 
-#: dashboard/dashboard.slint:296
+#: dashboard/dashboard.slint:302
 msgid "SWAP"
 msgstr ""
 
-#: dashboard/dashboard.slint:298
+#: dashboard/dashboard.slint:304
 msgid "DISK"
 msgstr ""
 
-#: dashboard/dashboard.slint:307 panel/network-popup.slint:13
+#: dashboard/dashboard.slint:313 panel/network-popup.slint:13
 msgid "NETWORK"
 msgstr ""
 
-#: dashboard/dashboard.slint:309
+#: dashboard/dashboard.slint:315
 msgid "SYSTEM"
 msgstr ""
 
-#: dashboard/dashboard.slint:311
+#: dashboard/dashboard.slint:317
 #, c-format
 msgid "Up {}"
 msgstr ""
 
-#: dashboard/dashboard.slint:312
+#: dashboard/dashboard.slint:318
 #, c-format
 msgid "Hottest sensor {}°C"
 msgstr ""
 
-#: dashboard/dashboard.slint:322
+#: dashboard/dashboard.slint:328
 #, c-format
 msgid "{} notifications"
 msgstr ""
 
-#: dashboard/dashboard.slint:325
+#: dashboard/dashboard.slint:332
 msgid "Do not disturb is on"
 msgstr ""
 
-#: dashboard/dashboard.slint:328
+#: dashboard/dashboard.slint:335
 msgid "Clear all"
 msgstr ""
 
-#: dashboard/dashboard.slint:330
+#: dashboard/dashboard.slint:337
 msgid "Another notification daemon is running; LunaDash shows no history."
 msgstr ""
 
-#: dashboard/dashboard.slint:336
+#: dashboard/dashboard.slint:343
 msgid "You're all caught up"
 msgstr ""
 
-#: dashboard/dashboard.slint:386 welcome/welcome.slint:58
+#: dashboard/dashboard.slint:394 welcome/welcome.slint:58
 msgid "Dashboard"
 msgstr ""
 
-#: dashboard/dashboard.slint:387
+#: dashboard/dashboard.slint:395
 msgid "Media"
 msgstr ""
 
-#: dashboard/dashboard.slint:388
+#: dashboard/dashboard.slint:396
 msgid "Performance"
 msgstr ""
 
-#: dashboard/dashboard.slint:389 settings/settings.slint:171 settings/settings.slint:285
+#: dashboard/dashboard.slint:397 settings/settings.slint:168 settings/settings.slint:282
 msgid "Notifications"
 msgstr ""
 
@@ -347,7 +347,7 @@ msgstr ""
 msgid "Power"
 msgstr ""
 
-#: session/power-menu.slint:72 settings/settings.slint:221
+#: session/power-menu.slint:72 settings/settings.slint:218
 msgid "Lock"
 msgstr ""
 
@@ -396,161 +396,161 @@ msgstr ""
 msgid "PALETTE · {}"
 msgstr ""
 
-#: settings/settings.slint:107
+#: settings/settings.slint:105
 msgid "LunaDash"
 msgstr ""
 
-#: settings/settings.slint:108
+#: settings/settings.slint:106
 msgid "The default dark and light palettes"
 msgstr ""
 
-#: settings/settings.slint:139
+#: settings/settings.slint:136
 msgid "Wallpaper folder"
 msgstr ""
 
-#: settings/settings.slint:141
+#: settings/settings.slint:138
 msgid "Choose wallpaper"
 msgstr ""
 
-#: settings/settings.slint:145
+#: settings/settings.slint:142
 msgid "Random wallpaper"
 msgstr ""
 
-#: settings/settings.slint:146
+#: settings/settings.slint:143
 msgid "Picks another image from the LunaDash wallpaper library."
 msgstr ""
 
-#: settings/settings.slint:147
+#: settings/settings.slint:144
 msgid "Shuffle"
 msgstr ""
 
-#: settings/settings.slint:150
+#: settings/settings.slint:147
 msgid "Desktop clock"
 msgstr ""
 
-#: settings/settings.slint:150
+#: settings/settings.slint:147
 msgid "A large clock on the wallpaper."
 msgstr ""
 
-#: settings/settings.slint:154 settings/settings.slint:284
+#: settings/settings.slint:151 settings/settings.slint:281
 msgid "Panel & dock"
 msgstr ""
 
-#: settings/settings.slint:155
+#: settings/settings.slint:152
 msgid "Show the dock"
 msgstr ""
 
-#: settings/settings.slint:157
+#: settings/settings.slint:154
 msgid "24-hour clock"
 msgstr ""
 
-#: settings/settings.slint:159
+#: settings/settings.slint:156
 msgid "Show seconds"
 msgstr ""
 
-#: settings/settings.slint:161
+#: settings/settings.slint:158
 msgid "Weeks start on Monday"
 msgstr ""
 
-#: settings/settings.slint:164
+#: settings/settings.slint:161
 msgid "Pinned applications"
 msgstr ""
 
-#: settings/settings.slint:165
+#: settings/settings.slint:162
 #, c-format
 msgid "{} pinned. Right-click an application in the launcher or dock to pin or unpin it."
 msgstr ""
 
-#: settings/settings.slint:166
+#: settings/settings.slint:163
 msgid "Unpin all"
 msgstr ""
 
-#: settings/settings.slint:173
+#: settings/settings.slint:170
 msgid "Another notification daemon is running. Stop it to use LunaDash notifications."
 msgstr ""
 
-#: settings/settings.slint:177
+#: settings/settings.slint:174
 msgid "Pop-ups"
 msgstr ""
 
-#: settings/settings.slint:177
+#: settings/settings.slint:174
 msgid "Show new notifications in the corner."
 msgstr ""
 
-#: settings/settings.slint:179
+#: settings/settings.slint:176
 msgid "Only critical notifications pop up."
 msgstr ""
 
-#: settings/settings.slint:182
+#: settings/settings.slint:179
 msgid "Pop-up duration"
 msgstr ""
 
-#: settings/settings.slint:195 settings/settings.slint:286
+#: settings/settings.slint:192 settings/settings.slint:283
 msgid "Power & lock"
 msgstr ""
 
-#: settings/settings.slint:197
+#: settings/settings.slint:194
 msgid "Lock after inactivity"
 msgstr ""
 
-#: settings/settings.slint:199
+#: settings/settings.slint:196
 msgid "Never"
 msgstr ""
 
-#: settings/settings.slint:209
+#: settings/settings.slint:206
 msgid "Lock before sleep"
 msgstr ""
 
-#: settings/settings.slint:219
+#: settings/settings.slint:216
 msgid "Keep the screen awake"
 msgstr ""
 
-#: settings/settings.slint:219
+#: settings/settings.slint:216
 msgid "Until LunaDash restarts."
 msgstr ""
 
-#: settings/settings.slint:221
+#: settings/settings.slint:218
 msgid "Lock now"
 msgstr ""
 
-#: settings/settings.slint:225 settings/settings.slint:287
+#: settings/settings.slint:222 settings/settings.slint:284
 msgid "Language"
 msgstr ""
 
-#: settings/settings.slint:242 settings/settings.slint:288
+#: settings/settings.slint:239 settings/settings.slint:285
 msgid "About"
 msgstr ""
 
-#: settings/settings.slint:249
+#: settings/settings.slint:246
 #, c-format
 msgid "Desktop shell written in Slint, running on SlintLu {}"
 msgstr ""
 
-#: settings/settings.slint:254
+#: settings/settings.slint:251
 msgid "System"
 msgstr ""
 
-#: settings/settings.slint:255
+#: settings/settings.slint:252
 msgid "Kernel"
 msgstr ""
 
-#: settings/settings.slint:256
+#: settings/settings.slint:253
 msgid "Host"
 msgstr ""
 
-#: settings/settings.slint:257
+#: settings/settings.slint:254
 msgid "Compositor"
 msgstr ""
 
-#: settings/settings.slint:258
+#: settings/settings.slint:255
 msgid "Renderer"
 msgstr ""
 
-#: settings/settings.slint:270
+#: settings/settings.slint:267
 msgid "Show welcome"
 msgstr ""
 
-#: settings/settings.slint:271
+#: settings/settings.slint:268
 msgid "Reload shell"
 msgstr ""
 

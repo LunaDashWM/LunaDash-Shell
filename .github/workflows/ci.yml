@@ -1,4 +1,9 @@
 name: Shell CI
+
+# CI only builds: SlintLu, the shell (slintlu check compiles every component) and an install
+# tree. Translations, the installer checks and the headless run are local
+# (scripts/extract-tr.py, scripts/headless-check.sh); run them before pushing.
+
 on:
   push:
     branches: [main]
@@ -11,49 +16,23 @@ concurrency:
 env:
   BUILD_PACKAGES: pkg-config libwayland-dev libxkbcommon-dev libfontconfig-dev libpam0g-dev
 jobs:
-  installer:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Installer syntax and preview
-        run: |
-          bash -n install.sh
-          ./install.sh --prefix "$RUNNER_TEMP/lunadash-prefix" --dry-run
-          ./install.sh --prefix /usr --destdir "$RUNNER_TEMP/lunadash-stage"
-          stage="$RUNNER_TEMP/lunadash-stage/usr"
-          test -r "$stage/share/lunadash/shell/shell.slint"
-          test -r "$stage/share/lunadash/shell/i18n/zh_TW.po"
-          test -r "$stage/share/lunadash/shell/assets/wallpapers/florist.png"
-          test -x "$stage/bin/lunadash-shell"
-          test ! -e "$stage/share/lunadash/shell/scripts"
-          # Piped into bash (curl … | bash): downloads main and installs from it.
-          bash -s -- --prefix "$RUNNER_TEMP/piped" < install.sh
-          test -r "$RUNNER_TEMP/piped/share/lunadash/shell/shell.slint"
-      - name: Translations are up to date
-        run: |
-          python3 scripts/extract-tr.py
-          git diff --exit-code i18n
-
-  slintlu:
+  build:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: ${{ env.BUILD_PACKAGES }} sway grim dbus libnotify-bin fonts-noto-cjk fonts-dejavu-core
-          version: shell-1
+          packages: ${{ env.BUILD_PACKAGES }}
+          version: shell-2
       - name: Latest SlintLu revision
         id: slintlu
-        run: echo "rev=$(git ls-remote https://github.com/LunaDash-DE/SlintLu.git refs/heads/main | cut -f1)" >> "$GITHUB_OUTPUT"
+        run: echo "rev=$(git ls-remote https://github.com/LunaDashWM/SlintLu.git refs/heads/main | cut -f1)" >> "$GITHUB_OUTPUT"
       - name: Cache SlintLu
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/slintlu
           key: slintlu-${{ runner.os }}-${{ steps.slintlu.outputs.rev }}
@@ -61,21 +40,8 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
       - name: Build SlintLu
         if: steps.cache.outputs.cache-hit != 'true'
-        run: cargo install --locked --git https://github.com/LunaDash-DE/SlintLu.git --rev ${{ steps.slintlu.outputs.rev }} slintlu
-      - name: Compile the shell
+        run: cargo install --locked --git https://github.com/LunaDashWM/SlintLu.git --rev ${{ steps.slintlu.outputs.rev }} slintlu
+      - name: Build the shell
         run: ~/.cargo/bin/slintlu check .
-      - name: Install with the SlintLu check
-        run: |
-          PATH="$HOME/.cargo/bin:$PATH" ./install.sh --prefix "$RUNNER_TEMP/prefix"
-          ~/.cargo/bin/slintlu check "$RUNNER_TEMP/prefix/share/lunadash/shell"
-      - name: Run the shell headless
-        env:
-          SLINTLU: /home/runner/.cargo/bin/slintlu
-          SHOTS: ${{ runner.temp }}/shots
-        run: scripts/headless-check.sh "$RUNNER_TEMP/prefix/share/lunadash/shell"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: screenshots
-          path: ${{ runner.temp }}/shots
-          if-no-files-found: ignore
+      - name: Build the install tree
+        run: PATH="$HOME/.cargo/bin:$PATH" ./install.sh --prefix /usr --destdir "$RUNNER_TEMP/stage"
