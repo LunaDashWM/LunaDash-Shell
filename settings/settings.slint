@@ -225,13 +225,13 @@ component LanguagePage inherits Page {
     title: @tr("Language");
     ListRow {
         icon: "language";
-        title: "English";
+        title: I18n.language-name("");
         selected: I18n.language == "";
         clicked => { Apply.choose-language(""); }
     }
     for language in I18n.languages: ListRow {
         icon: "language";
-        title: language == "zh_TW" ? "繁體中文" : language;
+        title: I18n.language-name(language);
         subtitle: language;
         selected: I18n.language == language;
         clicked => { Apply.choose-language(language); }

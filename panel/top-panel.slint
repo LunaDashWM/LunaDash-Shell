@@ -116,7 +116,8 @@ export component TopPanel inherits PanelWindow {
         // Shell-wide settings are applied once, from the primary screen.
         if UI.primary {
             Apply.all();
-            if !Prefs.welcome-done {
+            // LunaDash has its own first-run setup; the card is for other compositors.
+            if !Prefs.welcome-done && !Compositor.has-commands {
                 UI.open-overlay("welcome");
             }
         }
