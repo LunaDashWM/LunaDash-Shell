@@ -23,6 +23,11 @@ export component Toasts inherits PanelWindow {
     column := VerticalLayout {
         spacing: Style.spacing-sm;
         for n in Notifications.popups: Rectangle {
+            // A toast joining a visible stack fades in (the first one arrives with the surface).
+            property <float> appear: 0;
+            opacity: self.appear;
+            init => { self.appear = 1; }
+            animate appear { duration: Style.motion; easing: ease-out; }
             height: row.preferred-height;
             border-radius: Style.radius-medium;
             background: Style.glass-strong;

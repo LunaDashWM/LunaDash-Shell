@@ -22,14 +22,14 @@ export component CalendarPopup inherits PanelPopup {
     VerticalLayout {
         spacing: 2px;
         Text { text: Clock.format-date(Clock.year, Clock.month, Clock.day, "%A"); color: Style.accent; font-size: Style.font-small; }
-        Text { text: Clock.format-date(Clock.year, Clock.month, Clock.day, "%e %B %Y"); color: Style.text; font-size: 22px; font-weight: 600; }
+        Text { text: Clock.format-date(Clock.year, Clock.month, Clock.day, @tr("%B %-d, %Y")); color: Style.text; font-size: 22px; font-weight: 600; }
         Text { text: Time.clock; color: Style.muted; font-size: Style.font-size; }
     }
     HorizontalLayout {
         IconButton { icon: "chevron-left"; clicked => { root.offset -= 1; } }
         Text {
             horizontal-stretch: 1;
-            text: Clock.format-date(root.shown-year, root.shown-month, 1, "%B %Y");
+            text: Clock.format-date(root.shown-year, root.shown-month, 1, @tr("%B %Y"));
             color: Style.text;
             font-size: Style.font-size + 1px;
             font-weight: 600;

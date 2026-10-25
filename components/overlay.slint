@@ -21,6 +21,10 @@ export component Overlay inherits PanelWindow {
     anchor-left: true;
     anchor-right: true;
     shown: UI.overlay == root.name && UI.on-active-screen;
+    // 0 → 1 when the overlay opens: the content rises and fades in over the backdrop, which the
+    // compositor fades in with the surface.
+    property <float> entrance: 0;
+    animate entrance { duration: Style.motion; easing: ease-out; }
     default-font-family: Style.font;
     escape => { UI.close-all(); }
 
@@ -38,7 +42,8 @@ export component Overlay inherits PanelWindow {
         }
         Surface {
             x: (parent.width - self.width) / 2;
-            y: max(Style.panel-height + 20px, (parent.height - self.height) / 2);
+            y: max(Style.panel-height + 20px, (parent.height - self.height) / 2) + (1 - root.entrance) * 18px;
+            opacity: 0.4 + 0.6 * root.entrance;
             width: min(root.content-width, parent.width - 40px);
             height: min(root.content-height, parent.height - Style.panel-height - 40px);
             // Swallow clicks so they do not reach the backdrop.
@@ -47,6 +52,8 @@ export component Overlay inherits PanelWindow {
         }
     }
     changed shown => {
+        root.entrance = self.shown ? 1 : 0;
         if self.shown { scope.focus(); }
     }
+    init => { root.entrance = self.shown ? 1 : 0; }
 }

@@ -6,7 +6,7 @@ import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
-import { Switch, SectionTitle, IconButton, TextButton, ListRow, Card } from "../components/controls.slint";
+import { Switch, SectionTitle, IconButton, TextButton, ListRow, Card, Reveal } from "../components/controls.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
 import { Apply } from "../state/apply.slint";
 
@@ -97,10 +97,8 @@ component AppearancePage inherits Page {
     Rectangle { height: Style.spacing-md; }
     SectionTitle { text: @tr("PALETTE · {}", Theme.name); }
     Rectangle { height: Style.spacing-sm; }
-    Flickable {
-        height: 220px;
-        content-height: palettes.preferred-height;
-        palettes := VerticalLayout {
+    // The whole page scrolls; a nested fixed-height list hid palettes behind an invisible edge.
+    VerticalLayout {
             spacing: 2px;
             ListRow {
                 icon: "palette";
@@ -121,7 +119,6 @@ component AppearancePage inherits Page {
                     Theme.set-palette(name);
                 }
             }
-        }
     }
 }
 
@@ -319,13 +316,13 @@ export component Settings inherits Overlay {
             content-height: content.preferred-height;
             content := VerticalLayout {
                 padding: Style.spacing-xl;
-                if UI.settings-page == "appearance": AppearancePage { }
-                if UI.settings-page == "wallpaper": WallpaperPage { }
-                if UI.settings-page == "panel": PanelPage { }
-                if UI.settings-page == "notifications": NotificationsPage { }
-                if UI.settings-page == "power": PowerPage { }
-                if UI.settings-page == "language": LanguagePage { }
-                if UI.settings-page == "about": AboutPage { }
+                if UI.settings-page == "appearance": Reveal { AppearancePage { } }
+                if UI.settings-page == "wallpaper": Reveal { WallpaperPage { } }
+                if UI.settings-page == "panel": Reveal { PanelPage { } }
+                if UI.settings-page == "notifications": Reveal { NotificationsPage { } }
+                if UI.settings-page == "power": Reveal { PowerPage { } }
+                if UI.settings-page == "language": Reveal { LanguagePage { } }
+                if UI.settings-page == "about": Reveal { AboutPage { } }
             }
         }
         IconButton { icon: "close"; size: 34px; y: 14px; clicked => { UI.close-all(); } }

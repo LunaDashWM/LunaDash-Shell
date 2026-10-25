@@ -216,6 +216,16 @@ export component QuickToggle inherits Rectangle {
     }
 }
 
+// Fades its content in when it appears: wrap the content of a tab or page (re-created when
+// the selection changes) to cross-fade it.
+export component Reveal inherits Rectangle {
+    property <float> amount: 0;
+    opacity: self.amount;
+    init => { self.amount = 1; }
+    animate amount { duration: Style.motion; easing: ease-out; }
+    @children
+}
+
 // A rounded card on popups and the dashboard.
 export component Card inherits Rectangle {
     border-radius: Style.radius-medium;

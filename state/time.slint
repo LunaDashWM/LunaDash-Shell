@@ -5,8 +5,10 @@ import { Prefs } from "prefs.slint";
 
 export global Time {
     out property <string> clock: root.hm(Clock.hour, Clock.minute) + (Prefs.clock-seconds ? ":" + root.two(Clock.second) : "") + root.suffix(Clock.hour);
-    out property <string> short-date: Clock.format-date(Clock.year, Clock.month, Clock.day, "%a, %m.%d");
-    out property <string> long-date: Clock.format-date(Clock.year, Clock.month, Clock.day, "%Y/%m/%d %A");
+    // strftime patterns are translated too: each language orders its dates its own way, and
+    // SlintLu names weekdays and months in the interface language.
+    out property <string> short-date: Clock.format-date(Clock.year, Clock.month, Clock.day, @tr("%a, %b %-d"));
+    out property <string> long-date: Clock.format-date(Clock.year, Clock.month, Clock.day, @tr("%A, %B %-d, %Y"));
 
     public pure function two(n: int) -> string {
         return n < 10 ? "0" + n : "" + n;

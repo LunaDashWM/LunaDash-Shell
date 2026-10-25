@@ -220,6 +220,14 @@ msgstr "麥克風"
 msgid "DEVICES"
 msgstr "裝置"
 
+#: panel/calendar-popup.slint:25
+msgid "%B %-d, %Y"
+msgstr "%Y年%-m月%-d日"
+
+#: panel/calendar-popup.slint:32
+msgid "%B %Y"
+msgstr "%Y年%-m月"
+
 #: panel/calendar-popup.slint:42 panel/calendar-popup.slint:43
 msgid "Mon"
 msgstr "一"
@@ -545,6 +553,14 @@ msgstr "顯示歡迎畫面"
 #: settings/settings.slint:271
 msgid "Reload shell"
 msgstr "重新載入殼層"
+
+#: state/time.slint:10
+msgid "%a, %b %-d"
+msgstr "%-m月%-d日 %A"
+
+#: state/time.slint:11
+msgid "%A, %B %-d, %Y"
+msgstr "%Y年%-m月%-d日 %A"
 
 #: wallpaper/gallery.slint:113
 msgid "LunaDash default"

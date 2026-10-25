@@ -220,6 +220,14 @@ msgstr ""
 msgid "DEVICES"
 msgstr ""
 
+#: panel/calendar-popup.slint:25
+msgid "%B %-d, %Y"
+msgstr ""
+
+#: panel/calendar-popup.slint:32
+msgid "%B %Y"
+msgstr ""
+
 #: panel/calendar-popup.slint:42 panel/calendar-popup.slint:43
 msgid "Mon"
 msgstr ""
@@ -544,6 +552,14 @@ msgstr ""
 
 #: settings/settings.slint:271
 msgid "Reload shell"
+msgstr ""
+
+#: state/time.slint:10
+msgid "%a, %b %-d"
+msgstr ""
+
+#: state/time.slint:11
+msgid "%A, %B %-d, %Y"
 msgstr ""
 
 #: wallpaper/gallery.slint:113

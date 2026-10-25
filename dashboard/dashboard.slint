@@ -7,7 +7,7 @@ import { UI } from "../state/ui.slint";
 import { Time } from "../state/time.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
-import { Card, QuickToggle, Slider, IconButton, TextButton, SectionTitle } from "../components/controls.slint";
+import { Card, QuickToggle, Slider, IconButton, TextButton, SectionTitle, Reveal } from "../components/controls.slint";
 import { DefaultApps } from "../state/apps.slint";
 
 component Tab inherits Rectangle {
@@ -34,6 +34,9 @@ component StatCard inherits Card {
     in property <string> label;
     in property <string> value;
     in property <float> ratio: -1;
+    // Equal shares of the row, whatever the text inside.
+    preferred-width: 0px;
+    horizontal-stretch: 1;
     VerticalLayout {
         padding: Style.spacing-lg;
         spacing: 6px;
@@ -139,9 +142,9 @@ component OverviewTab inherits HorizontalLayout {
         }
         HorizontalLayout {
             spacing: Style.spacing-sm;
-            TextButton { horizontal-stretch: 1; icon: "settings"; text: @tr("Settings"); clicked => { UI.open-settings("appearance"); } }
-            TextButton { horizontal-stretch: 1; icon: "folder"; text: @tr("Files"); clicked => { DefaultApps.files(); UI.close-all(); } }
-            TextButton { horizontal-stretch: 1; icon: "terminal"; text: @tr("Terminal"); clicked => { DefaultApps.terminal(); UI.close-all(); } }
+            TextButton { horizontal-stretch: 1; preferred-width: 0px; icon: "settings"; text: @tr("Settings"); clicked => { UI.open-settings("appearance"); } }
+            TextButton { horizontal-stretch: 1; preferred-width: 0px; icon: "folder"; text: @tr("Files"); clicked => { DefaultApps.files(); UI.close-all(); } }
+            TextButton { horizontal-stretch: 1; preferred-width: 0px; icon: "terminal"; text: @tr("Terminal"); clicked => { DefaultApps.terminal(); UI.close-all(); } }
         }
     }
 }
@@ -210,6 +213,9 @@ component ControlsColumn inherits VerticalLayout {
         value: Brightness.level;
         changed(v) => { Brightness.set(max(0.02, v)); }
     }
+    // The tiles have fixed heights; without a stretchable filler this column would cap the
+    // height of the whole row and leave the tab content short.
+    Rectangle { vertical-stretch: 1; }
 }
 
 component MediaTab inherits HorizontalLayout {
@@ -321,11 +327,12 @@ component NotificationsTab inherits VerticalLayout {
         spacing: Style.spacing-sm;
         Text { text: @tr("{} notifications", Notifications.count); color: Style.text; font-size: Style.font-title; vertical-alignment: center; horizontal-stretch: 1; }
         TextButton {
+            horizontal-stretch: 0;
             icon: Notifications.do-not-disturb ? "bell-off" : "bell";
             text: Notifications.do-not-disturb ? @tr("Do not disturb is on") : @tr("Do not disturb");
             clicked => { Notifications.set-do-not-disturb(!Notifications.do-not-disturb); }
         }
-        if Notifications.count > 0: TextButton { icon: "trash"; text: @tr("Clear all"); clicked => { Notifications.dismiss-all(); } }
+        if Notifications.count > 0: TextButton { horizontal-stretch: 0; icon: "trash"; text: @tr("Clear all"); clicked => { Notifications.dismiss-all(); } }
     }
     if !Notifications.available: Text { text: @tr("Another notification daemon is running; LunaDash shows no history."); color: Style.muted; wrap: word-wrap; }
     if Notifications.available && Notifications.count == 0: VerticalLayout {
@@ -335,7 +342,8 @@ component NotificationsTab inherits VerticalLayout {
         HorizontalLayout { alignment: center; Icon { name: "bell"; width: 44px; height: 44px; color: Style.muted; } }
         Text { text: @tr("You're all caught up"); color: Style.muted; horizontal-alignment: center; }
     }
-    Flickable {
+    // Only with notifications: an empty list would take half the room from the empty state.
+    if Notifications.count > 0: Flickable {
         vertical-stretch: 1;
         content-height: items.preferred-height;
         items := VerticalLayout {
@@ -400,10 +408,10 @@ export component Dashboard inherits Overlay {
         HorizontalLayout {
             vertical-stretch: 1;
             spacing: Style.spacing-lg;
-            if UI.dashboard-tab == 0: OverviewTab { horizontal-stretch: 3; }
-            if UI.dashboard-tab == 1: MediaTab { horizontal-stretch: 3; }
-            if UI.dashboard-tab == 2: PerformanceTab { horizontal-stretch: 3; }
-            if UI.dashboard-tab == 3: NotificationsTab { horizontal-stretch: 3; }
+            if UI.dashboard-tab == 0: Reveal { horizontal-stretch: 3; OverviewTab { } }
+            if UI.dashboard-tab == 1: Reveal { horizontal-stretch: 3; MediaTab { } }
+            if UI.dashboard-tab == 2: Reveal { horizontal-stretch: 3; PerformanceTab { } }
+            if UI.dashboard-tab == 3: Reveal { horizontal-stretch: 3; NotificationsTab { } }
             ControlsColumn { width: 300px; }
         }
     }
