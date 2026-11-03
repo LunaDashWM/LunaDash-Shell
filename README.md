@@ -89,6 +89,8 @@ slintlu --config .
   and popup and fails if it dies (`SHOTS=dir` keeps screenshots). CI only builds, so run
   it (and `scripts/extract-tr.py`) before pushing.
 - `scripts/extract-tr.py` updates `i18n/*.po` after changing `@tr("…")` texts.
+- `python3 -m unittest discover -s tests -v` checks the installer and generated launcher
+  on Linux, including custom paths and staged installs. It needs no SlintLu or compositor.
 - Icons come from SlintLu's shared set (`Icon` in `@slintlu`, see SlintLu's `res/`); only the
   LunaDash mark lives here (`assets/luna.svg`).
 
