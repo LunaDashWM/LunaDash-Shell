@@ -123,11 +123,14 @@ mv -- "$stage" "$destination"
 trap - EXIT
 
 install -d -m 0755 -- "$(dirname -- "$launcher")"
+# Quote the literal path for the POSIX shell used by the generated launcher.
+# An apostrophe must close the quote, emit an escaped apostrophe, then reopen it.
+quoted_shell_directory=${shell_directory//\'/\'\\\'\'}
 cat > "$launcher" <<EOF
 #!/bin/sh
 # Starts the LunaDash shell with SlintLu. Extra arguments are options of \`slintlu run\`.
-slintlu=\$(command -v slintlu || echo "\$HOME/.cargo/bin/slintlu")
-exec "\$slintlu" --config "$shell_directory" "\$@"
+slintlu=\$(command -v slintlu || printf '%s\n' "\$HOME/.cargo/bin/slintlu")
+exec "\$slintlu" --config '$quoted_shell_directory' "\$@"
 EOF
 chmod 0755 "$launcher"
 
