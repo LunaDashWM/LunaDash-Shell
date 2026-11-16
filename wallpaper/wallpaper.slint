@@ -97,13 +97,71 @@ export component Wallpaper inherits PanelWindow {
         }
     }
 
+    // A new wallpaper is revealed over the old one, like noctalia's transitions: a fade, a
+    // wipe from the left, a disc growing from the centre or a zoom; "random" picks one.
+    property <string> source-key: Wallpapers.video ? Compositor.wallpaper-poster : Wallpapers.path;
+    property <string> shown-key;
+    property <image> picture: Wallpapers.current();
+    property <image> previous;
+    // 0 fade, 1 wipe, 2 disc, 3 zoom.
+    property <int> effect;
+    property <duration> started;
+    property <bool> transitioning;
+    property <float> progress: root.transitioning && Style.wallpaper-transition > 0ms
+        ? clamp((animation-tick() - root.started) / Style.wallpaper-transition, 0, 1) : 1;
+    property <float> eased: 1 - Math.pow(1 - root.progress, 3);
+    property <ImageFit> fit: Prefs.wallpaper-fit == "contain" ? ImageFit.contain : Prefs.wallpaper-fit == "fill" ? ImageFit.fill : ImageFit.cover;
+    changed source-key => {
+        // The first wallpaper (at startup) appears without a transition.
+        if root.shown-key != "" && Style.wallpaper-transition > 0ms {
+            root.previous = root.picture;
+            root.effect = Prefs.wallpaper-transition == "fade" ? 0 : Prefs.wallpaper-transition == "wipe" ? 1
+                : Prefs.wallpaper-transition == "disc" ? 2 : Prefs.wallpaper-transition == "zoom" ? 3
+                : Math.mod(Math.round(animation-tick() / 1ms), 4);
+            root.started = animation-tick();
+            root.transitioning = true;
+            finish.running = true;
+        }
+        root.picture = Wallpapers.current();
+        root.shown-key = root.source-key;
+    }
+    finish := Timer {
+        interval: max(1ms, Style.wallpaper-transition);
+        running: false;
+        triggered => {
+            root.transitioning = false;
+            self.running = false;
+        }
+    }
+
     // A playing video wallpaper shows through.
     Rectangle { background: Wallpapers.live ? transparent : Style.base; }
-    if !Wallpapers.live: Image {
+    if !Wallpapers.live && root.transitioning: Image {
         width: parent.width;
         height: parent.height;
-        source: Wallpapers.current();
-        image-fit: Prefs.wallpaper-fit == "contain" ? ImageFit.contain : Prefs.wallpaper-fit == "fill" ? ImageFit.fill : ImageFit.cover;
+        source: root.previous;
+        image-fit: root.fit;
+    }
+    if !Wallpapers.live: reveal := Rectangle {
+        property <bool> clipped: root.transitioning && (root.effect == 1 || root.effect == 2);
+        property <length> disc: sqrt(root.width * root.width / 1px / 1px + root.height * root.height / 1px / 1px) * 1px * root.eased;
+        x: root.transitioning && root.effect == 2 ? (root.width - self.disc) / 2 : 0px;
+        y: root.transitioning && root.effect == 2 ? (root.height - self.disc) / 2 : 0px;
+        width: !root.transitioning ? root.width : root.effect == 1 ? root.width * root.eased : root.effect == 2 ? self.disc : root.width;
+        height: root.transitioning && root.effect == 2 ? self.disc : root.height;
+        border-radius: root.transitioning && root.effect == 2 ? self.disc / 2 : 0px;
+        clip: self.clipped;
+        Image {
+            // The picture stays put while its window into it grows; the zoom settles from 108 %.
+            property <float> scale: root.transitioning && root.effect == 3 ? 1.08 - 0.08 * root.eased : 1;
+            width: root.width * self.scale;
+            height: root.height * self.scale;
+            x: (root.width - self.width) / 2 - reveal.x;
+            y: (root.height - self.height) / 2 - reveal.y;
+            source: root.picture;
+            image-fit: root.fit;
+            opacity: root.transitioning && (root.effect == 0 || root.effect == 3) ? root.eased : 1;
+        }
     }
     if Prefs.wallpaper-dim > 0: Rectangle { background: #000000.with-alpha(Prefs.wallpaper-dim / 100); }
     // The desktop clock: the time large and bold, a bar, then month, day and weekday stacked.

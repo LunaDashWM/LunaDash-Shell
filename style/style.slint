@@ -58,10 +58,11 @@ export global Style {
     out property <color> success: Theme.green;
     out property <color> warning: Theme.yellow;
 
-    // Typography: the theme's font, else Noto Sans CJK TC — one family whose Latin and Chinese
-    // glyphs were drawn together, in matching weights, so mixed text reads as one voice.
+    // Typography: theme.json's font, else the desktop's interface font (SlintLu reads it from
+    // the desktop portal), else the system default. Glyphs the family lacks (Chinese in a
+    // Latin interface font) come from the system's fallback fonts.
     out property <float> text-scale: clamp(Prefs.text-scale, 80, 140) / 100;
-    out property <string> font: Theme.font-family != "" ? Theme.font-family : "Noto Sans CJK TC";
+    out property <string> font: Theme.font-family;
     out property <length> font-size: Theme.font-size * root.text-scale;
     out property <length> font-small: (Theme.font-size - 1.5px) * root.text-scale;
     out property <length> font-title: (Theme.font-size + 5px) * root.text-scale;
@@ -102,4 +103,6 @@ export global Style {
     out property <duration> motion: Prefs.animations ? 400ms * root.motion-scale : 0ms;
     out property <duration> motion-fast: Prefs.animations ? 200ms * root.motion-scale : 0ms;
     out property <duration> motion-slow: Prefs.animations ? 500ms * root.motion-scale : 0ms;
+    // A wallpaper change, like noctalia's wallpaper transitions.
+    out property <duration> wallpaper-transition: Prefs.animations && Prefs.wallpaper-transition != "none" ? 1200ms * root.motion-scale : 0ms;
 }

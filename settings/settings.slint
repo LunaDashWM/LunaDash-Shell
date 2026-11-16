@@ -282,6 +282,19 @@ component WallpaperPage inherits Page {
         }
         Divider { }
         Setting {
+            title: @tr("Transition");
+            description: @tr("How a new wallpaper replaces the old one.");
+            Segmented {
+                property <[string]> values: ["random", "fade", "wipe", "disc", "zoom", "none"];
+                labels: [@tr("Random"), @tr("Fade"), @tr("Wipe"), @tr("Disc"), @tr("Zoom"), @tr("Off")];
+                selected: Prefs.wallpaper-transition == "fade" ? 1 : Prefs.wallpaper-transition == "wipe" ? 2
+                    : Prefs.wallpaper-transition == "disc" ? 3 : Prefs.wallpaper-transition == "zoom" ? 4
+                    : Prefs.wallpaper-transition == "none" ? 5 : 0;
+                chosen(i) => { Store.set-string("wallpaper-transition", self.values[i]); }
+            }
+        }
+        Divider { }
+        Setting {
             title: @tr("Dim");
             description: @tr("Darkens the wallpaper so text and windows stand out.");
             RangeSlider { minimum: 0; maximum: 60; step: 5; unit: "%"; value: Prefs.wallpaper-dim; committed(v) => { Store.set-number("wallpaper-dim", v); } }
@@ -347,6 +360,8 @@ component PanelPage inherits Page {
                 chosen(i) => { Store.set-string("workspace-style", i == 1 ? "numbers" : "dots"); }
             }
         }
+        Divider { }
+        Setting { title: @tr("Taskbar"); description: @tr("Show every window's icon after the workspaces."); Switch { on: Prefs.taskbar; toggled => { Store.set-bool("taskbar", !Prefs.taskbar); } } }
         Divider { }
         Setting { title: @tr("Window title"); description: @tr("Show the focused window's title."); Switch { on: Prefs.window-title; toggled => { Store.set-bool("window-title", !Prefs.window-title); } } }
     }

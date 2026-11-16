@@ -3,7 +3,7 @@
 // window, tray, clock, system status, settings and power. Its popouts slide out of it beside
 // the item that opened them.
 
-import { PanelWindow, ExclusiveMode, MediaPlayerInfo, Shell, Workspaces, Switcher, Audio, Network, Bluetooth, Battery, Notifications, Tray, Compositor, ClipboardHistory, Clock, Apps, AppInfo, Media, System } from "@slintlu";
+import { PanelWindow, ExclusiveMode, MediaPlayerInfo, Shell, Workspaces, WindowInfo, Switcher, Audio, Network, Bluetooth, Battery, Notifications, Tray, Compositor, ClipboardHistory, Clock, Apps, AppInfo, Media, System } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -21,8 +21,8 @@ component Slot inherits Rectangle {
     height: root.vertical ? root.size : Style.bar-width;
 }
 
-// The workspaces as a pill: occupied ones on a tonal track, the active one a long
-// primary-coloured capsule.
+// The workspaces as a pill of buttons, like waybar's: occupied ones on a tonal track, the
+// active one a primary-coloured capsule. The windows themselves are in the taskbar after it.
 component WorkspaceDot inherits Rectangle {
     in property <bool> vertical;
     in property <bool> numbers;
@@ -30,10 +30,9 @@ component WorkspaceDot inherits Rectangle {
     in property <bool> active;
     in property <bool> urgent;
     in property <bool> occupied;
-    // The workspace's id: its windows' icons follow the marker in a top bar.
     in property <int> id;
     callback clicked();
-    width: root.vertical ? 24px : max(root.active ? 44px : 24px, marks.preferred-width);
+    width: root.vertical ? 24px : max(root.active ? 36px : 24px, marks.preferred-width);
     height: root.vertical ? (root.active ? 44px : 24px) : 24px;
     border-radius: 12px;
     background: root.active ? Style.accent : root.urgent ? Style.danger
@@ -42,8 +41,8 @@ component WorkspaceDot inherits Rectangle {
     animate background { duration: Style.motion-fast; }
     marks := HorizontalLayout {
         alignment: center;
-        padding-left: root.occupied && !root.vertical ? 8px : 0px;
-        padding-right: root.occupied && !root.vertical ? 5px : 0px;
+        padding-left: 6px;
+        padding-right: 6px;
         Rectangle {
             width: root.numbers ? 12px : 8px;
             if root.numbers: Text {
@@ -59,29 +58,6 @@ component WorkspaceDot inherits Rectangle {
                 height: self.width;
                 border-radius: self.width / 2;
                 background: root.active ? Style.accent-ink : root.occupied ? Style.text : Style.muted.with-alpha(0.6);
-            }
-        }
-        // The icons of the windows on it (others collapse to nothing).
-        if !root.vertical: HorizontalLayout {
-            for w in Workspaces.windows: slot := Rectangle {
-                property <bool> here: w.workspace == root.id;
-                property <AppInfo> app: Apps.get(w.app-id + ".desktop");
-                width: self.here ? 20px : 0px;
-                visible: self.here;
-                if slot.here && slot.app.icon.width > 0: Image {
-                    x: 4px;
-                    width: 15px;
-                    height: 15px;
-                    source: slot.app.icon;
-                    image-fit: contain;
-                }
-                if slot.here && slot.app.icon.width == 0: Icon {
-                    x: 4px;
-                    name: "window";
-                    width: 14px;
-                    height: 14px;
-                    color: root.active ? Style.accent-ink : Style.muted;
-                }
             }
         }
     }
@@ -131,6 +107,64 @@ component Workspaces-Strip inherits Rectangle {
                 clicked => { Workspaces.focus(ws.id); }
             }
         }
+    }
+}
+
+// Every window as an icon, like waybar's taskbar: click switches to it (and its workspace),
+// a middle click closes it.
+component TaskIcon inherits Rectangle {
+    in property <WindowInfo> window;
+    property <AppInfo> app: Apps.get(root.window.app-id + ".desktop");
+    width: 28px;
+    height: 24px;
+    border-radius: 8px;
+    background: root.window.focused ? Style.accent-soft : touch.has-hover ? Style.hover : transparent;
+    animate background { duration: Style.motion-fast; }
+    if root.app.icon.width > 0: Image {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: 18px;
+        height: 18px;
+        source: root.app.icon;
+        image-fit: contain;
+    }
+    if root.app.icon.width == 0: Icon {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        name: "window";
+        width: 16px;
+        height: 16px;
+        color: root.window.focused ? Style.accent : Style.muted;
+    }
+    // The focused window is underlined.
+    Rectangle {
+        visible: root.window.focused;
+        x: (parent.width - self.width) / 2;
+        y: parent.height - 3px;
+        width: 12px;
+        height: 2px;
+        border-radius: 1px;
+        background: Style.accent;
+    }
+    touch := TouchArea {
+        clicked => { Workspaces.focus-window(root.window.id); }
+        pointer-event(event) => {
+            if event.button == PointerEventButton.middle && event.kind == PointerEventKind.up {
+                Workspaces.close-window(root.window.id);
+            }
+        }
+    }
+}
+
+component Taskbar inherits Rectangle {
+    width: row.preferred-width;
+    height: 32px;
+    border-radius: 16px;
+    background: Style.surface;
+    row := HorizontalLayout {
+        padding: 4px;
+        spacing: 2px;
+        for window in Workspaces.windows: TaskIcon { window: window; }
     }
 }
 
@@ -676,6 +710,7 @@ export component Bar inherits BarWindow {
 
         Slot { size: 36px; LunaButton { } }
         if Workspaces.available: Slot { size: ws.width; ws := Workspaces-Strip { vertical: false; } }
+        if Workspaces.available && Prefs.taskbar && Workspaces.windows.length > 0: Slot { size: tasks.width; tasks := Taskbar { } }
         if Switcher.available: Slot { size: 30px; SwitcherButton { } }
         WindowTitle {
             horizontal-stretch: 1;

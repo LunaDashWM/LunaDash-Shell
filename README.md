@@ -17,9 +17,11 @@ Sway, where it keeps its own settings.
 - **Look** — Material 3 in the style of [caelestia](https://github.com/caelestia-kde/caelestia):
   the bar and a thin frame around the screen share one surface colour, and the dashboard,
   launcher, power menu, dock, popouts, OSD and notifications slide out of that frame as
-  drawers joined to it by rounded corners. One font (Noto Sans CJK TC) for Latin and Chinese.
-- **Bar** — at the top (or down the left edge): the LunaDash logo (launcher), workspaces with
-  the icons of their windows, focused window, media, CPU / memory, tray, clock with
+  drawers joined to it by rounded corners. The font is the desktop's interface font (or
+  `theme.json`'s `font-family`); the system's fallback fonts supply glyphs it lacks.
+- **Bar** — at the top (or down the left edge): the LunaDash logo (launcher), numbered
+  workspaces and a taskbar with every window's icon (click to switch, middle-click to close),
+  like waybar's, focused window, media, CPU / memory, tray, clock with
   calendar, clipboard history, network, Bluetooth, volume, battery, notifications, settings
   and power.
 - **Dashboard** — overview, media player, per-core performance and notification history, with
@@ -27,9 +29,11 @@ Sway, where it keeps its own settings.
   brightness sliders.
 - **Launcher** — fuzzy search over installed applications, frequently used first; right-click
   to pin to the dock.
-- **Dock** — pinned applications and open windows grouped per application; click to open,
-  focus or cycle windows.
-- **Wallpaper** — a picker with thumbnails for any folder and an optional desktop clock.
+- **Dock** — off by default (Settings → Dock): pinned applications and open windows grouped
+  per application; click to open, focus or cycle windows.
+- **Wallpaper** — a picker with thumbnails for any folder and an optional desktop clock. A new
+  wallpaper is revealed over the old one by a fade, wipe, growing disc or zoom (random by
+  default; Settings → Wallpaper → Transition).
 - **Notifications** — pop-ups with actions and images, history, do not disturb.
 - **Lock screen** — PAM authentication, automatic locking after inactivity and before sleep.
 - **Polkit dialog**, **power menu**, **volume / brightness OSD**, **welcome card**.
