@@ -14,7 +14,7 @@ msgstr ""
 msgid "Charging"
 msgstr ""
 
-#: dashboard/dashboard.slint:138 settings/settings.slint:597
+#: dashboard/dashboard.slint:138 settings/settings.slint:603
 msgid "Uptime"
 msgstr ""
 
@@ -22,7 +22,7 @@ msgstr ""
 msgid "CPU"
 msgstr ""
 
-#: dashboard/dashboard.slint:146 settings/settings.slint:596
+#: dashboard/dashboard.slint:146 settings/settings.slint:602
 msgid "Memory"
 msgstr ""
 
@@ -46,7 +46,7 @@ msgstr ""
 msgid "Temperature"
 msgstr ""
 
-#: dashboard/dashboard.slint:160 settings/settings.slint:643 welcome/welcome.slint:60
+#: dashboard/dashboard.slint:160 settings/settings.slint:649 welcome/welcome.slint:60
 msgid "Settings"
 msgstr ""
 
@@ -74,7 +74,7 @@ msgstr ""
 msgid "Bluetooth"
 msgstr ""
 
-#: dashboard/dashboard.slint:192 dashboard/dashboard.slint:351 settings/settings.slint:474
+#: dashboard/dashboard.slint:192 dashboard/dashboard.slint:351 settings/settings.slint:480
 msgid "Do not disturb"
 msgstr ""
 
@@ -90,11 +90,11 @@ msgstr ""
 msgid "Light"
 msgstr ""
 
-#: dashboard/dashboard.slint:208 settings/settings.slint:103 settings/settings.slint:619
+#: dashboard/dashboard.slint:208 settings/settings.slint:103 settings/settings.slint:625
 msgid "Appearance"
 msgstr ""
 
-#: dashboard/dashboard.slint:218 settings/settings.slint:214 settings/settings.slint:620
+#: dashboard/dashboard.slint:218 settings/settings.slint:214 settings/settings.slint:626
 msgid "Wallpaper"
 msgstr ""
 
@@ -127,7 +127,7 @@ msgstr ""
 msgid "NETWORK"
 msgstr ""
 
-#: dashboard/dashboard.slint:334 settings/settings.slint:589
+#: dashboard/dashboard.slint:334 settings/settings.slint:595
 msgid "SYSTEM"
 msgstr ""
 
@@ -174,7 +174,7 @@ msgstr ""
 msgid "Performance"
 msgstr ""
 
-#: dashboard/dashboard.slint:418 settings/settings.slint:465 settings/settings.slint:625
+#: dashboard/dashboard.slint:418 settings/settings.slint:471 settings/settings.slint:631
 msgid "Notifications"
 msgstr ""
 
@@ -343,7 +343,7 @@ msgstr ""
 msgid "Click again"
 msgstr ""
 
-#: session/power-menu.slint:73 settings/settings.slint:538
+#: session/power-menu.slint:73 settings/settings.slint:544
 msgid "Lock"
 msgstr ""
 
@@ -423,7 +423,7 @@ msgstr ""
 msgid "Corners"
 msgstr ""
 
-#: settings/settings.slint:152 settings/settings.slint:502
+#: settings/settings.slint:152 settings/settings.slint:508
 msgid "Compact"
 msgstr ""
 
@@ -459,7 +459,7 @@ msgstr ""
 msgid "Fast"
 msgstr ""
 
-#: settings/settings.slint:178 settings/settings.slint:401
+#: settings/settings.slint:178 settings/settings.slint:407
 msgid "Normal"
 msgstr ""
 
@@ -584,7 +584,7 @@ msgstr ""
 msgid "A large clock on the wallpaper."
 msgstr ""
 
-#: settings/settings.slint:295 settings/settings.slint:322 settings/settings.slint:477
+#: settings/settings.slint:295 settings/settings.slint:322 settings/settings.slint:483
 msgid "Position"
 msgstr ""
 
@@ -592,7 +592,7 @@ msgstr ""
 msgid "Bottom left"
 msgstr ""
 
-#: settings/settings.slint:297 settings/settings.slint:479
+#: settings/settings.slint:297 settings/settings.slint:485
 msgid "Bottom right"
 msgstr ""
 
@@ -608,23 +608,23 @@ msgstr ""
 msgid "Size"
 msgstr ""
 
-#: settings/settings.slint:306 settings/settings.slint:370
+#: settings/settings.slint:306 settings/settings.slint:376
 msgid "Small"
 msgstr ""
 
-#: settings/settings.slint:306 settings/settings.slint:370
+#: settings/settings.slint:306 settings/settings.slint:376
 msgid "Medium"
 msgstr ""
 
-#: settings/settings.slint:306 settings/settings.slint:370
+#: settings/settings.slint:306 settings/settings.slint:376
 msgid "Large"
 msgstr ""
 
-#: settings/settings.slint:312 settings/settings.slint:353
+#: settings/settings.slint:312 settings/settings.slint:359
 msgid "Show the date"
 msgstr ""
 
-#: settings/settings.slint:317 settings/settings.slint:621
+#: settings/settings.slint:317 settings/settings.slint:627
 msgid "Panel"
 msgstr ""
 
@@ -632,7 +632,7 @@ msgstr ""
 msgid "The bar with your workspaces, clock and status."
 msgstr ""
 
-#: settings/settings.slint:320 settings/settings.slint:394
+#: settings/settings.slint:320 settings/settings.slint:400
 msgid "LAYOUT"
 msgstr ""
 
@@ -645,284 +645,292 @@ msgid "Left"
 msgstr ""
 
 #: settings/settings.slint:331
-msgid "Screen frame"
+msgid "Bar opacity"
 msgstr ""
 
 #: settings/settings.slint:332
-msgid "A border around the screen that the bar and the panels open out of."
+msgid "Also the screen frame and the panels that open out of it."
 msgstr ""
 
 #: settings/settings.slint:337
+msgid "Screen frame"
+msgstr ""
+
+#: settings/settings.slint:338
+msgid "A border around the screen that the bar and the panels open out of."
+msgstr ""
+
+#: settings/settings.slint:343
 msgid "Workspace indicator"
 msgstr ""
 
-#: settings/settings.slint:339
+#: settings/settings.slint:345
 msgid "Dots"
 msgstr ""
 
-#: settings/settings.slint:339
+#: settings/settings.slint:345
 msgid "Numbers"
 msgstr ""
 
-#: settings/settings.slint:345
+#: settings/settings.slint:351
 msgid "Window title"
 msgstr ""
 
-#: settings/settings.slint:345
+#: settings/settings.slint:351
 msgid "Show the focused window's title."
 msgstr ""
 
-#: settings/settings.slint:348
+#: settings/settings.slint:354
 msgid "CLOCK"
 msgstr ""
 
-#: settings/settings.slint:349
+#: settings/settings.slint:355
 msgid "24-hour clock"
 msgstr ""
 
-#: settings/settings.slint:351
+#: settings/settings.slint:357
 msgid "Show seconds"
 msgstr ""
 
-#: settings/settings.slint:355
+#: settings/settings.slint:361
 msgid "Weeks start on Monday"
 msgstr ""
 
-#: settings/settings.slint:360 settings/settings.slint:622 welcome/welcome.slint:59
+#: settings/settings.slint:366 settings/settings.slint:628 welcome/welcome.slint:59
 msgid "Dock"
 msgstr ""
 
-#: settings/settings.slint:361
+#: settings/settings.slint:367
 msgid "Pinned applications and running windows."
 msgstr ""
 
-#: settings/settings.slint:363
+#: settings/settings.slint:369
 msgid "Show the dock"
 msgstr ""
 
-#: settings/settings.slint:365
+#: settings/settings.slint:371
 msgid "Hide automatically"
 msgstr ""
 
-#: settings/settings.slint:365
+#: settings/settings.slint:371
 msgid "Slides away until the pointer reaches the bottom edge."
 msgstr ""
 
-#: settings/settings.slint:368
+#: settings/settings.slint:374
 msgid "Icon size"
 msgstr ""
 
-#: settings/settings.slint:376
+#: settings/settings.slint:382
 msgid "Launcher button"
 msgstr ""
 
-#: settings/settings.slint:379
+#: settings/settings.slint:385
 msgid "PINNED"
 msgstr ""
 
-#: settings/settings.slint:381
+#: settings/settings.slint:387
 msgid "Pinned applications"
 msgstr ""
 
-#: settings/settings.slint:382
+#: settings/settings.slint:388
 #, c-format
 msgid "{} pinned. Right-click an application in the launcher or dock to pin or unpin it."
 msgstr ""
 
-#: settings/settings.slint:383
+#: settings/settings.slint:389
 msgid "Unpin all"
 msgstr ""
 
-#: settings/settings.slint:389 settings/settings.slint:623 switcher/switcher.slint:115
+#: settings/settings.slint:395 settings/settings.slint:629 switcher/switcher.slint:115
 msgid "Windows"
 msgstr ""
 
-#: settings/settings.slint:390
+#: settings/settings.slint:396
 msgid "How LunaDash arranges and draws application windows."
 msgstr ""
 
-#: settings/settings.slint:396
+#: settings/settings.slint:402
 msgid "Tiling"
 msgstr ""
 
-#: settings/settings.slint:398
+#: settings/settings.slint:404
 msgid "Normal: windows keep their width in columns that scroll sideways, like niri. Super+Shift+Space switches."
 msgstr ""
 
-#: settings/settings.slint:399
+#: settings/settings.slint:405
 msgid "Fill: windows split the screen between them and fill it. Super+Shift+Space switches."
 msgstr ""
 
-#: settings/settings.slint:401
+#: settings/settings.slint:407
 msgid "Fill"
 msgstr ""
 
-#: settings/settings.slint:408
+#: settings/settings.slint:414
 msgid "Gaps"
 msgstr ""
 
-#: settings/settings.slint:413
+#: settings/settings.slint:419
 msgid "LOOK"
 msgstr ""
 
-#: settings/settings.slint:415
+#: settings/settings.slint:421
 msgid "Window opacity"
 msgstr ""
 
-#: settings/settings.slint:416
+#: settings/settings.slint:422
 msgid "Unfocused content shows the blurred wallpaper through it."
 msgstr ""
 
-#: settings/settings.slint:421
+#: settings/settings.slint:427
 msgid "Blur"
 msgstr ""
 
-#: settings/settings.slint:426
+#: settings/settings.slint:432
 msgid "Blur strength"
 msgstr ""
 
-#: settings/settings.slint:433 settings/settings.slint:624
+#: settings/settings.slint:439 settings/settings.slint:630
 msgid "Display"
 msgstr ""
 
-#: settings/settings.slint:434
+#: settings/settings.slint:440
 msgid "Night light and the pointer."
 msgstr ""
 
-#: settings/settings.slint:437
+#: settings/settings.slint:443
 msgid "NIGHT LIGHT"
 msgstr ""
 
-#: settings/settings.slint:439
+#: settings/settings.slint:445
 msgid "Night light"
 msgstr ""
 
-#: settings/settings.slint:440
+#: settings/settings.slint:446
 msgid "Warmer colours that are easier on the eyes in the evening (Super+N)."
 msgstr ""
 
-#: settings/settings.slint:445
+#: settings/settings.slint:451
 msgid "Colour temperature"
 msgstr ""
 
-#: settings/settings.slint:450
+#: settings/settings.slint:456
 msgid "POINTER"
 msgstr ""
 
-#: settings/settings.slint:452
+#: settings/settings.slint:458
 msgid "Cursor size"
 msgstr ""
 
-#: settings/settings.slint:453
+#: settings/settings.slint:459
 msgid "Takes effect after signing in again."
 msgstr ""
 
-#: settings/settings.slint:467
+#: settings/settings.slint:473
 msgid "Another notification daemon is running. Stop it to use LunaDash notifications."
 msgstr ""
 
-#: settings/settings.slint:472
+#: settings/settings.slint:478
 msgid "Pop-ups"
 msgstr ""
 
-#: settings/settings.slint:472
+#: settings/settings.slint:478
 msgid "Show new notifications in the corner."
 msgstr ""
 
-#: settings/settings.slint:474
+#: settings/settings.slint:480
 msgid "Only critical notifications pop up."
 msgstr ""
 
-#: settings/settings.slint:479
+#: settings/settings.slint:485
 msgid "Top right"
 msgstr ""
 
-#: settings/settings.slint:479
+#: settings/settings.slint:485
 msgid "Top centre"
 msgstr ""
 
-#: settings/settings.slint:486
+#: settings/settings.slint:492
 msgid "Pop-up duration"
 msgstr ""
 
-#: settings/settings.slint:498
+#: settings/settings.slint:504
 msgid "LAUNCHER"
 msgstr ""
 
-#: settings/settings.slint:500
+#: settings/settings.slint:506
 msgid "Launcher layout"
 msgstr ""
 
-#: settings/settings.slint:502
+#: settings/settings.slint:508
 msgid "Comfortable"
 msgstr ""
 
-#: settings/settings.slint:511 settings/settings.slint:626
+#: settings/settings.slint:517 settings/settings.slint:632
 msgid "Power & lock"
 msgstr ""
 
-#: settings/settings.slint:514
+#: settings/settings.slint:520
 msgid "Lock after inactivity"
 msgstr ""
 
-#: settings/settings.slint:516
+#: settings/settings.slint:522
 msgid "Never"
 msgstr ""
 
-#: settings/settings.slint:526
+#: settings/settings.slint:532
 msgid "Lock before sleep"
 msgstr ""
 
-#: settings/settings.slint:536
+#: settings/settings.slint:542
 msgid "Keep the screen awake"
 msgstr ""
 
-#: settings/settings.slint:536
+#: settings/settings.slint:542
 msgid "Until LunaDash restarts."
 msgstr ""
 
-#: settings/settings.slint:538
+#: settings/settings.slint:544
 msgid "Lock now"
 msgstr ""
 
-#: settings/settings.slint:543 settings/settings.slint:627
+#: settings/settings.slint:549 settings/settings.slint:633
 msgid "Language"
 msgstr ""
 
-#: settings/settings.slint:562 settings/settings.slint:628
+#: settings/settings.slint:568 settings/settings.slint:634
 msgid "About"
 msgstr ""
 
-#: settings/settings.slint:583
+#: settings/settings.slint:589
 #, c-format
 msgid "Desktop shell written in Slint, running on SlintLu {}"
 msgstr ""
 
-#: settings/settings.slint:591
+#: settings/settings.slint:597
 msgid "System"
 msgstr ""
 
-#: settings/settings.slint:592
+#: settings/settings.slint:598
 msgid "Kernel"
 msgstr ""
 
-#: settings/settings.slint:593
+#: settings/settings.slint:599
 msgid "Host"
 msgstr ""
 
-#: settings/settings.slint:594
+#: settings/settings.slint:600
 msgid "Compositor"
 msgstr ""
 
-#: settings/settings.slint:595
+#: settings/settings.slint:601
 msgid "Renderer"
 msgstr ""
 
-#: settings/settings.slint:607
+#: settings/settings.slint:613
 msgid "Show welcome"
 msgstr ""
 
-#: settings/settings.slint:608
+#: settings/settings.slint:614
 msgid "Reload shell"
 msgstr ""
 

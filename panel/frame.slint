@@ -10,6 +10,7 @@
 import { PanelWindow, Layer, ExclusiveMode } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
+import { Prefs } from "../state/prefs.slint";
 import { ConcaveCorner } from "../components/shape.slint";
 
 // Keeps windows clear of one edge by `zone`.
@@ -61,11 +62,16 @@ component FrameStrip inherits PanelWindow {
     Rectangle { background: Style.frame; }
 }
 
+// The strips never overlap each other or the bar (a translucent frame would darken where
+// they did): the top and bottom strips run from the bar to the right edge, the side strips
+// between them.
+
 // Along the top when the bar is on the left.
 export component FrameTop inherits FrameStrip {
     anchor-top: true;
     anchor-left: true;
     anchor-right: true;
+    margin-left: Style.inner-left;
     preferred-height: Style.frame-width;
     shown: Style.framed && !Style.bar-top;
 
@@ -90,6 +96,8 @@ export component FrameLeft inherits FrameStrip {
     anchor-left: true;
     anchor-top: true;
     anchor-bottom: true;
+    margin-top: Style.inner-top;
+    margin-bottom: Style.frame-width;
     preferred-width: Style.frame-width;
     shown: Style.framed && Style.bar-top;
 }
@@ -98,6 +106,8 @@ export component FrameRight inherits FrameStrip {
     anchor-right: true;
     anchor-top: true;
     anchor-bottom: true;
+    margin-top: Style.inner-top;
+    margin-bottom: Style.frame-width;
     preferred-width: Style.frame-width;
 }
 
@@ -105,6 +115,7 @@ export component FrameBottom inherits FrameStrip {
     anchor-bottom: true;
     anchor-left: true;
     anchor-right: true;
+    margin-left: Style.bar-top ? 0px : Style.inner-left;
     preferred-height: Style.frame-width;
 }
 
@@ -128,8 +139,10 @@ export component FrameCornerTopLeft inherits FrameCorner {
     margin-left: Style.inner-left;
 }
 
+// Notification pop-ups in this corner cover it; under a translucent card it would show through.
 export component FrameCornerTopRight inherits FrameCorner {
     solid: "tr";
+    shown: Style.framed && !(UI.toasts-showing && Prefs.toast-position == "top-right");
     anchor-top: true;
     anchor-right: true;
     margin-top: Style.inner-top;
@@ -146,6 +159,7 @@ export component FrameCornerBottomLeft inherits FrameCorner {
 
 export component FrameCornerBottomRight inherits FrameCorner {
     solid: "br";
+    shown: Style.framed && !(UI.toasts-showing && Prefs.toast-position == "bottom-right");
     anchor-bottom: true;
     anchor-right: true;
     margin-bottom: Style.frame-width;

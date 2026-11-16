@@ -31,9 +31,10 @@ export global Style {
     // Surfaces
     out property <float> glass-alpha: Prefs.transparency ? clamp(Prefs.glass-opacity, 50, 100) / 100 : 1.0;
     // The screen frame, the bar and every drawer that grows out of them share this colour, so
-    // they read as one shape. It stays opaque: the frame is several surfaces that meet and
-    // overlap at the edges, and translucent ones would show the seams.
-    out property <color> frame: Theme.background;
+    // they read as one shape. Its opacity is the bar's (Settings → Panel); the pieces meet
+    // edge to edge without overlapping, so a translucent frame shows no seams.
+    out property <float> frame-alpha: clamp(Prefs.bar-opacity, 30, 100) / 100;
+    out property <color> frame: Theme.background.with-alpha(root.frame-alpha);
     out property <color> base: Theme.background;
     // Free-floating surfaces (dialogs, notifications) follow the transparency preference.
     out property <color> glass: Theme.background.with-alpha(root.glass-alpha);

@@ -19,6 +19,8 @@ export global Prefs {
     out property <string> bar-position: Store.get-string("bar-position", "top", Store.revision);
     // A frame in the bar's colour around the whole screen, out of which the panels open.
     out property <bool> screen-frame: Store.get-bool("screen-frame", true, Store.revision);
+    // Opacity of the bar, the frame and the drawers that open out of them, 30–100 %.
+    out property <int> bar-opacity: Store.get-number("bar-opacity", 80, Store.revision);
     // "dots" or "numbers".
     out property <string> workspace-style: Store.get-string("workspace-style", "dots", Store.revision);
     out property <bool> window-title: Store.get-bool("window-title", true, Store.revision);

@@ -328,6 +328,12 @@ component PanelPage inherits Page {
         }
         Divider { }
         Setting {
+            title: @tr("Bar opacity");
+            description: @tr("Also the screen frame and the panels that open out of it.");
+            RangeSlider { minimum: 30; maximum: 100; step: 5; unit: "%"; value: Prefs.bar-opacity; committed(v) => { Store.set-number("bar-opacity", v); } }
+        }
+        Divider { }
+        Setting {
             title: @tr("Screen frame");
             description: @tr("A border around the screen that the bar and the panels open out of.");
             Switch { on: Prefs.screen-frame; toggled => { Store.set-bool("screen-frame", !Prefs.screen-frame); } }

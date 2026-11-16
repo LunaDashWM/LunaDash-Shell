@@ -32,12 +32,13 @@ export component PanelPopup inherits PanelWindow {
     init => { root.entrance = self.shown ? 1 : 0; }
 
     property <length> body-height: min(content.preferred-height,
-        root.height - Style.frame-width - (Style.bar-top ? 0px : Style.frame-width));
-    // Centred on the item, kept inside the frame.
-    property <length> body-x: clamp(UI.popup-pos * 1px - root.body-width / 2, Style.frame-width + Style.frame-radius,
-        root.width - Style.frame-width - Style.frame-radius - root.body-width);
-    property <length> body-y: clamp(UI.popup-pos * 1px - root.body-height / 2, Style.frame-width,
-        root.height - Style.frame-width - root.body-height);
+        root.height - Style.frame-width - (Style.bar-top ? 0px : Style.frame-width + 4 * Style.frame-radius));
+    // Centred on the item, kept inside the frame with its ears clear of the frame's rounded
+    // corners (overlapping a translucent corner would darken it).
+    property <length> body-x: clamp(UI.popup-pos * 1px - root.body-width / 2, Style.frame-width + 2 * Style.frame-radius,
+        root.width - Style.frame-width - 2 * Style.frame-radius - root.body-width);
+    property <length> body-y: clamp(UI.popup-pos * 1px - root.body-height / 2, Style.frame-width + 2 * Style.frame-radius,
+        root.height - Style.frame-width - 2 * Style.frame-radius - root.body-height);
 
     // The empty rest of the band closes the popout like the dismisser beside it.
     TouchArea { clicked => { UI.close-all(); } }

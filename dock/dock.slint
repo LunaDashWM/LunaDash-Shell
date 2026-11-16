@@ -61,7 +61,8 @@ export component Dock inherits PanelWindow {
     // On the frame; the frame's bottom reserve keeps windows clear of it.
     exclusive-mode: ExclusiveMode.ignore;
     margin-bottom: Style.frame-width;
-    shown: Prefs.dock;
+    // The launcher rises from the same edge and takes its place.
+    shown: Prefs.dock && UI.overlay != "launcher";
     default-font-family: Style.font;
 
     property <length> item-size: Style.dock-item;
