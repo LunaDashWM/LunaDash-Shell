@@ -1,5 +1,11 @@
 // LunaDash design tokens on top of SlintLu's Theme (which follows theme.json and the desktop's
 // light / dark preference) and the appearance preferences.
+//
+// The look follows Material 3 the way caelestia does: one surface colour frames the screen and
+// the panels grow out of that frame, flat tonal containers sit on it, and shapes are generously
+// rounded. Theme's slots map onto the M3 roles: background → surface, surface →
+// surface-container, surface-alt → surface-container-high, border → outline-variant,
+// accent → primary.
 
 import { Theme } from "@slintlu";
 import { Prefs } from "../state/prefs.slint";
@@ -9,53 +15,90 @@ export global Style {
     out property <[color]> accents: [#9ccbfb, #c4b5fd, #f5a9c8, #7dcccf, #a6e3a1, #efcd8c, #f4a77c, #e2e5ed];
     out property <[string]> accent-hex: ["#9ccbfb", "#c4b5fd", "#f5a9c8", "#7dcccf", "#a6e3a1", "#efcd8c", "#f4a77c", "#e2e5ed"];
 
-    // Surfaces
-    out property <float> glass-alpha: Prefs.transparency ? clamp(Prefs.glass-opacity, 50, 100) / 100 : 1.0;
-    out property <color> base: Theme.background;
-    out property <color> glass: Theme.background.with-alpha(root.glass-alpha);
-    out property <color> glass-strong: Theme.background.with-alpha(min(1.0, root.glass-alpha + 0.09));
-    out property <color> surface: Theme.surface;
-    out property <color> elevated: Theme.surface-alt;
-    out property <color> hover: Theme.surface-alt.brighter(Theme.dark ? 0.12 : -0.06);
-    out property <color> border: Theme.border.with-alpha(0.55);
-    out property <color> hairline: Theme.border.with-alpha(0.3);
-    // A soft light along the top edge of raised surfaces.
-    out property <color> sheen: Theme.dark ? #ffffff10 : #ffffff80;
-    out property <color> scrim: #060a14.with-alpha(0.45);
-    out property <color> shadow: Theme.dark ? #00000070 : #1b2a4430;
-    // Content
-    out property <color> text: Theme.text;
-    out property <color> muted: Theme.text-muted;
+    // Primary and its tonal companions
     out property <color> accent: Prefs.accent >= 0 && Prefs.accent < root.accents.length
         ? (Theme.dark ? root.accents[Prefs.accent] : root.accents[Prefs.accent].darker(0.45))
         : Theme.accent;
-    out property <color> accent-soft: root.accent.with-alpha(0.18);
-    out property <color> accent-ink: Theme.dark ? Theme.background : #ffffff;
+    // On top of the primary colour.
+    out property <color> accent-ink: Theme.dark ? root.accent.mix(#000000, 0.28) : #ffffff;
+    // M3 primary / secondary containers: the accent steeped into the surface.
+    out property <color> primary-container: Theme.dark ? root.accent.mix(Theme.background, 0.3) : root.accent.mix(#ffffff, 0.22);
+    out property <color> on-primary-container: Theme.dark ? root.accent.mix(#ffffff, 0.35) : root.accent.mix(#000000, 0.45);
+    out property <color> tonal: Theme.dark ? root.accent.mix(Theme.surface-alt, 0.16) : root.accent.mix(Theme.surface, 0.14);
+    out property <color> on-tonal: Theme.dark ? root.accent.mix(Theme.text, 0.25) : root.accent.mix(#000000, 0.55);
+    out property <color> accent-soft: root.accent.with-alpha(0.16);
+
+    // Surfaces
+    out property <float> glass-alpha: Prefs.transparency ? clamp(Prefs.glass-opacity, 50, 100) / 100 : 1.0;
+    // The screen frame, the bar and every drawer that grows out of them share this colour, so
+    // they read as one shape. It stays opaque: the frame is several surfaces that meet and
+    // overlap at the edges, and translucent ones would show the seams.
+    out property <color> frame: Theme.background;
+    out property <color> base: Theme.background;
+    // Free-floating surfaces (dialogs, notifications) follow the transparency preference.
+    out property <color> glass: Theme.background.with-alpha(root.glass-alpha);
+    out property <color> glass-strong: Theme.background.with-alpha(min(1.0, root.glass-alpha + 0.08));
+    // surface-container and surface-container-high.
+    out property <color> surface: Theme.surface;
+    out property <color> elevated: Theme.surface-alt;
+    // M3 state layers: the content colour at 8 % (hover) and 12 % (pressed).
+    out property <color> hover: Theme.surface-alt.mix(Theme.text, 0.9);
+    out property <color> pressed: Theme.surface-alt.mix(Theme.text, 0.84);
+    out property <color> border: Theme.border;
+    out property <color> hairline: Theme.border.with-alpha(0.5);
+    out property <color> sheen: transparent;
+    out property <color> scrim: #000000.with-alpha(0.32);
+    out property <color> shadow: Theme.dark ? #00000066 : #00000026;
+    // Content
+    out property <color> text: Theme.text;
+    out property <color> muted: Theme.text-muted;
     out property <color> danger: Theme.red;
+    out property <color> danger-container: Theme.dark ? Theme.red.mix(Theme.background, 0.28) : Theme.red.mix(#ffffff, 0.2);
     out property <color> success: Theme.green;
     out property <color> warning: Theme.yellow;
-    // Typography
+
+    // Typography: the theme's font, else Noto Sans CJK TC — one family whose Latin and Chinese
+    // glyphs were drawn together, in matching weights, so mixed text reads as one voice.
     out property <float> text-scale: clamp(Prefs.text-scale, 80, 140) / 100;
-    out property <string> font: Theme.font-family;
+    out property <string> font: Theme.font-family != "" ? Theme.font-family : "Noto Sans CJK TC";
     out property <length> font-size: Theme.font-size * root.text-scale;
     out property <length> font-small: (Theme.font-size - 1.5px) * root.text-scale;
-    out property <length> font-title: (Theme.font-size + 4px) * root.text-scale;
-    out property <length> font-display: 22px * root.text-scale;
-    // Geometry
-    out property <float> corner-scale: Prefs.corners == "compact" ? 0.5 : Prefs.corners == "round" ? 1.35 : 1.0;
+    out property <length> font-title: (Theme.font-size + 5px) * root.text-scale;
+    out property <length> font-display: 28px * root.text-scale;
+
+    // Geometry (M3 shape and spacing scales)
+    out property <float> corner-scale: Prefs.corners == "compact" ? 0.5 : Prefs.corners == "round" ? 1.3 : 1.0;
     out property <length> spacing-xs: 4px;
     out property <length> spacing-sm: 8px;
     out property <length> spacing-md: 12px;
-    out property <length> spacing-lg: 18px;
-    out property <length> spacing-xl: 24px;
-    out property <length> radius-small: 10px * root.corner-scale;
-    out property <length> radius-medium: 16px * root.corner-scale;
-    out property <length> radius: 24px * root.corner-scale;
-    out property <length> radius-large: 30px * root.corner-scale;
-    out property <length> panel-height: 40px;
+    out property <length> spacing-lg: 16px;
+    out property <length> spacing-xl: 20px;
+    out property <length> spacing-xxl: 28px;
+    out property <length> radius-small: 8px * root.corner-scale;
+    out property <length> radius-medium: 12px * root.corner-scale;
+    out property <length> radius: 25px * root.corner-scale;
+    out property <length> radius-large: 28px * root.corner-scale;
+    // The screen frame: its width, and the rounding where it meets the desktop or a drawer.
+    out property <bool> framed: Prefs.screen-frame;
+    out property <length> frame-width: root.framed ? 10px : 0px;
+    out property <length> frame-radius: 25px * root.corner-scale;
+    // The bar along the top edge, or the left one.
+    out property <bool> bar-top: Prefs.bar-position != "left";
+    out property <length> bar-width: 48px;
+    out property <length> panel-height: root.bar-width;
+    // Where the desktop area inside the bar and the frame begins.
+    out property <length> inner-left: root.bar-top ? root.frame-width : root.bar-width;
+    out property <length> inner-top: root.bar-top ? root.bar-width : root.frame-width;
     out property <length> pill-height: 32px;
-    // Motion
+    // The dock's icons and its full height.
+    out property <length> dock-item: Prefs.dock-size == "small" ? 40px : Prefs.dock-size == "large" ? 60px : 50px;
+    out property <length> dock-height: root.dock-item + 16px;
+    // What the dock keeps clear at the bottom of the desktop.
+    out property <length> dock-reserve: Prefs.dock && !Prefs.dock-autohide ? root.dock-height : 0px;
+
+    // Motion: M3 durations; the spatial curve overshoots a little, like caelestia's.
     out property <float> motion-scale: Prefs.animation-speed == "fast" ? 0.6 : Prefs.animation-speed == "relaxed" ? 1.6 : 1.0;
-    out property <duration> motion: Prefs.animations ? 220ms * root.motion-scale : 0ms;
-    out property <duration> motion-fast: Prefs.animations ? 120ms * root.motion-scale : 0ms;
+    out property <duration> motion: Prefs.animations ? 400ms * root.motion-scale : 0ms;
+    out property <duration> motion-fast: Prefs.animations ? 200ms * root.motion-scale : 0ms;
+    out property <duration> motion-slow: Prefs.animations ? 500ms * root.motion-scale : 0ms;
 }

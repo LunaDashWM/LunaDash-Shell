@@ -14,9 +14,14 @@ Sway, where it keeps its own settings.
 
 ## Features
 
-- **Top panel** — workspaces, power, focused window, launcher / dashboard / settings
-  buttons, clock with calendar, tray, clipboard history, network, Bluetooth, volume, battery
-  and notifications.
+- **Look** — Material 3 in the style of [caelestia](https://github.com/caelestia-kde/caelestia):
+  the bar and a thin frame around the screen share one surface colour, and the dashboard,
+  launcher, power menu, dock, popouts, OSD and notifications slide out of that frame as
+  drawers joined to it by rounded corners. One font (Noto Sans CJK TC) for Latin and Chinese.
+- **Bar** — at the top (or down the left edge): the LunaDash logo (launcher), workspaces with
+  the icons of their windows, focused window, media, CPU / memory, tray, clock with
+  calendar, clipboard history, network, Bluetooth, volume, battery, notifications, settings
+  and power.
 - **Dashboard** — overview, media player, per-core performance and notification history, with
   quick toggles (Wi-Fi, Bluetooth, do not disturb, keep awake, dark mode) and volume /
   brightness sliders.
@@ -28,8 +33,8 @@ Sway, where it keeps its own settings.
 - **Notifications** — pop-ups with actions and images, history, do not disturb.
 - **Lock screen** — PAM authentication, automatic locking after inactivity and before sleep.
 - **Polkit dialog**, **power menu**, **volume / brightness OSD**, **welcome card**.
-- **Settings** — appearance (mode, palettes, transparency, animations), wallpaper, panel and
-  dock, notifications, power and lock, language and about.
+- **Settings** — appearance (mode, palettes, transparency, animations), wallpaper, bar
+  (position, screen frame) and dock, notifications, power and lock, language and about.
 - **Translations** — English and Traditional Chinese (`i18n/zh_TW.po`).
 
 Settings are stored by SlintLu in `$XDG_STATE_HOME/slintlu`. The colours come from
@@ -94,7 +99,7 @@ slintlu --config .
 - Icons come from SlintLu's shared set (`Icon` in `@slintlu`, see SlintLu's `res/`); only the
   LunaDash mark lives here (`assets/luna.svg`).
 
-Layout: `panel/` (panel and its popups), `dashboard/`, `launcher/`, `dock/`, `wallpaper/`,
+Layout: `panel/` (bar, screen frame and popouts), `dashboard/`, `launcher/`, `dock/`, `wallpaper/`,
 `session/` (lock screen, power menu, polkit), `feedback/` (notifications, OSD), `settings/`,
 `welcome/`, shared `components/`, `state/` (preferences and cross-window state) and `style/`.
 When the shell needs something SlintLu cannot do yet, the feature is added to SlintLu.

@@ -12,21 +12,21 @@ component PowerButton inherits Rectangle {
     in property <bool> armed;
     in property <bool> enabled: true;
     callback clicked();
-    width: 128px;
-    height: 132px;
-    border-radius: Style.radius-medium;
+    width: 92px;
+    height: 92px;
+    border-radius: root.armed || touch.has-hover ? Style.radius-large : Style.radius-large * 0.6;
     opacity: root.enabled ? 1 : 0.4;
-    background: root.armed ? Style.danger : touch.has-hover ? Style.hover : Style.elevated;
-    border-width: 1px;
-    border-color: root.armed ? Style.danger : Style.border;
+    background: root.armed ? Style.danger : touch.pressed ? Style.pressed : touch.has-hover ? Style.tonal : Style.surface;
     animate background { duration: Style.motion-fast; }
+    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     VerticalLayout {
         alignment: center;
-        spacing: 12px;
-        Icon { name: root.icon; width: 34px; height: 34px; x: (parent.width - self.width) / 2; color: root.armed ? #ffffff : Style.text; }
+        spacing: 8px;
+        Icon { name: root.icon; width: 28px; height: 28px; x: (parent.width - self.width) / 2; color: root.armed ? Style.base : touch.has-hover ? Style.on-tonal : Style.text; }
         Text {
             text: root.armed ? @tr("Click again") : root.label;
-            color: root.armed ? #ffffff : Style.text;
+            color: root.armed ? Style.base : touch.has-hover ? Style.on-tonal : Style.muted;
+            font-size: Style.font-small;
             horizontal-alignment: center;
         }
     }
@@ -39,8 +39,10 @@ component PowerButton inherits Rectangle {
 export component PowerMenu inherits Overlay {
     name: "power";
     namespace: "lunadash-power";
-    content-width: 760px;
-    content-height: 260px;
+    // Slides out of the right edge of the screen frame.
+    edge: "right";
+    content-width: 124px;
+    content-height: 5 * 92px + 4 * 12px + 2 * 16px;
 
     property <string> armed;
     changed shown => { root.armed = ""; }
@@ -61,10 +63,9 @@ export component PowerMenu inherits Overlay {
     }
 
     VerticalLayout {
-        padding: Style.spacing-xl;
-        spacing: Style.spacing-lg;
-        Text { text: @tr("Power"); color: Style.text; font-size: Style.font-title; font-weight: 600; }
-        HorizontalLayout {
+        padding: Style.spacing-lg;
+        padding-right: Style.spacing-lg + 2px;
+        VerticalLayout {
             spacing: Style.spacing-md;
             alignment: center;
             PowerButton {

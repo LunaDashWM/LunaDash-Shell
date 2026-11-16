@@ -14,10 +14,11 @@ export global Prefs {
     // Darkens the wallpaper, 0–60 %.
     out property <int> wallpaper-dim: Store.get-number("wallpaper-dim", 0, Store.revision);
 
-    // Panel
-    // "top" or "bottom".
-    out property <string> panel-position: Store.get-string("panel-position", "top", Store.revision);
-    out property <bool> panel-bottom: root.panel-position == "bottom";
+    // Bar and screen frame
+    // "top" or "left".
+    out property <string> bar-position: Store.get-string("bar-position", "top", Store.revision);
+    // A frame in the bar's colour around the whole screen, out of which the panels open.
+    out property <bool> screen-frame: Store.get-bool("screen-frame", true, Store.revision);
     // "dots" or "numbers".
     out property <string> workspace-style: Store.get-string("workspace-style", "dots", Store.revision);
     out property <bool> window-title: Store.get-bool("window-title", true, Store.revision);

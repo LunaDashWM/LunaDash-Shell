@@ -1,0 +1,105 @@
+// The shapes that make the screen frame and its drawers read as one surface.
+
+import { Style } from "../style/style.slint";
+
+// A square filled in one corner and hollowed by a quarter circle centred on the opposite
+// corner: the concave "ear" where a drawer meets the frame, or the frame's inner corner.
+// `solid` names the filled corner: "tl", "tr", "bl" or "br".
+export component ConcaveCorner inherits Path {
+    in property <string> solid: "tl";
+    in property <color> color: Style.frame;
+    width: Style.frame-radius;
+    height: Style.frame-radius;
+    viewbox-width: 100;
+    viewbox-height: 100;
+    fill: root.color;
+    stroke-width: 0;
+    commands: root.solid == "tr" ? "M 100 0 L 100 100 A 100 100 0 0 0 0 0 Z"
+        : root.solid == "bl" ? "M 0 100 L 0 0 A 100 100 0 0 0 100 100 Z"
+        : root.solid == "br" ? "M 100 100 L 0 100 A 100 100 0 0 0 100 0 Z"
+        : "M 0 0 L 100 0 A 100 100 0 0 0 0 100 Z";
+}
+
+// A drawer attached to one screen edge ("top", "bottom", "left" or "right"): the body, square
+// along that edge and rounded away from it, plus an ear on each side joining it to the frame.
+// Size it with `body-width` / `body-height`; the element itself is larger by the ears.
+// "center" makes it a free-floating card instead: rounded all round, with a shadow.
+export component Drawer {
+    in property <string> edge: "top";
+    in property <length> body-width: 300px;
+    in property <length> body-height: 200px;
+    in property <color> color: Style.frame;
+    property <bool> floating: root.edge == "center";
+    property <length> ear: root.floating ? 0px : Style.frame-radius;
+    property <bool> horizontal: root.edge == "top" || root.edge == "bottom";
+    width: root.horizontal ? root.body-width + 2 * root.ear : root.body-width;
+    height: root.horizontal ? root.body-height : root.body-height + 2 * root.ear;
+
+    // Ears
+    if root.edge == "top": ConcaveCorner { x: 0; y: 0; solid: "tr"; color: root.color; }
+    if root.edge == "top": ConcaveCorner { x: parent.width - self.width; y: 0; solid: "tl"; color: root.color; }
+    if root.edge == "bottom": ConcaveCorner { x: 0; y: parent.height - self.height; solid: "br"; color: root.color; }
+    if root.edge == "bottom": ConcaveCorner { x: parent.width - self.width; y: parent.height - self.height; solid: "bl"; color: root.color; }
+    if root.edge == "left": ConcaveCorner { x: 0; y: 0; solid: "bl"; color: root.color; }
+    if root.edge == "left": ConcaveCorner { x: 0; y: parent.height - self.height; solid: "tl"; color: root.color; }
+    if root.edge == "right": ConcaveCorner { x: parent.width - self.width; y: 0; solid: "br"; color: root.color; }
+    if root.edge == "right": ConcaveCorner { x: parent.width - self.width; y: parent.height - self.height; solid: "tr"; color: root.color; }
+
+    body := Rectangle {
+        x: root.horizontal ? root.ear : 0px;
+        y: root.horizontal ? 0px : root.ear;
+        width: root.body-width;
+        height: root.body-height;
+        background: root.color;
+        border-top-left-radius: root.floating || root.edge == "bottom" || root.edge == "right" ? Style.frame-radius : 0px;
+        border-top-right-radius: root.floating || root.edge == "bottom" || root.edge == "left" ? Style.frame-radius : 0px;
+        border-bottom-left-radius: root.floating || root.edge == "top" || root.edge == "right" ? Style.frame-radius : 0px;
+        border-bottom-right-radius: root.floating || root.edge == "top" || root.edge == "left" ? Style.frame-radius : 0px;
+        drop-shadow-blur: root.floating ? 24px : 0px;
+        drop-shadow-color: Style.shadow;
+        drop-shadow-offset-y: 6px;
+        @children
+    }
+}
+
+// A drawer tucked into one corner of the frame ("tl", "tr", "bl" or "br"): the body is square
+// in that corner and rounded diagonally across, with an ear along each of the two edges.
+// The element is larger than the body by one ear in each direction.
+export component CornerDrawer {
+    in property <string> corner: "tr";
+    in property <length> body-width: 300px;
+    in property <length> body-height: 200px;
+    in property <color> color: Style.frame;
+    property <length> ear: Style.frame-radius;
+    property <bool> right: root.corner == "tr" || root.corner == "br";
+    property <bool> bottom: root.corner == "bl" || root.corner == "br";
+    width: root.body-width + root.ear;
+    height: root.body-height + root.ear;
+
+    // Along the horizontal edge, beside the body.
+    ConcaveCorner {
+        x: root.right ? 0px : root.body-width;
+        y: root.bottom ? parent.height - self.height : 0px;
+        solid: root.corner;
+        color: root.color;
+    }
+    // Along the vertical edge, past the body.
+    ConcaveCorner {
+        x: root.right ? parent.width - self.width : 0px;
+        y: root.bottom ? 0px : root.body-height;
+        solid: root.corner;
+        color: root.color;
+    }
+    Rectangle {
+        x: root.right ? root.ear : 0px;
+        y: root.bottom ? root.ear : 0px;
+        width: root.body-width;
+        height: root.body-height;
+        background: root.color;
+        border-top-left-radius: root.corner == "br" ? Style.frame-radius : 0px;
+        border-top-right-radius: root.corner == "bl" ? Style.frame-radius : 0px;
+        border-bottom-left-radius: root.corner == "tr" ? Style.frame-radius : 0px;
+        border-bottom-right-radius: root.corner == "tl" ? Style.frame-radius : 0px;
+        @children
+    }
+}
