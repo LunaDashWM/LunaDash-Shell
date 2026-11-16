@@ -286,31 +286,30 @@ component StatusPill inherits Rectangle {
     }
 }
 
-// The LunaDash logo: the launcher (right-click: the dashboard). The app icon itself, on a
-// soft glow that brightens on hover and turns into an accent ring while the launcher is open.
+// The LunaDash logo: the launcher (right-click: the dashboard). The mark alone — the app
+// icon's tile would turn into a dark smudge at bar size — over a soft accent halo that
+// brightens on hover; a tonal disc while the launcher is open.
 component LunaButton inherits Rectangle {
     property <bool> open: UI.overlay == "launcher";
     width: 36px;
     height: 36px;
-    border-radius: 11px;
-    background: transparent;
-    border-width: root.open ? 2px : 0px;
-    border-color: Style.accent;
-    drop-shadow-blur: root.open || luna.has-hover ? 14px : 6px;
-    drop-shadow-color: Style.accent.with-alpha(root.open || luna.has-hover ? 0.55 : 0.18);
-    animate drop-shadow-blur, drop-shadow-color, border-width { duration: Style.motion-fast; }
+    border-radius: 18px;
+    background: root.open ? Style.tonal : luna.pressed ? Style.pressed : transparent;
+    animate background { duration: Style.motion-fast; }
     Rectangle {
-        width: luna.pressed ? 26px : root.open ? 28px : 32px;
+        width: 34px;
+        height: 34px;
+        border-radius: 17px;
+        opacity: root.open ? 0 : luna.has-hover ? 1 : 0.4;
+        background: @radial-gradient(circle, Style.accent.with-alpha(0.45) 0%, Style.accent.with-alpha(0.12) 45%, transparent 70%);
+        animate opacity { duration: Style.motion-fast; }
+    }
+    Image {
+        width: luna.pressed ? 20px : luna.has-hover ? 27px : 25px;
         height: self.width;
-        border-radius: self.width * 0.28;
-        clip: true;
+        source: @image-url("../assets/luna-mark.svg");
+        image-fit: contain;
         animate width { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
-        Image {
-            width: 100%;
-            height: 100%;
-            source: @image-url("../assets/lunadash.png");
-            image-fit: cover;
-        }
     }
     luna := TouchArea {
         clicked => { UI.toggle-overlay("launcher"); }
