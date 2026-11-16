@@ -17,6 +17,8 @@ export component Overlay inherits PanelWindow {
     layer: Layer.overlay;
     keyboard-mode: KeyboardMode.exclusive;
     exclusive-mode: ExclusiveMode.ignore;
+    // The compositor blurs the screen behind the overlay (ext-background-effect-v1).
+    background-blur: true;
     anchor-top: true;
     anchor-bottom: true;
     anchor-left: true;
