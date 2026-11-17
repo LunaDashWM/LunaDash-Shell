@@ -8,7 +8,7 @@ import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
 
 component AppTile inherits Rectangle {
-    in property <length> icon-size: 52px;
+    in property <length> icon-size: 56px;
     in property <image> icon;
     in property <string> name;
     in property <bool> selected;
@@ -20,7 +20,7 @@ component AppTile inherits Rectangle {
     animate background { duration: Style.motion-fast; }
     animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     VerticalLayout {
-        padding: 10px;
+        padding: 8px;
         spacing: 8px;
         alignment: center;
         Image {
@@ -30,11 +30,17 @@ component AppTile inherits Rectangle {
             x: (parent.width - self.width) / 2;
             image-fit: contain;
         }
+        // Up to two lines, so longer names ("KDE Partition Manager") stay readable. CJK
+        // fallback fonts have taller lines than Latin ones: leave room for two of them, or
+        // the wrapped and elided name loses its first line.
         Text {
             text: root.name;
             color: Style.text;
-            font-size: Style.font-small;
+            font-size: Style.font-size;
+            height: 2 * Style.font-size * 1.6;
             horizontal-alignment: center;
+            vertical-alignment: top;
+            wrap: word-wrap;
             overflow: elide;
         }
     }
@@ -96,51 +102,65 @@ export component Launcher inherits Overlay {
             Icon {
                 y: (parent.height - self.height) / 2;
                 name: root.query == "" ? "grid" : "search";
-                width: 16px;
-                height: 16px;
+                width: 20px;
+                height: 20px;
                 color: Style.accent;
             }
             Text {
                 text: root.query == "" ? @tr("Frequently used") : @tr("{} results", root.results.length);
                 color: Style.text;
-                font-size: Style.font-size;
+                font-size: Style.font-title;
                 font-weight: 600;
                 vertical-alignment: center;
             }
             Rectangle { horizontal-stretch: 1; }
             Rectangle {
-                width: count.preferred-width + 16px;
-                height: 22px;
-                border-radius: 11px;
+                width: count.preferred-width + 20px;
+                height: 26px;
+                y: (parent.height - self.height) / 2;
+                border-radius: 13px;
                 background: Style.tonal;
                 count := Text {
                     text: Apps.all.length;
                     color: Style.on-tonal;
-                    font-size: 11px;
-                    font-weight: 500;
+                    font-size: Style.font-small;
+                    font-weight: 600;
                 }
             }
         }
-        Flickable {
+        // The drawer shares the bar's translucent colour, and edge drawers are not blurred, so
+        // the grid sits on an opaque surface: windows behind must not show through the names.
+        Rectangle {
             vertical-stretch: 1;
-            property <length> tile: self.width / root.columns;
-            content-height: Math.ceil(root.results.length / root.columns) * self.tile * 1.0;
-            for app[i] in root.results: AppTile {
-                x: Math.mod(i, root.columns) * parent.tile;
-                y: Math.floor(i / root.columns) * parent.tile;
-                width: parent.tile - 6px;
-                height: parent.tile - 6px;
-                icon: app.icon;
-                icon-size: root.compact ? 40px : 52px;
-                name: app.name;
-                selected: i == root.selected;
-                pinned: root.is-pinned(app.id);
-                clicked => { root.launch(app.id); }
-                pin => {
-                    if root.is-pinned(app.id) {
-                        Store.list-remove("dock-pinned", app.id);
-                    } else {
-                        Store.list-add("dock-pinned", app.id);
+            border-radius: Style.radius-large;
+            background: Style.surface;
+            clip: true;
+            Flickable {
+                x: Style.spacing-sm;
+                y: Style.spacing-sm;
+                width: parent.width - 2 * Style.spacing-sm;
+                height: parent.height - 2 * Style.spacing-sm;
+                property <length> tile: self.width / root.columns;
+                // Tiles are a little taller than wide: room for a two-line name.
+                property <length> tile-height: self.tile * 1.15;
+                content-height: Math.ceil(root.results.length / root.columns) * self.tile-height * 1.0;
+                for app[i] in root.results: AppTile {
+                    x: Math.mod(i, root.columns) * parent.tile;
+                    y: Math.floor(i / root.columns) * parent.tile-height;
+                    width: parent.tile - 6px;
+                    height: parent.tile-height - 6px;
+                    icon: app.icon;
+                    icon-size: root.compact ? 44px : 56px;
+                    name: app.name;
+                    selected: i == root.selected;
+                    pinned: root.is-pinned(app.id);
+                    clicked => { root.launch(app.id); }
+                    pin => {
+                        if root.is-pinned(app.id) {
+                            Store.list-remove("dock-pinned", app.id);
+                        } else {
+                            Store.list-add("dock-pinned", app.id);
+                        }
                     }
                 }
             }
