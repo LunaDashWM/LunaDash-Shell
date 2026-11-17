@@ -16,16 +16,25 @@ component Tab inherits Rectangle {
     in property <string> label;
     in property <bool> selected;
     callback clicked();
-    height: 44px;
+    // An M3 primary tab: the selected one in the primary colour over a rounded indicator.
+    height: 48px;
     border-radius: Style.radius-medium;
-    background: root.selected ? Style.elevated : touch.has-hover ? Style.hover.with-alpha(0.5) : transparent;
-    border-width: root.selected ? 1px : 0;
-    border-color: Style.border;
+    background: touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
+    animate background { duration: Style.motion-fast; }
     HorizontalLayout {
         alignment: center;
         spacing: 8px;
         Icon { name: root.icon; width: 18px; height: 18px; y: (parent.height - self.height) / 2; color: root.selected ? Style.accent : Style.muted; }
-        Text { text: root.label; color: root.selected ? Style.text : Style.muted; vertical-alignment: center; font-weight: root.selected ? 600 : 400; }
+        Text { text: root.label; color: root.selected ? Style.accent : Style.muted; vertical-alignment: center; font-weight: 500; }
+    }
+    Rectangle {
+        y: parent.height - self.height;
+        width: root.selected ? min(parent.width - 24px, 64px) : 0px;
+        height: 3px;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        background: Style.accent;
+        animate width { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     }
     touch := TouchArea { clicked => { root.clicked(); } }
 }
@@ -392,8 +401,10 @@ component NotificationsTab inherits VerticalLayout {
 export component Dashboard inherits Overlay {
     name: "dashboard";
     namespace: "lunadash-dashboard";
+    // Drops out of the top of the screen frame.
+    edge: "top";
     content-width: 1060px;
-    content-height: 640px;
+    content-height: 620px;
 
     VerticalLayout {
         padding: Style.spacing-lg;
@@ -414,7 +425,6 @@ export component Dashboard inherits Overlay {
             }
             IconButton { icon: "close"; size: 36px; y: (parent.height - self.height) / 2; clicked => { UI.close-all(); } }
         }
-        Rectangle { height: 1px; background: Style.hairline; }
         HorizontalLayout {
             vertical-stretch: 1;
             spacing: Style.spacing-lg;

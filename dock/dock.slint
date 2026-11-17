@@ -1,11 +1,12 @@
 // The dock: pinned applications and running windows, grouped per application.
 // Click to open or focus (again to cycle windows), right-click to pin or unpin.
 
-import { PanelWindow, Apps, AppWindows, Workspaces, Store } from "@slintlu";
+import { PanelWindow, ExclusiveMode, Apps, AppWindows, Workspaces, Store } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Icon } from "../components/icon.slint";
+import { Drawer } from "../components/shape.slint";
 
 component DockItem inherits Rectangle {
     in property <length> size: 52px;
@@ -17,9 +18,10 @@ component DockItem inherits Rectangle {
     callback right-clicked();
     width: root.size;
     height: root.size;
-    border-radius: Style.radius-medium;
-    background: root.focused ? Style.accent-soft : touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
+    border-radius: touch.has-hover || root.focused ? Style.radius-large * 0.6 : self.width / 2;
+    background: root.focused ? Style.tonal : touch.has-hover ? Style.hover : transparent;
     animate background { duration: Style.motion-fast; }
+    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     Image {
         source: root.icon;
         width: root.size * (touch.pressed ? 0.65 : touch.has-hover ? 0.8 : 0.73);
@@ -52,16 +54,19 @@ component DockItem inherits Rectangle {
     }
 }
 
+// A drawer on the bottom edge of the screen frame (which keeps windows clear of it).
 export component Dock inherits PanelWindow {
     namespace: "lunadash-dock";
     anchor-bottom: true;
-    // Above a panel at the bottom edge.
-    margin-bottom: Prefs.panel-bottom ? Style.panel-height + 12px : 8px;
-    shown: Prefs.dock;
+    // On the frame; the frame's bottom reserve keeps windows clear of it.
+    exclusive-mode: ExclusiveMode.ignore;
+    margin-bottom: Style.frame-width;
+    // The launcher rises from the same edge and takes its place.
+    shown: Prefs.dock && UI.overlay != "launcher";
     default-font-family: Style.font;
 
-    property <length> item-size: Prefs.dock-size == "small" ? 40px : Prefs.dock-size == "large" ? 64px : 52px;
-    property <length> full-height: root.item-size + 16px;
+    property <length> item-size: Style.dock-item;
+    property <length> full-height: Style.dock-height;
     // Auto-hide keeps a thin strip at the edge; reaching it brings the dock back.
     property <bool> hovered;
     property <bool> revealed: !Prefs.dock-autohide || root.hovered || UI.overlay == "launcher";
@@ -146,7 +151,7 @@ export component Dock inherits PanelWindow {
     }
 
     preferred-height: root.revealed ? root.full-height : 6px;
-    preferred-width: row.preferred-width;
+    preferred-width: row.preferred-width + 2 * Style.frame-radius;
 
     hover := TouchArea {
         changed has-hover => {
@@ -154,30 +159,27 @@ export component Dock inherits PanelWindow {
                 root.hovered = true;
             }
         }
-        Rectangle {
+        Drawer {
+            edge: "bottom";
             y: root.revealed ? 0px : root.full-height;
-            height: root.full-height;
-            animate y { duration: Style.motion; easing: ease-out; }
-            border-radius: Style.radius-large;
-            drop-shadow-blur: 18px;
-            drop-shadow-color: Style.shadow;
-            drop-shadow-offset-y: 4px;
-            background: Style.glass;
-            border-width: 1px;
-            border-color: Style.hairline;
+            body-width: row.preferred-width;
+            body-height: root.full-height;
+            animate y { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
             row := HorizontalLayout {
                 padding: 8px;
                 spacing: 4px;
                 if Prefs.dock-launcher: Rectangle {
                     width: root.item-size;
                     height: root.item-size;
-                    border-radius: Style.radius-medium;
-                    background: UI.overlay == "launcher" ? Style.accent : launcher-touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
+                    border-radius: UI.overlay == "launcher" || launcher-touch.has-hover ? Style.radius-large * 0.6 : self.width / 2;
+                    background: UI.overlay == "launcher" ? Style.accent : launcher-touch.has-hover ? Style.hover : Style.surface;
+                    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
                     Icon { name: "apps"; width: root.item-size * 0.46; height: self.width; color: UI.overlay == "launcher" ? Style.accent-ink : Style.text; }
                     launcher-touch := TouchArea { clicked => { UI.toggle-overlay("launcher"); } }
                 }
                 if Prefs.dock-launcher && root.items.length > 0: Rectangle {
                     width: 1px;
+                    height: root.item-size * 0.5;
                     background: Style.hairline;
                 }
                 for item in root.items: DockItem {

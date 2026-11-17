@@ -1,4 +1,5 @@
-// Notification pop-ups in a corner (or top centre) of the screen.
+// Notification pop-ups in a drawer tucked into a corner of the screen frame (or dropping out
+// of its top edge).
 
 import { PanelWindow, Layer, ExclusiveMode, Notifications } from "@slintlu";
 import { Style } from "../style/style.slint";
@@ -6,23 +7,44 @@ import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Icon } from "../components/icon.slint";
 import { IconButton, TextButton } from "../components/controls.slint";
+import { Drawer, CornerDrawer } from "../components/shape.slint";
 
 export component Toasts inherits PanelWindow {
     namespace: "lunadash-notifications";
     layer: Layer.overlay;
-    exclusive-mode: ExclusiveMode.normal;
-    anchor-top: Prefs.toast-position != "bottom-right";
-    anchor-bottom: Prefs.toast-position == "bottom-right";
-    anchor-right: Prefs.toast-position != "top-center";
-    margin-top: 8px;
-    margin-bottom: Prefs.dock ? 96px : 12px;
-    margin-right: 10px;
+    exclusive-mode: ExclusiveMode.ignore;
+    property <bool> centered: Prefs.toast-position == "top-center";
+    property <bool> at-bottom: Prefs.toast-position == "bottom-right";
+    anchor-top: !root.at-bottom;
+    anchor-bottom: root.at-bottom;
+    anchor-right: !root.centered;
+    margin-top: Style.inner-top;
+    margin-bottom: Style.frame-width + Style.dock-reserve;
+    margin-right: Style.frame-width;
     shown: Prefs.toasts && Notifications.popups.length > 0 && UI.on-active-screen && UI.overlay == "";
-    preferred-width: 380px;
-    preferred-height: column.preferred-height;
+    property <length> body-width: 400px;
+    property <length> body-height: column.preferred-height;
+    preferred-width: root.body-width + (root.centered ? 2 : 1) * Style.frame-radius;
+    preferred-height: root.body-height + (root.centered ? 0 : 1) * Style.frame-radius;
     default-font-family: Style.font;
 
+    if root.centered: Drawer {
+        edge: "top";
+        body-width: root.body-width;
+        body-height: root.body-height;
+    }
+    if !root.centered: CornerDrawer {
+        corner: root.at-bottom ? "br" : "tr";
+        body-width: root.body-width;
+        body-height: root.body-height;
+    }
+
     column := VerticalLayout {
+        x: Style.frame-radius;
+        y: root.at-bottom ? Style.frame-radius : 0px;
+        width: root.body-width;
+        height: root.body-height;
+        padding: Style.spacing-md;
         spacing: Style.spacing-sm;
         for n in Notifications.popups: Rectangle {
             // A toast joining a visible stack fades in (the first one arrives with the surface).
@@ -31,10 +53,8 @@ export component Toasts inherits PanelWindow {
             init => { self.appear = 1; }
             animate appear { duration: Style.motion; easing: ease-out; }
             height: row.preferred-height;
-            border-radius: Style.radius-medium;
-            background: Style.glass-strong;
-            border-width: 1px;
-            border-color: n.urgency == "critical" ? Style.danger : Style.hairline;
+            border-radius: Style.radius-large * 0.6;
+            background: n.urgency == "critical" ? Style.danger-container : Style.surface;
             touch := TouchArea {
                 clicked => {
                     Notifications.invoke(n.id, "default");
@@ -45,11 +65,11 @@ export component Toasts inherits PanelWindow {
                 padding: Style.spacing-md;
                 spacing: Style.spacing-md;
                 Rectangle {
-                    width: 40px;
-                    height: 40px;
-                    border-radius: Style.radius-small;
+                    width: 42px;
+                    height: 42px;
+                    border-radius: 21px;
                     clip: true;
-                    background: Style.elevated;
+                    background: Style.tonal;
                     Image {
                         width: n.image.width > 0 ? parent.width : 26px;
                         height: n.image.width > 0 ? parent.height : 26px;

@@ -1,18 +1,20 @@
-// On-screen display for volume and brightness changes.
+// On-screen display for volume and brightness changes: a vertical slider that slides out of
+// the right edge of the screen frame.
 
 import { PanelWindow, Layer, ExclusiveMode, Audio, Brightness } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
 import { Icon } from "../components/icon.slint";
+import { Drawer } from "../components/shape.slint";
 
 export component Osd inherits PanelWindow {
     namespace: "lunadash-osd";
     layer: Layer.overlay;
     exclusive-mode: ExclusiveMode.ignore;
-    anchor-bottom: true;
-    margin-bottom: 110px;
-    preferred-width: 300px;
-    preferred-height: 56px;
+    anchor-right: true;
+    margin-right: Style.frame-width;
+    preferred-width: 58px;
+    preferred-height: 220px + 2 * Style.frame-radius;
     shown: root.visible-now && UI.on-active-screen;
     default-font-family: Style.font;
 
@@ -23,6 +25,10 @@ export component Osd inherits PanelWindow {
     property <float> volume: Audio.output.volume;
     property <bool> muted: Audio.output.muted;
     property <float> brightness: Brightness.level;
+
+    property <float> entrance: 0;
+    animate entrance { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
+    changed shown => { root.entrance = self.shown ? 1 : 0; }
 
     function show(kind: string) {
         if !root.armed { return; }
@@ -39,41 +45,43 @@ export component Osd inherits PanelWindow {
     hide-timer := Timer { interval: 1500ms; running: false; triggered => { root.visible-now = false; self.running = false; } }
 
     property <float> value: root.kind == "volume" ? (root.muted ? 0 : root.volume) : root.brightness;
-    Rectangle {
-        border-radius: 28px;
-        background: Style.glass-strong;
-        border-width: 1px;
-        border-color: Style.hairline;
-        HorizontalLayout {
-            padding-left: 20px;
-            padding-right: 20px;
-            spacing: 14px;
-            Icon {
-                name: root.kind == "brightness" ? "brightness" : root.muted ? "volume-mute" : root.volume < 0.4 ? "volume-low" : "volume";
-                width: 22px;
-                height: 22px;
-                y: (parent.height - self.height) / 2;
-                color: Style.text;
-            }
-            Rectangle {
-                height: 8px;
-                y: (parent.height - self.height) / 2;
-                border-radius: 4px;
+    Drawer {
+        edge: "right";
+        x: (1 - root.entrance) * (self.width + 2px);
+        body-width: root.width;
+        body-height: root.height - 2 * Style.frame-radius;
+        VerticalLayout {
+            padding: 12px;
+            padding-top: 14px;
+            spacing: 10px;
+            // A thick M3 track that fills from the bottom.
+            track := Rectangle {
+                vertical-stretch: 1;
+                width: 34px;
+                border-radius: 17px;
                 background: Style.elevated;
+                clip: true;
                 Rectangle {
-                    x: 0;
-                    width: parent.width * clamp(root.value, 0, 1);
-                    border-radius: 4px;
+                    y: parent.height - self.height;
+                    height: max(parent.width, parent.height * clamp(root.value, 0, 1));
+                    border-radius: 17px;
                     background: root.value > 1 ? Style.warning : Style.accent;
-                    animate width { duration: Style.motion-fast; }
+                    animate height { duration: Style.motion-fast; }
+                }
+                Icon {
+                    y: parent.height - self.height - 9px;
+                    name: root.kind == "brightness" ? "brightness" : root.muted ? "volume-mute" : root.volume < 0.4 ? "volume-low" : "volume";
+                    width: 16px;
+                    height: 16px;
+                    color: root.value > 0.05 ? Style.accent-ink : Style.text;
                 }
             }
             Text {
-                width: 42px;
-                text: Math.round(root.value * 100) + "%";
+                text: Math.round(root.value * 100);
                 color: Style.text;
-                horizontal-alignment: right;
-                vertical-alignment: center;
+                font-size: Style.font-small;
+                font-weight: 500;
+                horizontal-alignment: center;
             }
         }
     }

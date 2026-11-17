@@ -1,31 +1,47 @@
-// Base for the panel's popups, and the transparent layer that closes them on outside clicks.
+// Base for the bar's popouts, and the transparent layer that closes them on outside clicks.
 
 import { PanelWindow, Layer, KeyboardMode, ExclusiveMode } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
-import { Prefs } from "../state/prefs.slint";
-import { Surface } from "../components/controls.slint";
+import { Drawer } from "../components/shape.slint";
 
-// A popup next to the panel (under it, or above it when the panel is at the bottom). Set `name` to the UI.popup value that opens it.
+// A popout that slides out of the bar beside the item that opened it (see UI.toggle-popup-at)
+// and stays joined to it. Set `name` to the UI.popup value that opens it and `preferred-width`
+// to its width.
 export component PanelPopup inherits PanelWindow {
     in property <string> name;
-    in property <bool> left-side;
     layer: Layer.overlay;
     keyboard-mode: KeyboardMode.on-demand;
     exclusive-mode: ExclusiveMode.ignore;
-    // The compositor blurs what is behind the popup card (ext-background-effect-v1).
-    background-blur: true;
-    anchor-top: !Prefs.panel-bottom;
-    anchor-bottom: Prefs.panel-bottom;
-    anchor-right: !root.left-side;
-    anchor-left: root.left-side;
-    margin-top: Style.panel-height + 10px;
-    margin-bottom: Style.panel-height + 10px;
-    margin-right: 8px;
-    margin-left: 8px;
+    // A band along the bar (a row under a top bar, a column beside a side bar); only the
+    // drawer in it is painted.
+    anchor-top: true;
+    anchor-left: true;
+    anchor-right: Style.bar-top;
+    anchor-bottom: true;
+    margin-top: Style.bar-top ? Style.bar-width : 0px;
+    margin-left: Style.bar-top ? 0px : Style.bar-width;
     shown: UI.popup == root.name && UI.on-active-screen;
     default-font-family: Style.font;
 
+    // Set by each popout; the band is as wide as the screen under a top bar.
+    property <length> body-width: root.preferred-width;
+    property <float> entrance: 0;
+    animate entrance { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
+    changed shown => { root.entrance = self.shown ? 1 : 0; }
+    init => { root.entrance = self.shown ? 1 : 0; }
+
+    property <length> body-height: min(content.preferred-height,
+        root.height - Style.frame-width - (Style.bar-top ? 0px : Style.frame-width + 4 * Style.frame-radius));
+    // Centred on the item, kept inside the frame with its ears clear of the frame's rounded
+    // corners (overlapping a translucent corner would darken it).
+    property <length> body-x: clamp(UI.popup-pos * 1px - root.body-width / 2, Style.frame-width + 2 * Style.frame-radius,
+        root.width - Style.frame-width - 2 * Style.frame-radius - root.body-width);
+    property <length> body-y: clamp(UI.popup-pos * 1px - root.body-height / 2, Style.frame-width + 2 * Style.frame-radius,
+        root.height - Style.frame-width - 2 * Style.frame-radius - root.body-height);
+
+    // The empty rest of the band closes the popout like the dismisser beside it.
+    TouchArea { clicked => { UI.close-all(); } }
     FocusScope {
         key-pressed(event) => {
             if event.text == Key.Escape {
@@ -34,9 +50,17 @@ export component PanelPopup inherits PanelWindow {
             }
             reject
         }
-        Surface {
-            VerticalLayout {
-                padding: Style.spacing-lg;
+        Drawer {
+            edge: Style.bar-top ? "top" : "left";
+            x: Style.bar-top ? root.body-x - Style.frame-radius : -(1 - root.entrance) * (self.width + 2px);
+            y: Style.bar-top ? -(1 - root.entrance) * (self.height + 2px) : root.body-y - Style.frame-radius;
+            body-width: root.body-width;
+            body-height: root.body-height;
+            TouchArea { }
+            content := VerticalLayout {
+                padding: Style.spacing-xl;
+                padding-top: Style.bar-top ? Style.spacing-lg : Style.spacing-xl;
+                padding-left: Style.bar-top ? Style.spacing-xl : Style.spacing-lg;
                 spacing: Style.spacing-md;
                 @children
             }
@@ -44,7 +68,7 @@ export component PanelPopup inherits PanelWindow {
     }
 }
 
-// Covers the screen beside the panel while a popup is open; a click closes the popup.
+// Covers the screen beside the bar while a popout is open; a click closes the popout.
 export component PopupDismisser inherits PanelWindow {
     namespace: "lunadash-dismiss";
     layer: Layer.top;
@@ -53,8 +77,8 @@ export component PopupDismisser inherits PanelWindow {
     anchor-bottom: true;
     anchor-left: true;
     anchor-right: true;
-    margin-top: Prefs.panel-bottom ? 0px : Style.panel-height + 8px;
-    margin-bottom: Prefs.panel-bottom ? Style.panel-height + 8px : 0px;
+    margin-top: Style.bar-top ? Style.bar-width : 0px;
+    margin-left: Style.bar-top ? 0px : Style.bar-width;
     shown: UI.popup != "" && UI.on-active-screen;
     TouchArea { clicked => { UI.close-all(); } }
 }

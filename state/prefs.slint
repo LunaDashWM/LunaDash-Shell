@@ -13,21 +13,28 @@ export global Prefs {
     out property <string> wallpaper-fit: Store.get-string("wallpaper-fit", "cover", Store.revision);
     // Darkens the wallpaper, 0–60 %.
     out property <int> wallpaper-dim: Store.get-number("wallpaper-dim", 0, Store.revision);
+    // How a new wallpaper replaces the old one: "random", "fade", "wipe", "disc", "zoom" or "none".
+    out property <string> wallpaper-transition: Store.get-string("wallpaper-transition", "random", Store.revision);
 
-    // Panel
-    // "top" or "bottom".
-    out property <string> panel-position: Store.get-string("panel-position", "top", Store.revision);
-    out property <bool> panel-bottom: root.panel-position == "bottom";
+    // Bar and screen frame
+    // "top" or "left".
+    out property <string> bar-position: Store.get-string("bar-position", "top", Store.revision);
+    // A frame in the bar's colour around the whole screen, out of which the panels open.
+    out property <bool> screen-frame: Store.get-bool("screen-frame", true, Store.revision);
+    // Opacity of the bar, the frame and the drawers that open out of them, 30–100 %.
+    out property <int> bar-opacity: Store.get-number("bar-opacity", 80, Store.revision);
     // "dots" or "numbers".
-    out property <string> workspace-style: Store.get-string("workspace-style", "dots", Store.revision);
+    out property <string> workspace-style: Store.get-string("workspace-style", "numbers", Store.revision);
     out property <bool> window-title: Store.get-bool("window-title", true, Store.revision);
+    // Every window's icon after the workspaces, like a waybar taskbar.
+    out property <bool> taskbar: Store.get-bool("taskbar", true, Store.revision);
     out property <bool> clock-date: Store.get-bool("clock-date", true, Store.revision);
     out property <bool> clock-24h: Store.get-bool("clock-24h", true, Store.revision);
     out property <bool> clock-seconds: Store.get-bool("clock-seconds", false, Store.revision);
     out property <bool> week-starts-monday: Store.get-bool("week-starts-monday", false, Store.revision);
 
     // Dock
-    out property <bool> dock: Store.get-bool("dock", true, Store.revision);
+    out property <bool> dock: Store.get-bool("dock", false, Store.revision);
     out property <[string]> pinned: Store.get-list("dock-pinned", Store.revision);
     out property <bool> dock-autohide: Store.get-bool("dock-autohide", false, Store.revision);
     // "small", "medium" or "large".

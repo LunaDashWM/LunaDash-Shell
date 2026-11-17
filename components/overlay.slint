@@ -1,38 +1,48 @@
-// Full-screen overlays (dashboard, launcher, settings …): a dimmed backdrop that closes on
-// click, with the content centred.
+// Full-screen overlays (dashboard, launcher, settings …). With an `edge`, the content is a
+// drawer that slides out of the screen frame on that side and stays joined to it; without one
+// ("center") it is a floating card over a dimmed backdrop. A click beside it closes it.
 
 import { PanelWindow, Layer, KeyboardMode, ExclusiveMode } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
-import { Prefs } from "../state/prefs.slint";
-import { Surface } from "controls.slint";
+import { Drawer } from "shape.slint";
 
 export component Overlay inherits PanelWindow {
     // The UI.overlay value that opens it.
     in property <string> name;
     in property <length> content-width: 900px;
     in property <length> content-height: 600px;
-    in property <bool> dim: true;
+    // "center", or the frame edge the drawer grows out of: "top", "bottom", "left" or "right".
+    in property <string> edge: "center";
+    in property <bool> dim: root.edge == "center";
     callback escape();
     layer: Layer.overlay;
     keyboard-mode: KeyboardMode.exclusive;
     exclusive-mode: ExclusiveMode.ignore;
-    // The compositor blurs the screen behind the overlay (ext-background-effect-v1).
-    background-blur: true;
+    // The compositor blurs the screen behind a dimmed overlay (ext-background-effect-v1).
+    background-blur: root.dim;
     anchor-top: true;
     anchor-bottom: true;
     anchor-left: true;
     anchor-right: true;
     shown: UI.overlay == root.name && UI.on-active-screen;
-    // 0 → 1 when the overlay opens: the content rises and fades in over the backdrop, which the
-    // compositor fades in with the surface.
+    // 0 → 1 when the overlay opens.
     property <float> entrance: 0;
-    animate entrance { duration: Style.motion; easing: ease-out; }
+    animate entrance { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
     default-font-family: Style.font;
     escape => { UI.close-all(); }
 
+    // The desktop area inside the bar and the frame.
+    property <length> inner-x: Style.inner-left;
+    property <length> inner-y: Style.inner-top;
+    property <length> inner-width: root.width - Style.inner-left - Style.frame-width;
+    property <length> inner-height: root.height - Style.inner-top - Style.frame-width;
+    property <bool> horizontal: root.edge == "top" || root.edge == "bottom";
+    property <length> body-width: min(root.content-width, root.inner-width - (root.edge == "center" ? 40px : root.horizontal ? 2 * Style.frame-radius : 0px));
+    property <length> body-height: min(root.content-height, root.inner-height - (root.edge == "center" ? 40px : root.horizontal ? 0px : 2 * Style.frame-radius));
+
     Rectangle {
-        background: root.dim ? Style.scrim : transparent;
+        background: root.dim ? Style.scrim.with-alpha(0.32 * root.entrance) : transparent;
         TouchArea { clicked => { UI.close-all(); } }
     }
     scope := FocusScope {
@@ -43,19 +53,30 @@ export component Overlay inherits PanelWindow {
             }
             reject
         }
-        Surface {
-            x: (parent.width - self.width) / 2;
-            // Centred, clear of the panel whichever edge it is on.
-            y: (Prefs.panel-bottom
-                    ? min(parent.height - Style.panel-height - 20px - self.height, (parent.height - self.height) / 2)
-                    : max(Style.panel-height + 20px, (parent.height - self.height) / 2))
-                + (1 - root.entrance) * 18px;
-            opacity: 0.4 + 0.6 * root.entrance;
-            width: min(root.content-width, parent.width - 40px);
-            height: min(root.content-height, parent.height - Style.panel-height - 40px);
-            // Swallow clicks so they do not reach the backdrop.
-            TouchArea { }
-            @children
+        // Edge drawers slide out from under the frame: everything outside the desktop area is
+        // clipped away. A centred card rises and fades in instead.
+        Rectangle {
+            x: root.inner-x;
+            y: root.inner-y;
+            width: root.inner-width;
+            height: root.inner-height;
+            clip: root.edge != "center";
+            Drawer {
+                edge: root.edge;
+                color: root.edge == "center" ? Style.glass-strong : Style.frame;
+                body-width: root.body-width;
+                body-height: root.body-height;
+                opacity: root.edge == "center" ? root.entrance : 1;
+                x: root.edge == "left" ? -(1 - root.entrance) * (self.width + 2px)
+                    : root.edge == "right" ? parent.width - self.width + (1 - root.entrance) * (self.width + 2px)
+                    : (parent.width - self.width) / 2;
+                y: root.edge == "top" ? -(1 - root.entrance) * (self.height + 2px)
+                    : root.edge == "bottom" ? parent.height - self.height + (1 - root.entrance) * (self.height + 2px)
+                    : (parent.height - self.height) / 2 + (root.edge == "center" ? (1 - root.entrance) * 24px : 0px);
+                // Swallow clicks so they do not reach the backdrop.
+                TouchArea { }
+                @children
+            }
         }
     }
     changed shown => {

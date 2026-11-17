@@ -1,0 +1,167 @@
+// The screen frame: thin strips along the edges in the bar's colour, and rounded inner
+// corners, so the desktop sits inside one continuous border that the bar is part of. Drawers
+// (dashboard, launcher, power menu …) open out of it.
+//
+// Every visible piece ignores exclusive zones and is placed from the screen edges: compositors
+// arrange surfaces that reserve space one after another, each inside what the earlier ones
+// left, so reserving pieces would shift each other around. The space is reserved instead by
+// invisible one-pixel surfaces on the background layer, one per edge.
+
+import { PanelWindow, Layer, ExclusiveMode } from "@slintlu";
+import { Style } from "../style/style.slint";
+import { UI } from "../state/ui.slint";
+import { Prefs } from "../state/prefs.slint";
+import { ConcaveCorner } from "../components/shape.slint";
+
+// Keeps windows clear of one edge by `zone`.
+component Reserve inherits PanelWindow {
+    in property <length> zone;
+    namespace: "lunadash-reserve";
+    layer: Layer.background;
+    exclusive-mode: ExclusiveMode.fixed;
+    exclusive-zone: root.zone;
+    shown: root.zone > 0;
+    preferred-width: 1px;
+    preferred-height: 1px;
+}
+
+export component ReserveTop inherits Reserve {
+    anchor-top: true;
+    anchor-left: true;
+    anchor-right: true;
+    zone: Style.inner-top;
+}
+
+export component ReserveLeft inherits Reserve {
+    anchor-left: true;
+    anchor-top: true;
+    anchor-bottom: true;
+    zone: Style.inner-left;
+}
+
+export component ReserveRight inherits Reserve {
+    anchor-right: true;
+    anchor-top: true;
+    anchor-bottom: true;
+    zone: Style.frame-width;
+}
+
+export component ReserveBottom inherits Reserve {
+    anchor-bottom: true;
+    anchor-left: true;
+    anchor-right: true;
+    // The dock sits on the bottom edge of the frame: keep windows clear of it too.
+    zone: Style.frame-width + Style.dock-reserve;
+}
+
+component FrameStrip inherits PanelWindow {
+    namespace: "lunadash-frame";
+    layer: Layer.top;
+    exclusive-mode: ExclusiveMode.ignore;
+    shown: Style.framed;
+    Rectangle { background: Style.frame; }
+}
+
+// The strips never overlap each other or the bar (a translucent frame would darken where
+// they did): the top and bottom strips run from the bar to the right edge, the side strips
+// between them.
+
+// Along the top when the bar is on the left.
+export component FrameTop inherits FrameStrip {
+    anchor-top: true;
+    anchor-left: true;
+    anchor-right: true;
+    margin-left: Style.inner-left;
+    preferred-height: Style.frame-width;
+    shown: Style.framed && !Style.bar-top;
+
+    // Resting the pointer on the middle of the top edge opens the dashboard, which drops out
+    // of it.
+    hot := TouchArea {
+        x: (parent.width - self.width) / 2;
+        width: min(parent.width, 520px);
+    }
+    Timer {
+        interval: 250ms;
+        running: hot.has-hover && UI.overlay == "";
+        triggered => {
+            self.running = false;
+            UI.open-overlay("dashboard");
+        }
+    }
+}
+
+// Along the left when the bar is at the top.
+export component FrameLeft inherits FrameStrip {
+    anchor-left: true;
+    anchor-top: true;
+    anchor-bottom: true;
+    margin-top: Style.inner-top;
+    margin-bottom: Style.frame-width;
+    preferred-width: Style.frame-width;
+    shown: Style.framed && Style.bar-top;
+}
+
+export component FrameRight inherits FrameStrip {
+    anchor-right: true;
+    anchor-top: true;
+    anchor-bottom: true;
+    margin-top: Style.inner-top;
+    margin-bottom: Style.frame-width;
+    preferred-width: Style.frame-width;
+}
+
+export component FrameBottom inherits FrameStrip {
+    anchor-bottom: true;
+    anchor-left: true;
+    anchor-right: true;
+    margin-left: Style.bar-top ? 0px : Style.inner-left;
+    preferred-height: Style.frame-width;
+}
+
+// The rounded inner corners of the desktop area.
+component FrameCorner inherits PanelWindow {
+    in property <string> solid;
+    namespace: "lunadash-frame";
+    layer: Layer.top;
+    exclusive-mode: ExclusiveMode.ignore;
+    shown: Style.framed;
+    preferred-width: Style.frame-radius;
+    preferred-height: Style.frame-radius;
+    ConcaveCorner { solid: root.solid; }
+}
+
+export component FrameCornerTopLeft inherits FrameCorner {
+    solid: "tl";
+    anchor-top: true;
+    anchor-left: true;
+    margin-top: Style.inner-top;
+    margin-left: Style.inner-left;
+}
+
+// Notification pop-ups in this corner cover it; under a translucent card it would show through.
+export component FrameCornerTopRight inherits FrameCorner {
+    solid: "tr";
+    shown: Style.framed && !(UI.toasts-showing && Prefs.toast-position == "top-right");
+    anchor-top: true;
+    anchor-right: true;
+    margin-top: Style.inner-top;
+    margin-right: Style.frame-width;
+}
+
+export component FrameCornerBottomLeft inherits FrameCorner {
+    solid: "bl";
+    anchor-bottom: true;
+    anchor-left: true;
+    margin-bottom: Style.frame-width;
+    margin-left: Style.inner-left;
+}
+
+export component FrameCornerBottomRight inherits FrameCorner {
+    solid: "br";
+    shown: Style.framed && !(UI.toasts-showing && Prefs.toast-position == "bottom-right");
+    anchor-bottom: true;
+    anchor-right: true;
+    margin-bottom: Style.frame-width;
+    margin-right: Style.frame-width;
+}

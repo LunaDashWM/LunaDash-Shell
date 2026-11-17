@@ -3,16 +3,11 @@
 import { Style } from "../style/style.slint";
 import { Icon } from "icon.slint";
 
-// A translucent capsule grouping panel items.
+// A flat surface-container capsule grouping bar items.
 export component Pill inherits Rectangle {
     height: Style.pill-height;
-    border-radius: min(self.height / 2, Style.radius);
-    background: @linear-gradient(180deg, Style.glass.brighter(0.06) 0%, Style.glass 100%);
-    border-width: 1px;
-    border-color: Style.hairline;
-    drop-shadow-blur: 12px;
-    drop-shadow-color: Style.shadow.with-alpha(0.25);
-    drop-shadow-offset-y: 2px;
+    border-radius: min(self.height / 2, self.width / 2);
+    background: Style.surface;
 }
 
 // A round button with an icon, optionally highlighted.
@@ -30,7 +25,7 @@ export component IconButton inherits Rectangle {
     width: root.size;
     height: root.size;
     border-radius: root.size / 2;
-    background: root.active ? Style.accent : touch.pressed ? Style.elevated : touch.has-hover ? Style.hover.with-alpha(0.7) : transparent;
+    background: root.active ? Style.accent : touch.pressed ? Style.pressed : touch.has-hover ? Style.hover : transparent;
     animate background { duration: Style.motion-fast; }
     Icon {
         name: root.icon;
@@ -61,14 +56,15 @@ export component TextButton inherits Rectangle {
     in property <bool> enabled: true;
     callback clicked();
 
-    height: 34px;
-    preferred-width: content.preferred-width + 28px;
-    border-radius: Style.radius-small;
+    height: 36px;
+    preferred-width: content.preferred-width + 32px;
+    // Pressed buttons square off a little, as in M3 Expressive.
+    border-radius: touch.pressed ? Style.radius-medium : self.height / 2;
     background: !root.enabled ? Style.surface.with-alpha(0.5)
-        : root.primary ? (touch.has-hover ? Style.accent.brighter(0.12) : Style.accent)
-        : root.danger ? (touch.has-hover ? Style.danger.with-alpha(0.32) : Style.danger.with-alpha(0.2))
-        : touch.has-hover ? Style.hover : Style.elevated;
-    animate background { duration: Style.motion-fast; }
+        : root.primary ? (touch.pressed ? Style.accent.mix(Style.accent-ink, 0.84) : touch.has-hover ? Style.accent.mix(Style.accent-ink, 0.92) : Style.accent)
+        : root.danger ? (touch.has-hover ? Style.danger-container.brighter(0.1) : Style.danger-container)
+        : touch.pressed ? Style.tonal.mix(Style.on-tonal, 0.84) : touch.has-hover ? Style.tonal.mix(Style.on-tonal, 0.92) : Style.tonal;
+    animate background, border-radius { duration: Style.motion-fast; }
     content := HorizontalLayout {
         alignment: center;
         spacing: 6px;
@@ -79,12 +75,13 @@ export component TextButton inherits Rectangle {
             width: 16px;
             height: 16px;
             y: (parent.height - self.height) / 2;
-            color: root.primary ? Style.accent-ink : Style.text;
+            color: root.primary ? Style.accent-ink : root.danger ? Style.danger : Style.on-tonal;
         }
         Text {
             text: root.text;
-            color: root.primary ? Style.accent-ink : root.danger ? Style.danger : Style.text;
+            color: root.primary ? Style.accent-ink : root.danger ? Style.danger : Style.on-tonal;
             font-size: Style.font-size;
+            font-weight: 500;
             vertical-alignment: center;
         }
     }
@@ -99,22 +96,23 @@ export component Switch inherits Rectangle {
     in property <bool> on;
     callback toggled();
 
-    width: 42px;
-    height: 24px;
+    width: 52px;
+    height: 32px;
     border-radius: self.height / 2;
     background: root.on ? Style.accent : Style.elevated;
-    border-width: root.on ? 0 : 1px;
-    border-color: Style.border;
+    border-width: root.on ? 0 : 2px;
+    border-color: Style.muted.with-alpha(0.7);
     animate background { duration: Style.motion-fast; }
+    // The handle grows when on (and while pressed), like M3's.
     Rectangle {
-        width: 18px;
-        height: 18px;
-        border-radius: 9px;
-        x: root.on ? parent.width - self.width - 3px : 3px;
+        width: touch.pressed ? 28px : root.on ? 24px : 16px;
+        height: self.width;
+        border-radius: self.width / 2;
+        x: root.on ? parent.width - self.width - (parent.height - self.height) / 2 : (parent.height - self.height) / 2;
         background: root.on ? Style.accent-ink : Style.muted;
-        animate x { duration: Style.motion-fast; easing: ease-out; }
+        animate x, width { duration: Style.motion-fast; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     }
-    TouchArea { clicked => { root.toggled(); } }
+    touch := TouchArea { clicked => { root.toggled(); } }
 }
 
 // A horizontal slider for values in 0..1 (or up to `maximum`).
@@ -136,25 +134,32 @@ export component Slider inherits Rectangle {
         }
         track := Rectangle {
             property <float> ratio: clamp(root.value / root.maximum, 0, 1);
+            property <length> handle-x: 2px + (self.width - 4px - 4px) * track.ratio;
+            // Active part, a gap around the handle, then the inactive part (M3 Expressive).
             Rectangle {
-                height: 8px;
-                border-radius: 4px;
-                background: Style.elevated;
-                Rectangle {
-                    x: 0;
-                    width: parent.width * track.ratio;
-                    border-radius: 4px;
-                    background: Style.accent;
-                }
+                x: 0;
+                width: max(0px, track.handle-x - 4px);
+                height: 16px;
+                border-radius: 8px;
+                border-top-right-radius: 2px;
+                border-bottom-right-radius: 2px;
+                background: Style.accent;
             }
             Rectangle {
-                width: 18px;
-                height: 18px;
-                border-radius: 9px;
-                x: (parent.width - self.width) * track.ratio;
+                x: track.handle-x + 8px;
+                width: max(0px, parent.width - self.x);
+                height: 16px;
+                border-radius: 8px;
+                border-top-left-radius: 2px;
+                border-bottom-left-radius: 2px;
+                background: Style.elevated;
+            }
+            Rectangle {
+                x: track.handle-x;
+                width: 4px;
+                height: 32px;
+                border-radius: 2px;
                 background: Style.accent;
-                border-width: 3px;
-                border-color: Style.base;
             }
             TouchArea {
                 pointer-event(event) => {
@@ -181,14 +186,17 @@ export component QuickToggle inherits Rectangle {
     callback clicked();
 
     height: 58px;
-    border-radius: Style.radius-medium;
-    background: root.on ? Style.accent : touch.has-hover ? Style.hover : Style.surface;
+    // Off tiles are rounded rectangles, on tiles become pills (M3 Expressive shape morph).
+    border-radius: root.on ? self.height / 2 : Style.radius-large * 0.6;
+    background: root.on ? (touch.has-hover ? Style.accent.mix(Style.accent-ink, 0.92) : Style.accent)
+        : touch.has-hover ? Style.hover : Style.elevated;
     opacity: root.enabled ? 1 : 0.5;
     animate background { duration: Style.motion-fast; }
+    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     HorizontalLayout {
-        padding-left: 14px;
-        padding-right: 12px;
-        spacing: 10px;
+        padding-left: 18px;
+        padding-right: 14px;
+        spacing: 12px;
         Icon {
             name: root.icon;
             width: 20px;
@@ -231,29 +239,17 @@ export component Reveal inherits Rectangle {
 
 // A rounded card on popups and the dashboard.
 export component Card inherits Rectangle {
-    border-radius: Style.radius-medium;
-    background: @linear-gradient(180deg, Style.surface.brighter(0.04) 0%, Style.surface 100%);
-    border-width: 1px;
-    border-color: Style.hairline;
+    border-radius: Style.radius-large * 0.6;
+    background: Style.surface;
 }
 
-// The frame of popups and overlays.
+// A free-floating panel (dialogs, settings): the frame's colour, fully rounded.
 export component Surface inherits Rectangle {
     border-radius: Style.radius;
-    background: @linear-gradient(180deg, Style.glass-strong.brighter(0.05) 0%, Style.glass-strong 40%);
-    border-width: 1px;
-    border-color: Style.border;
-    drop-shadow-blur: 32px;
+    background: Style.glass-strong;
+    drop-shadow-blur: 24px;
     drop-shadow-color: Style.shadow;
-    drop-shadow-offset-y: 10px;
-    // A thin light along the top edge.
-    Rectangle {
-        x: parent.border-radius;
-        y: 1px;
-        width: parent.width - 2 * parent.border-radius;
-        height: 1px;
-        background: Style.sheen;
-    }
+    drop-shadow-offset-y: 6px;
 }
 
 // A slider with a label and value that applies when released (or on scroll), so dragging does
@@ -279,27 +275,31 @@ export component RangeSlider inherits Rectangle {
         spacing: 12px;
         track := Rectangle {
             width: root.track-width;
+            property <length> handle-x: (self.width - 4px) * root.ratio;
             Rectangle {
-                height: 6px;
-                border-radius: 3px;
-                background: Style.elevated;
-                Rectangle {
-                    x: 0;
-                    width: parent.width * root.ratio;
-                    border-radius: 3px;
-                    background: Style.accent;
-                }
+                x: 0;
+                width: max(0px, track.handle-x - 4px);
+                height: 12px;
+                border-radius: 6px;
+                border-top-right-radius: 2px;
+                border-bottom-right-radius: 2px;
+                background: Style.accent;
             }
             Rectangle {
-                width: root.dragging || touch.has-hover ? 20px : 16px;
-                height: self.width;
-                border-radius: self.width / 2;
-                x: (parent.width - self.width) * root.ratio;
+                x: track.handle-x + 8px;
+                width: max(0px, parent.width - self.x);
+                height: 12px;
+                border-radius: 6px;
+                border-top-left-radius: 2px;
+                border-bottom-left-radius: 2px;
+                background: Style.elevated;
+            }
+            Rectangle {
+                x: track.handle-x;
+                width: root.dragging ? 2px : 4px;
+                height: 28px;
+                border-radius: 2px;
                 background: Style.accent;
-                border-width: 3px;
-                border-color: Style.base;
-                drop-shadow-blur: 6px;
-                drop-shadow-color: Style.shadow;
                 animate width { duration: Style.motion-fast; }
             }
             touch := TouchArea {
@@ -355,10 +355,10 @@ export component Swatches inherits HorizontalLayout {
 
 // A small heading inside popups and pages.
 export component SectionTitle inherits Text {
-    color: Style.muted;
+    color: Style.accent;
     font-size: Style.font-small;
-    font-weight: 600;
-    letter-spacing: 0.6px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
 }
 
 // A row with an icon, two lines of text and optional trailing content.
@@ -370,20 +370,11 @@ export component ListRow inherits Rectangle {
     in property <bool> selected;
     callback clicked();
 
-    height: 48px;
-    border-radius: Style.radius-small;
-    background: root.selected ? Style.accent-soft : touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
+    height: 52px;
+    border-radius: root.selected ? self.height / 2 : Style.radius-medium;
+    background: root.selected ? Style.tonal : touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
     animate background { duration: Style.motion-fast; }
-    // The selected row carries an accent bar on its leading edge.
-    Rectangle {
-        x: 2px;
-        y: (parent.height - self.height) / 2;
-        width: 3px;
-        height: root.selected ? parent.height * 0.5 : 0px;
-        border-radius: 2px;
-        background: Style.accent;
-        animate height { duration: Style.motion; easing: ease-out; }
-    }
+    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     HorizontalLayout {
         padding-left: 10px;
         padding-right: 10px;
@@ -393,7 +384,7 @@ export component ListRow inherits Rectangle {
             width: 20px;
             height: 20px;
             y: (parent.height - self.height) / 2;
-            color: root.selected ? Style.accent : Style.text;
+            color: root.selected ? Style.on-tonal : Style.text;
         }
         if root.icon == "": Image {
             source: root.image;

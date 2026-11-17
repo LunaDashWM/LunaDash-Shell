@@ -15,15 +15,18 @@ component Segmented inherits Rectangle {
     in property <[string]> labels;
     in property <int> selected;
     callback chosen(index: int);
-    height: 34px;
-    border-radius: 17px;
-    background: Style.elevated;
+    height: 36px;
+    // An M3 connected button group: outer ends round, inner joins nearly square, the
+    // selected button fully round.
     HorizontalLayout {
-        padding: 3px;
         spacing: 2px;
         for label[i] in root.labels: Rectangle {
-            border-radius: 14px;
-            background: i == root.selected ? Style.accent : touch.has-hover ? Style.hover : transparent;
+            border-radius: i == root.selected ? self.height / 2 : 6px;
+            border-top-left-radius: i == 0 || i == root.selected ? self.height / 2 : 6px;
+            border-bottom-left-radius: i == 0 || i == root.selected ? self.height / 2 : 6px;
+            border-top-right-radius: i == root.labels.length - 1 || i == root.selected ? self.height / 2 : 6px;
+            border-bottom-right-radius: i == root.labels.length - 1 || i == root.selected ? self.height / 2 : 6px;
+            background: i == root.selected ? Style.accent : touch.has-hover ? Style.hover : Style.elevated;
             animate background { duration: Style.motion-fast; }
             Text {
                 text: label;
@@ -279,6 +282,19 @@ component WallpaperPage inherits Page {
         }
         Divider { }
         Setting {
+            title: @tr("Transition");
+            description: @tr("How a new wallpaper replaces the old one.");
+            Segmented {
+                property <[string]> values: ["random", "fade", "wipe", "disc", "zoom", "none"];
+                labels: [@tr("Random"), @tr("Fade"), @tr("Wipe"), @tr("Disc"), @tr("Zoom"), @tr("Off")];
+                selected: Prefs.wallpaper-transition == "fade" ? 1 : Prefs.wallpaper-transition == "wipe" ? 2
+                    : Prefs.wallpaper-transition == "disc" ? 3 : Prefs.wallpaper-transition == "zoom" ? 4
+                    : Prefs.wallpaper-transition == "none" ? 5 : 0;
+                chosen(i) => { Store.set-string("wallpaper-transition", self.values[i]); }
+            }
+        }
+        Divider { }
+        Setting {
             title: @tr("Dim");
             description: @tr("Darkens the wallpaper so text and windows stand out.");
             RangeSlider { minimum: 0; maximum: 60; step: 5; unit: "%"; value: Prefs.wallpaper-dim; committed(v) => { Store.set-number("wallpaper-dim", v); } }
@@ -318,10 +334,22 @@ component PanelPage inherits Page {
         Setting {
             title: @tr("Position");
             Segmented {
-                labels: [@tr("Top"), @tr("Bottom")];
-                selected: Prefs.panel-bottom ? 1 : 0;
-                chosen(i) => { Store.set-string("panel-position", i == 1 ? "bottom" : "top"); }
+                labels: [@tr("Top"), @tr("Left")];
+                selected: Style.bar-top ? 0 : 1;
+                chosen(i) => { Store.set-string("bar-position", i == 1 ? "left" : "top"); }
             }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Bar opacity");
+            description: @tr("Also the screen frame and the panels that open out of it.");
+            RangeSlider { minimum: 30; maximum: 100; step: 5; unit: "%"; value: Prefs.bar-opacity; committed(v) => { Store.set-number("bar-opacity", v); } }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Screen frame");
+            description: @tr("A border around the screen that the bar and the panels open out of.");
+            Switch { on: Prefs.screen-frame; toggled => { Store.set-bool("screen-frame", !Prefs.screen-frame); } }
         }
         Divider { }
         Setting {
@@ -332,6 +360,8 @@ component PanelPage inherits Page {
                 chosen(i) => { Store.set-string("workspace-style", i == 1 ? "numbers" : "dots"); }
             }
         }
+        Divider { }
+        Setting { title: @tr("Taskbar"); description: @tr("Show every window's icon after the workspaces."); Switch { on: Prefs.taskbar; toggled => { Store.set-bool("taskbar", !Prefs.taskbar); } } }
         Divider { }
         Setting { title: @tr("Window title"); description: @tr("Show the focused window's title."); Switch { on: Prefs.window-title; toggled => { Store.set-bool("window-title", !Prefs.window-title); } } }
     }
@@ -622,9 +652,7 @@ export component Settings inherits Overlay {
     HorizontalLayout {
         Rectangle {
             width: 240px;
-            background: Style.surface.with-alpha(0.5);
-            border-top-left-radius: Style.radius;
-            border-bottom-left-radius: Style.radius;
+            background: transparent;
             VerticalLayout {
                 padding: Style.spacing-lg;
                 spacing: 2px;
@@ -637,7 +665,7 @@ export component Settings inherits Overlay {
                 }
                 for page in root.pages: ListRow {
                     visible: !page.lunadash || Compositor.has-commands;
-                    height: self.visible ? 42px : 0px;
+                    height: self.visible ? 44px : 0px;
                     icon: page.icon;
                     title: page.label;
                     selected: UI.settings-page == page.id;
@@ -645,7 +673,6 @@ export component Settings inherits Overlay {
                 }
             }
         }
-        Rectangle { width: 1px; background: Style.hairline; }
         Flickable {
             horizontal-stretch: 1;
             content-height: content.preferred-height;

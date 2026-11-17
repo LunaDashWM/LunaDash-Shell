@@ -1,7 +1,8 @@
 // Which popup or overlay is open, shared by every window through SlintLu's Shared global
 // (globals defined in Slint exist once per window, so they cannot carry this).
 
-import { Shared, Shell, Workspaces } from "@slintlu";
+import { Shared, Shell, Workspaces, Notifications } from "@slintlu";
+import { Prefs } from "prefs.slint";
 
 export global UI {
     // "calendar", "audio", "network", "clipboard", "tray" or "".
@@ -10,6 +11,9 @@ export global UI {
     out property <string> overlay: Shared.get-string("overlay", "", Shared.revision);
     out property <int> dashboard-tab: Shared.get-number("dashboard-tab", 0, Shared.revision);
     out property <string> settings-page: Shared.get-string("settings-page", "appearance", Shared.revision);
+    // Where along the bar (logical px from the screen's left or top edge) the item that opened
+    // the popup is, so the popout slides out beside it.
+    out property <float> popup-pos: Shared.get-number("popup-pos", 0, Shared.revision);
 
     // Popups and overlays appear on the focused screen (or the first one).
     out property <string> active-screen: Workspaces.focused-output != "" ? Workspaces.focused-output
@@ -21,6 +25,15 @@ export global UI {
     public function toggle-popup(name: string) {
         Shared.set-string("overlay", "");
         Shared.set-string("popup", root.popup == name ? "" : name);
+    }
+    // Notification pop-ups are on screen (they cover the frame's corner on their side).
+    out property <bool> toasts-showing: Prefs.toasts && Notifications.popups.length > 0 && root.on-active-screen && root.overlay == "";
+
+    public function toggle-popup-at(name: string, pos: length) {
+        if root.popup != name {
+            Shared.set-number("popup-pos", pos / 1px);
+        }
+        root.toggle-popup(name);
     }
     public function toggle-overlay(name: string) {
         Shared.set-string("popup", "");
