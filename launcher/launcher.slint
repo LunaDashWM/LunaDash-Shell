@@ -30,12 +30,14 @@ component AppTile inherits Rectangle {
             x: (parent.width - self.width) / 2;
             image-fit: contain;
         }
-        // Up to two lines, so longer names ("KDE Partition Manager") stay readable.
+        // Up to two lines, so longer names ("KDE Partition Manager") stay readable. CJK
+        // fallback fonts have taller lines than Latin ones: leave room for two of them, or
+        // the wrapped and elided name loses its first line.
         Text {
             text: root.name;
             color: Style.text;
             font-size: Style.font-size;
-            height: 2 * Style.font-size * 1.35;
+            height: 2 * Style.font-size * 1.6;
             horizontal-alignment: center;
             vertical-alignment: top;
             wrap: word-wrap;
@@ -140,7 +142,7 @@ export component Launcher inherits Overlay {
                 height: parent.height - 2 * Style.spacing-sm;
                 property <length> tile: self.width / root.columns;
                 // Tiles are a little taller than wide: room for a two-line name.
-                property <length> tile-height: self.tile * 1.1;
+                property <length> tile-height: self.tile * 1.15;
                 content-height: Math.ceil(root.results.length / root.columns) * self.tile-height * 1.0;
                 for app[i] in root.results: AppTile {
                     x: Math.mod(i, root.columns) * parent.tile;
