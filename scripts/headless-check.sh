@@ -80,6 +80,18 @@ for popup in calendar audio network clipboard ""; do
     msg call Shared.set-string popup "$popup"
     step "popup-${popup:-none}"
 done
+# The desktop menu, at the pointer position a right click would give, on the first screen.
+screen=$("$slintlu" msg get Shell.screen | sed -n 's/.*"name": "\(.*\)".*/\1/p' | head -n1)
+msg call Shared.set-string desktop-menu-screen "$screen"
+msg call Shared.set-number desktop-menu-x 400
+msg call Shared.set-number desktop-menu-y 300
+msg call Shared.set-string popup desktop-menu
+step desktop-menu
+msg call Shared.set-string popup ""
+msg call Shared.set-string settings-page menu
+msg call Shared.set-string overlay settings
+step settings-desktop-menu
+msg call Shared.set-string overlay ""
 msg call I18n.set-language zh_TW
 msg call Shared.set-string overlay settings
 step "settings-zh_TW"

@@ -1,0 +1,166 @@
+// The desktop's right-click menu: which entries it offers, in which order, and what they do.
+//
+// The user's arrangement is the Store list "desktop-menu": built-in entry ids, "separator", and
+// "command-<n>" for commands of their own, whose label and command line are stored under
+// "desktop-menu-label:<id>" and "desktop-menu-command:<id>". Until it is first edited (Settings
+// → Desktop menu) the menu shows `defaults`. Commands run through Shell.run, which starts the
+// program with its arguments and never hands the line to a shell.
+
+import { Store, Shared, Shell, Compositor, Session } from "@slintlu";
+import { UI } from "ui.slint";
+import { DefaultApps } from "apps.slint";
+
+export global DesktopMenu {
+    // Every built-in entry, in their default order.
+    out property <[string]> builtins: ["launcher", "terminal", "files", "wallpapers", "random-wallpaper",
+        "dashboard", "display", "settings", "lock", "power"];
+    out property <[string]> defaults: ["launcher", "terminal", "files", "separator", "wallpapers", "random-wallpaper",
+        "dashboard", "separator", "display", "settings", "separator", "lock", "power"];
+    out property <bool> edited: Store.get-bool("desktop-menu-edited", false, Store.revision);
+    out property <[string]> entries: root.edited ? Store.get-list("desktop-menu", Store.revision) : root.defaults;
+
+    // Where it was opened: the pointer position on the right-clicked screen (logical px).
+    // The menu window reads the screen ("desktop-menu-screen") from Shared itself.
+    out property <length> x: Shared.get-number("desktop-menu-x", 0, Shared.revision) * 1px;
+    out property <length> y: Shared.get-number("desktop-menu-y", 0, Shared.revision) * 1px;
+
+    public function open-at(screen: string, x: length, y: length) {
+        Shared.set-string("desktop-menu-screen", screen);
+        Shared.set-number("desktop-menu-x", x / 1px);
+        Shared.set-number("desktop-menu-y", y / 1px);
+        Shared.set-string("overlay", "");
+        Shared.set-string("popup", "desktop-menu");
+    }
+
+    public pure function is-command(id: string) -> bool {
+        id.starts-with("command-")
+    }
+    // The command line of one of the user's entries ("" for built-ins).
+    public pure function command(id: string) -> string {
+        root.is-command(id) ? Store.get-string("desktop-menu-command:" + id, "", Store.revision) : ""
+    }
+    public pure function command-label(id: string) -> string {
+        Store.get-string("desktop-menu-label:" + id, "", Store.revision)
+    }
+    public pure function label(id: string) -> string {
+        id == "launcher" ? @tr("Applications")
+            : id == "terminal" ? @tr("Terminal")
+            : id == "files" ? @tr("Files")
+            : id == "wallpapers" ? @tr("Change wallpaper…")
+            : id == "random-wallpaper" ? @tr("Random wallpaper")
+            : id == "dashboard" ? @tr("Dashboard")
+            : id == "display" ? @tr("Display settings")
+            : id == "settings" ? @tr("Settings")
+            : id == "lock" ? @tr("Lock screen")
+            : id == "power" ? @tr("Power…")
+            : id == "separator" ? @tr("Separator")
+            : root.command-label(id) != "" ? root.command-label(id) : root.command(id)
+    }
+    public pure function icon(id: string) -> string {
+        id == "launcher" ? "apps"
+            : id == "terminal" ? "terminal"
+            : id == "files" ? "folder"
+            : id == "wallpapers" ? "image"
+            : id == "random-wallpaper" ? "reboot"
+            : id == "dashboard" ? "dashboard"
+            : id == "display" ? "monitor"
+            : id == "settings" ? "settings"
+            : id == "lock" ? "lock"
+            : id == "power" ? "power"
+            : id == "separator" ? "minus"
+            : "enter"
+    }
+    // Entries that need the LunaDash compositor.
+    public pure function needs-lunadash(id: string) -> bool {
+        id == "random-wallpaper" || id == "display"
+    }
+    // Whether an entry can be shown here: separators, built-ins (some only on LunaDash) and
+    // commands that have a command line. Unknown ids (from a newer shell) are skipped.
+    public pure function available(id: string) -> bool {
+        id == "separator" ? true
+            : root.is-command(id) ? root.command(id) != ""
+            : root.label(id) != "" && (!root.needs-lunadash(id) || Compositor.has-commands)
+    }
+    // A built-in entry the user has taken out of the menu.
+    public pure function hidden(id: string) -> bool {
+        root.edited && !Store.list-contains("desktop-menu", id, Store.revision)
+    }
+    // Separators are only drawn between entries, and only one at a time.
+    public pure function shows-separator(index: int) -> bool {
+        index > 0 && index < root.entries.length - 1 && root.entries[index - 1] != "separator"
+    }
+
+    public function activate(id: string) {
+        UI.close-all();
+        if id == "launcher" {
+            UI.open-overlay("launcher");
+        } else if id == "terminal" {
+            DefaultApps.terminal();
+        } else if id == "files" {
+            DefaultApps.files();
+        } else if id == "wallpapers" {
+            UI.open-overlay(Compositor.has-commands ? "wallpapers" : "gallery");
+        } else if id == "random-wallpaper" {
+            Compositor.command("wallpaper-random", "");
+        } else if id == "dashboard" {
+            UI.open-dashboard(0);
+        } else if id == "display" {
+            UI.open-settings("display");
+        } else if id == "settings" {
+            UI.open-overlay("settings");
+        } else if id == "lock" {
+            Session.lock();
+        } else if id == "power" {
+            UI.open-overlay("power");
+        } else if root.command(id) != "" {
+            Shell.run(root.command(id));
+        }
+    }
+
+    // Editing (Settings → Desktop menu). The first change stores the default arrangement, so
+    // it applies to what the menu showed.
+    function begin-edit() {
+        if !root.edited {
+            Store.set-list("desktop-menu", root.defaults);
+            Store.set-bool("desktop-menu-edited", true);
+        }
+    }
+    public function move(index: int, offset: int) {
+        root.begin-edit();
+        Store.list-move("desktop-menu", index, index + offset);
+    }
+    public function remove(index: int) {
+        root.begin-edit();
+        if index >= 0 && index < root.entries.length {
+            let id = root.entries[index];
+            Store.list-remove-at("desktop-menu", index);
+            if root.is-command(id) {
+                Store.remove("desktop-menu-label:" + id);
+                Store.remove("desktop-menu-command:" + id);
+            }
+        }
+    }
+    // Puts a built-in entry or a separator back at the end.
+    public function add(id: string) {
+        root.begin-edit();
+        Store.list-insert("desktop-menu", -1, id);
+    }
+    public function add-command(label: string, command: string) {
+        root.begin-edit();
+        let id = "command-" + Store.get-number("desktop-menu-next", 1, Store.revision);
+        Store.set-number("desktop-menu-next", Store.get-number("desktop-menu-next", 1, Store.revision) + 1);
+        Store.set-string("desktop-menu-label:" + id, label);
+        Store.set-string("desktop-menu-command:" + id, command);
+        Store.list-insert("desktop-menu", -1, id);
+    }
+    public function update-command(id: string, label: string, command: string) {
+        Store.set-string("desktop-menu-label:" + id, label);
+        Store.set-string("desktop-menu-command:" + id, command);
+    }
+    // Back to the default entries. Commands of the user's are dropped from the menu (their
+    // stored lines stay behind, unused, and new ones get fresh ids).
+    public function reset() {
+        Store.remove("desktop-menu");
+        Store.remove("desktop-menu-edited");
+    }
+}

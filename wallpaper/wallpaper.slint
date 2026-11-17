@@ -1,10 +1,12 @@
-// The wallpaper, with an optional large clock in the corner.
+// The wallpaper, with an optional large clock in the corner. Right-clicking it opens the
+// desktop menu (desktop-menu.slint).
 
-import { PanelWindow, Layer, ExclusiveMode, Files, Compositor, Store, Shared, Clock } from "@slintlu";
+import { PanelWindow, Layer, ExclusiveMode, Files, Compositor, Store, Shared, Clock, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { Time } from "../state/time.slint";
 import { UI } from "../state/ui.slint";
+import { DesktopMenu } from "../state/desktop-menu.slint";
 
 export global Wallpapers {
     // The bundled default wallpaper.
@@ -223,6 +225,14 @@ export component Wallpaper inherits PanelWindow {
                 text: Clock.format-date(Clock.year, Clock.month, Clock.day, "%A");
                 color: #ffffffd8;
                 font-size: 28px * clock.size;
+            }
+        }
+    }
+    // Right-clicking the desktop opens its menu at the pointer.
+    TouchArea {
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                DesktopMenu.open-at(Shell.screen.name, self.mouse-x, self.mouse-y);
             }
         }
     }

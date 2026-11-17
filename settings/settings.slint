@@ -1,5 +1,5 @@
-// Settings: appearance, wallpaper, panel, dock, windows, display, notifications, power,
-// language and about. Pages group their settings in cards.
+// Settings: appearance, wallpaper, panel, dock, desktop menu, windows, display, notifications,
+// power, language and about. Pages group their settings in cards.
 
 import { Theme, Store, Idle, Session, Notifications, I18n, Shell, System, Compositor } from "@slintlu";
 import { Style } from "../style/style.slint";
@@ -7,9 +7,10 @@ import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
-import { Switch, SectionTitle, IconButton, TextButton, ListRow, Card, Reveal, RangeSlider, Swatches } from "../components/controls.slint";
+import { Switch, SectionTitle, IconButton, TextButton, TextField, ListRow, Card, Reveal, RangeSlider, Swatches } from "../components/controls.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
 import { Apply } from "../state/apply.slint";
+import { DesktopMenu } from "../state/desktop-menu.slint";
 
 component Segmented inherits Rectangle {
     in property <[string]> labels;
@@ -406,6 +407,183 @@ component DockPage inherits Page {
     }
 }
 
+// One entry of the desktop menu, with buttons to move it, edit it (commands of the user's) or
+// take it out.
+component MenuEntryRow inherits Rectangle {
+    in property <string> id;
+    in property <int> index;
+    in property <int> count;
+    callback edit();
+    callback removed();
+    property <bool> command: DesktopMenu.is-command(root.id);
+    property <bool> elsewhere: DesktopMenu.needs-lunadash(root.id) && !Compositor.has-commands;
+    min-height: 52px;
+    HorizontalLayout {
+        padding-top: 6px;
+        padding-bottom: 6px;
+        spacing: Style.spacing-md;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                name: DesktopMenu.icon(root.id);
+                width: 20px;
+                height: 20px;
+                color: root.id == "separator" ? Style.muted : Style.text;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: 2px;
+            Text {
+                text: DesktopMenu.label(root.id);
+                color: root.id == "separator" || root.elsewhere ? Style.muted : Style.text;
+                font-size: Style.font-size;
+                overflow: elide;
+            }
+            if root.command: Text { text: DesktopMenu.command(root.id); color: Style.muted; font-size: Style.font-small; overflow: elide; }
+            if root.elsewhere: Text { text: @tr("Only on LunaDash"); color: Style.muted; font-size: Style.font-small; overflow: elide; }
+        }
+        VerticalLayout {
+            alignment: center;
+            HorizontalLayout {
+                spacing: 2px;
+                IconButton {
+                    icon: "arrow-up";
+                    opacity: root.index > 0 ? 1 : 0.35;
+                    clicked => {
+                        if root.index > 0 { DesktopMenu.move(root.index, -1); }
+                    }
+                }
+                IconButton {
+                    icon: "arrow-down";
+                    opacity: root.index < root.count - 1 ? 1 : 0.35;
+                    clicked => {
+                        if root.index < root.count - 1 { DesktopMenu.move(root.index, 1); }
+                    }
+                }
+                if root.command: IconButton { icon: "edit"; clicked => { root.edit(); } }
+                IconButton {
+                    icon: root.command ? "trash" : "close";
+                    clicked => {
+                        root.removed();
+                        DesktopMenu.remove(root.index);
+                    }
+                }
+            }
+        }
+    }
+}
+
+component DesktopMenuPage inherits Page {
+    title: @tr("Desktop menu");
+    subtitle: @tr("What right-clicking the desktop offers, in this order.");
+    // The command being edited ("" while adding one) and the form's fields.
+    property <string> editing;
+    property <string> label-text;
+    property <string> command-text;
+    function clear-form() {
+        root.editing = "";
+        root.label-text = "";
+        root.command-text = "";
+    }
+    function submit() {
+        if root.command-text == "" {
+            return;
+        }
+        if root.editing != "" {
+            DesktopMenu.update-command(root.editing, root.label-text, root.command-text);
+        } else {
+            DesktopMenu.add-command(root.label-text, root.command-text);
+        }
+        root.clear-form();
+    }
+
+    Group {
+        title: @tr("ENTRIES");
+        if DesktopMenu.entries.length == 0: Text {
+            height: 52px;
+            text: @tr("The menu is empty. Add entries below.");
+            color: Style.muted;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        for id[i] in DesktopMenu.entries: VerticalLayout {
+            if i > 0: Divider { }
+            MenuEntryRow {
+                id: id;
+                index: i;
+                count: DesktopMenu.entries.length;
+                edit => {
+                    root.editing = id;
+                    root.label-text = DesktopMenu.command-label(id);
+                    root.command-text = DesktopMenu.command(id);
+                }
+                removed => {
+                    if id == root.editing { root.clear-form(); }
+                }
+            }
+        }
+    }
+    Group {
+        title: @tr("ADD");
+        Setting {
+            title: @tr("Separator");
+            description: @tr("A line between groups of entries.");
+            TextButton { icon: "plus"; text: @tr("Add"); clicked => { DesktopMenu.add("separator"); } }
+        }
+        for id in DesktopMenu.builtins: VerticalLayout {
+            if DesktopMenu.hidden(id): Divider { }
+            if DesktopMenu.hidden(id): Setting {
+                title: DesktopMenu.label(id);
+                description: DesktopMenu.needs-lunadash(id) && !Compositor.has-commands ? @tr("Only on LunaDash") : "";
+                TextButton { icon: "plus"; text: @tr("Add"); clicked => { DesktopMenu.add(id); } }
+            }
+        }
+    }
+    Group {
+        title: root.editing != "" ? @tr("EDIT COMMAND") : @tr("YOUR OWN COMMAND");
+        Setting {
+            title: @tr("Name");
+            description: @tr("Shown in the menu. Empty: the command itself.");
+            TextField { width: 300px; placeholder: @tr("System monitor"); text <=> root.label-text; }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Command");
+            description: @tr("A program and its arguments. It starts without a shell: quotes group words, but pipes, variables and ; reach the program as text.");
+            TextField { width: 300px; placeholder: "kitty -e htop"; text <=> root.command-text; accepted => { root.submit(); } }
+        }
+        Divider { }
+        HorizontalLayout {
+            padding-top: 10px;
+            padding-bottom: 10px;
+            spacing: Style.spacing-sm;
+            alignment: end;
+            if root.editing != "": TextButton { text: @tr("Cancel"); clicked => { root.clear-form(); } }
+            TextButton {
+                icon: root.editing != "" ? "check" : "plus";
+                text: root.editing != "" ? @tr("Save") : @tr("Add command");
+                primary: true;
+                enabled: root.command-text != "";
+                clicked => { root.submit(); }
+            }
+        }
+    }
+    HorizontalLayout {
+        alignment: start;
+        TextButton {
+            icon: "reboot";
+            text: @tr("Restore defaults");
+            enabled: DesktopMenu.edited;
+            clicked => {
+                root.clear-form();
+                DesktopMenu.reset();
+            }
+        }
+    }
+}
+
 component WindowsPage inherits Page {
     title: @tr("Windows");
     subtitle: @tr("How LunaDash arranges and draws application windows.");
@@ -641,6 +819,7 @@ export component Settings inherits Overlay {
         { id: "wallpaper", icon: "image", label: @tr("Wallpaper"), lunadash: false },
         { id: "panel", icon: "panel", label: @tr("Panel"), lunadash: false },
         { id: "dock", icon: "dock", label: @tr("Dock"), lunadash: false },
+        { id: "menu", icon: "list", label: @tr("Desktop menu"), lunadash: false },
         { id: "windows", icon: "window", label: @tr("Windows"), lunadash: true },
         { id: "display", icon: "monitor", label: @tr("Display"), lunadash: true },
         { id: "notifications", icon: "bell", label: @tr("Notifications"), lunadash: false },
@@ -682,6 +861,7 @@ export component Settings inherits Overlay {
                 if UI.settings-page == "wallpaper": Reveal { WallpaperPage { } }
                 if UI.settings-page == "panel": Reveal { PanelPage { } }
                 if UI.settings-page == "dock": Reveal { DockPage { } }
+                if UI.settings-page == "menu": Reveal { DesktopMenuPage { } }
                 if UI.settings-page == "windows": Reveal { WindowsPage { } }
                 if UI.settings-page == "display": Reveal { DisplayPage { } }
                 if UI.settings-page == "notifications": Reveal { NotificationsPage { } }

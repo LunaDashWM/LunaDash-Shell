@@ -1,0 +1,145 @@
+// The menu that right-clicking the desktop opens: a glass card at the pointer with the entries
+// chosen in Settings → Desktop menu. A click beside it, or Escape, closes it; a right click
+// beside it opens it there instead.
+
+import { PanelWindow, Layer, KeyboardMode, ExclusiveMode, Shell, Shared } from "@slintlu";
+import { Style } from "../style/style.slint";
+import { UI } from "../state/ui.slint";
+import { DesktopMenu } from "../state/desktop-menu.slint";
+import { Icon } from "../components/icon.slint";
+
+component MenuEntry inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    callback activated();
+    height: 36px;
+    border-radius: Style.radius-small;
+    background: touch.pressed ? Style.pressed : touch.has-hover ? Style.hover : transparent;
+    animate background { duration: Style.motion-fast; }
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 12px;
+        spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                name: root.icon;
+                width: 18px;
+                height: 18px;
+                color: touch.has-hover ? Style.text : Style.muted;
+            }
+        }
+        Text {
+            text: root.label;
+            color: Style.text;
+            font-size: Style.font-size;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+    }
+    touch := TouchArea { clicked => { root.activated(); } }
+}
+
+export component DesktopMenuWindow inherits PanelWindow {
+    namespace: "lunadash-desktop-menu";
+    layer: Layer.overlay;
+    keyboard-mode: KeyboardMode.exclusive;
+    exclusive-mode: ExclusiveMode.ignore;
+    anchor-top: true;
+    anchor-bottom: true;
+    anchor-left: true;
+    anchor-right: true;
+    // Only on the screen that was right-clicked. Read straight from Shared: a hidden window
+    // does not see DesktopMenu.screen change.
+    property <string> menu-screen: Shared.get-string("desktop-menu-screen", "", Shared.revision);
+    shown: UI.popup == "desktop-menu" && Shell.screen.name == root.menu-screen;
+    default-font-family: Style.font;
+
+    changed shown => {
+        if self.shown { scope.focus(); }
+    }
+
+    // The card stays inside the desktop area (within the bar and the frame): it opens to the
+    // lower right of the pointer, or flips left / up where there is no room, and scrolls when
+    // the screen is too short for every entry.
+    property <length> gap: Style.spacing-sm;
+    property <length> area-left: Style.inner-left + root.gap;
+    property <length> area-top: Style.inner-top + root.gap;
+    property <length> area-right: root.width - Style.frame-width - root.gap;
+    property <length> area-bottom: root.height - Style.frame-width - root.gap;
+    property <length> card-width: min(260px, root.area-right - root.area-left);
+    property <length> card-height: min(list.preferred-height, root.area-bottom - root.area-top);
+    property <length> card-x: clamp(DesktopMenu.x + root.card-width <= root.area-right ? DesktopMenu.x : DesktopMenu.x - root.card-width,
+        root.area-left, max(root.area-left, root.area-right - root.card-width));
+    property <length> card-y: clamp(DesktopMenu.y + root.card-height <= root.area-bottom ? DesktopMenu.y : DesktopMenu.y - root.card-height,
+        root.area-top, max(root.area-top, root.area-bottom - root.card-height));
+
+    // Beside the card: a click closes the menu, a right click moves it to the pointer.
+    TouchArea {
+        clicked => { UI.close-all(); }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                DesktopMenu.open-at(Shell.screen.name, self.mouse-x, self.mouse-y);
+            } else if event.kind == PointerEventKind.down && event.button == PointerEventButton.middle {
+                UI.close-all();
+            }
+        }
+    }
+    scope := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape {
+                UI.close-all();
+                return accept;
+            }
+            reject
+        }
+        card := Rectangle {
+            x: root.card-x;
+            y: root.card-y;
+            width: root.card-width;
+            height: root.card-height;
+            // Fades in; bound to `shown` itself, since the window is hidden until then.
+            opacity: root.shown ? 1 : 0;
+            animate opacity { duration: Style.motion-fast; easing: ease-out; }
+            border-radius: Style.radius-large * 0.6;
+            background: Style.glass-strong;
+            border-width: 1px;
+            border-color: Style.hairline;
+            drop-shadow-blur: 24px;
+            drop-shadow-color: Style.shadow;
+            drop-shadow-offset-y: 6px;
+            clip: true;
+            // Clicks on the card's padding do not close it.
+            TouchArea { }
+            Flickable {
+                content-height: list.preferred-height;
+                interactive: list.preferred-height > root.card-height;
+                list := VerticalLayout {
+                    padding: 4px;
+                    spacing: 0px;
+                    if DesktopMenu.entries.length == 0: Text {
+                        height: 36px;
+                        text: @tr("No entries. Choose them in Settings → Desktop menu.");
+                        color: Style.muted;
+                        font-size: Style.font-small;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                        overflow: elide;
+                    }
+                    for id[i] in DesktopMenu.entries: VerticalLayout {
+                        if id == "separator" && DesktopMenu.shows-separator(i): Rectangle {
+                            height: 9px;
+                            Rectangle { x: 10px; width: parent.width - 20px; height: 1px; background: Style.hairline; }
+                        }
+                        if id != "separator" && DesktopMenu.available(id): MenuEntry {
+                            icon: DesktopMenu.icon(id);
+                            label: DesktopMenu.label(id);
+                            activated => { DesktopMenu.activate(id); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
