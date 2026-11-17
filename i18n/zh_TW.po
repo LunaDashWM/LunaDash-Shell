@@ -50,11 +50,11 @@ msgstr "溫度"
 msgid "Settings"
 msgstr "設定"
 
-#: dashboard/dashboard.slint:161 state/desktop-menu.slint:48
+#: dashboard/dashboard.slint:161 state/desktop-menu.slint:48 welcome/welcome.slint:183
 msgid "Files"
 msgstr "檔案"
 
-#: dashboard/dashboard.slint:162 state/desktop-menu.slint:47
+#: dashboard/dashboard.slint:162 state/desktop-menu.slint:47 welcome/welcome.slint:182
 msgid "Terminal"
 msgstr "終端機"
 
@@ -162,7 +162,7 @@ msgstr "另一個通知服務正在執行，LunaDash 無法顯示通知紀錄。
 msgid "You're all caught up"
 msgstr "沒有新通知"
 
-#: dashboard/dashboard.slint:415 state/desktop-menu.slint:51 welcome/welcome.slint:58
+#: dashboard/dashboard.slint:415 state/desktop-menu.slint:51 welcome/welcome.slint:200
 msgid "Dashboard"
 msgstr "儀表板"
 
@@ -732,7 +732,7 @@ msgstr "顯示秒數"
 msgid "Weeks start on Monday"
 msgstr "每週從星期一開始"
 
-#: settings/settings.slint:382 settings/settings.slint:821 welcome/welcome.slint:59
+#: settings/settings.slint:382 settings/settings.slint:821 welcome/welcome.slint:201
 msgid "Dock"
 msgstr "Dock"
 
@@ -1140,7 +1140,7 @@ msgstr "{} 中沒有圖片。請從左側選擇位置或其他資料夾。"
 msgid "Live"
 msgstr "動態"
 
-#: wallpaper/library.slint:143
+#: wallpaper/library.slint:143 welcome/welcome.slint:191
 msgid "Wallpapers"
 msgstr "桌布"
 
@@ -1200,42 +1200,70 @@ msgstr "選擇桌布資料夾"
 msgid "Choose the wallpaper library folder"
 msgstr "選擇桌布庫資料夾"
 
-#: welcome/welcome.slint:53
+#: welcome/welcome.slint:133
 msgid "Welcome to LunaDash"
 msgstr "歡迎使用 LunaDash"
 
-#: welcome/welcome.slint:54
+#: welcome/welcome.slint:134
 msgid "Here is how to get around."
 msgstr "以下是基本操作方式。"
 
-#: welcome/welcome.slint:57
+#: welcome/welcome.slint:141
+msgid "Author"
+msgstr "作者"
+
+#: welcome/welcome.slint:174
+msgid "KEYBOARD SHORTCUTS"
+msgstr "鍵盤快捷鍵"
+
+#: welcome/welcome.slint:180 welcome/welcome.slint:199
 msgid "Launcher"
 msgstr "啟動器"
 
-#: welcome/welcome.slint:57
-msgid "Press Super or click the apps button in the dock."
-msgstr "按下 Super 鍵，或點選 Dock 中的應用程式按鈕。"
+#: welcome/welcome.slint:181
+msgid "Overview"
+msgstr "總覽"
 
-#: welcome/welcome.slint:57
+#: welcome/welcome.slint:184
+msgid "Close window"
+msgstr "關閉視窗"
+
+#: welcome/welcome.slint:189
+msgid "Fullscreen"
+msgstr "全螢幕"
+
+#: welcome/welcome.slint:190
+msgid "Screenshot"
+msgstr "截圖"
+
+#: welcome/welcome.slint:192
+msgid "Control center"
+msgstr "控制中心"
+
+#: welcome/welcome.slint:193
+msgid "Clipboard"
+msgstr "剪貼簿"
+
+#: welcome/welcome.slint:199
 msgid "Click the diamond in the panel or the apps button in the dock."
 msgstr "點選面板中的菱形圖示，或 Dock 中的應用程式按鈕。"
 
-#: welcome/welcome.slint:58
+#: welcome/welcome.slint:200
 msgid "Click the moon in the panel for quick settings, media, performance and notifications."
 msgstr "點選面板中的月亮圖示，開啟快速設定、媒體、效能與通知。"
 
-#: welcome/welcome.slint:59
+#: welcome/welcome.slint:201
 msgid "Right-click applications in the launcher or dock to pin them."
 msgstr "在啟動器或 Dock 中以右鍵點選應用程式即可釘選。"
 
-#: welcome/welcome.slint:60
+#: welcome/welcome.slint:202
 msgid "Change the theme, wallpaper, language and lock behaviour."
 msgstr "變更主題、桌布、語言與鎖定方式。"
 
-#: welcome/welcome.slint:65
+#: welcome/welcome.slint:208
 msgid "Open settings"
 msgstr "開啟設定"
 
-#: welcome/welcome.slint:66
+#: welcome/welcome.slint:209
 msgid "Get started"
 msgstr "開始使用"

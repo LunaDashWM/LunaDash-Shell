@@ -1,12 +1,20 @@
-// A short introduction, shown once on the first start.
+// A short introduction, shown once on the first start: the project and its author at the
+// top, the keyboard shortcuts to get around below.
 
-import { Store, Compositor } from "@slintlu";
+import { Store, Compositor, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
-import { TextButton, Card } from "../components/controls.slint";
+import { TextButton, Card, SectionTitle } from "../components/controls.slint";
 
+// The project's author, shown in the header with a link to their GitHub profile.
+global Author {
+    out property <string> name: "LuYishan";
+    out property <string> github: "github.com/LuYishan-4";
+}
+
+// Used where the compositor does not report its shortcuts (anything but LunaDash).
 component Tip inherits Card {
     in property <string> icon;
     in property <string> title;
@@ -30,11 +38,73 @@ component Tip inherits Card {
     }
 }
 
+// One key of a shortcut, drawn like a keycap.
+component Keycap inherits Rectangle {
+    in property <string> key;
+    // Key names as LunaDash writes them, shown the way the keyboard labels them.
+    pure function label(key: string) -> string {
+        key == "Meta" ? "Super"
+            : key == "Return" ? "Enter"
+            : key == "bracketleft" ? "["
+            : key == "bracketright" ? "]"
+            : key == "period" ? "."
+            : key == "comma" ? ","
+            : key == "grave" ? "`"
+            : key == "minus" ? "-"
+            : key == "equal" ? "="
+            : key
+    }
+    width: max(26px, caption.preferred-width + 14px);
+    height: 26px;
+    border-radius: 6px;
+    background: Style.elevated;
+    border-width: 1px;
+    border-color: Style.hairline;
+    caption := Text {
+        text: root.label(root.key);
+        color: Style.text;
+        font-size: Style.font-small;
+        font-weight: 600;
+    }
+}
+
+// A labelled shortcut with the keys LunaDash currently binds to `action`.
+component ShortcutPreview inherits Card {
+    in property <string> action;
+    in property <string> label;
+    in property <string> icon;
+    height: 46px;
+    HorizontalLayout {
+        padding-left: Style.spacing-md;
+        padding-right: Style.spacing-sm;
+        spacing: Style.spacing-sm;
+        Icon { name: root.icon; width: 16px; height: 16px; y: (parent.height - self.height) / 2; color: Style.accent; }
+        Text {
+            text: root.label;
+            color: Style.text;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        // Slint cannot filter a model: every shortcut gets an empty slot except the match.
+        HorizontalLayout {
+            alignment: end;
+            for shortcut in Compositor.shortcuts: HorizontalLayout {
+                spacing: Style.spacing-xs;
+                if shortcut.action == root.action: HorizontalLayout {
+                    spacing: Style.spacing-xs;
+                    for key in shortcut.keys: Keycap { key: key; y: (parent.height - self.height) / 2; }
+                }
+            }
+        }
+    }
+}
+
 export component Welcome inherits Overlay {
     name: "welcome";
     namespace: "lunadash-welcome";
-    content-width: 640px;
-    content-height: 560px;
+    content-width: 680px;
+    content-height: 500px;
 
     function done() {
         Store.set-bool("welcome-done", true);
@@ -45,19 +115,92 @@ export component Welcome inherits Overlay {
     VerticalLayout {
         padding: Style.spacing-xl;
         spacing: Style.spacing-md;
+
+        // The project on the left, its author on the right.
         HorizontalLayout {
             spacing: Style.spacing-lg;
-            Image { source: @image-url("../assets/lunadash.png"); width: 64px; height: 64px; image-fit: contain; }
+            // 128 px, scaled with a good filter: drawing the 512 px logo at 64 px aliased it.
+            Image {
+                source: @image-url("../assets/lunadash-128.png");
+                width: 64px;
+                height: 64px;
+                y: (parent.height - self.height) / 2;
+                image-fit: contain;
+            }
             VerticalLayout {
                 alignment: center;
-                Text { text: @tr("Welcome to LunaDash"); color: Style.text; font-size: 26px; font-weight: 700; }
-                Text { text: @tr("Here is how to get around."); color: Style.muted; }
+                horizontal-stretch: 1;
+                Text { text: @tr("Welcome to LunaDash"); color: Style.text; font-size: 26px; font-weight: 700; overflow: elide; }
+                Text { text: @tr("Here is how to get around."); color: Style.muted; overflow: elide; }
+            }
+            HorizontalLayout {
+                spacing: Style.spacing-md;
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 2px;
+                    Text { text: @tr("Author"); color: Style.muted; font-size: Style.font-small; horizontal-alignment: right; }
+                    Text { text: Author.name; color: Style.text; font-weight: 600; horizontal-alignment: right; }
+                    Text {
+                        text: Author.github;
+                        color: link-touch.has-hover ? Style.text : Style.accent;
+                        font-size: Style.font-small;
+                        horizontal-alignment: right;
+                        link-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => { Shell.exec("xdg-open https://" + Author.github); }
+                        }
+                    }
+                }
+                Rectangle {
+                    width: 56px;
+                    height: 56px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: self.width / 2;
+                    border-width: 2px;
+                    border-color: Style.accent-soft;
+                    clip: true;
+                    Image {
+                        source: @image-url("../assets/author-avatar.png");
+                        width: parent.width;
+                        height: parent.height;
+                        image-fit: cover;
+                    }
+                }
             }
         }
-        Tip { icon: "apps"; title: @tr("Launcher"); text: Compositor.name == "lunadash" ? @tr("Press Super or click the apps button in the dock.") : @tr("Click the diamond in the panel or the apps button in the dock."); }
-        Tip { icon: "dashboard"; title: @tr("Dashboard"); text: @tr("Click the moon in the panel for quick settings, media, performance and notifications."); }
-        Tip { icon: "dock"; title: @tr("Dock"); text: @tr("Right-click applications in the launcher or dock to pin them."); }
-        Tip { icon: "settings"; title: @tr("Settings"); text: @tr("Change the theme, wallpaper, language and lock behaviour."); }
+
+        if Compositor.shortcuts.length > 0: VerticalLayout {
+            spacing: Style.spacing-sm;
+            SectionTitle { text: @tr("KEYBOARD SHORTCUTS"); }
+            HorizontalLayout {
+                spacing: Style.spacing-sm;
+                VerticalLayout {
+                    spacing: Style.spacing-sm;
+                    horizontal-stretch: 1;
+                    ShortcutPreview { action: "launchLauncher"; label: @tr("Launcher"); icon: "apps"; }
+                    ShortcutPreview { action: "toggleOverview"; label: @tr("Overview"); icon: "grid"; }
+                    ShortcutPreview { action: "launchTerminal"; label: @tr("Terminal"); icon: "terminal"; }
+                    ShortcutPreview { action: "launchFiles"; label: @tr("Files"); icon: "folder"; }
+                    ShortcutPreview { action: "closeWindow"; label: @tr("Close window"); icon: "close"; }
+                }
+                VerticalLayout {
+                    spacing: Style.spacing-sm;
+                    horizontal-stretch: 1;
+                    ShortcutPreview { action: "toggleFullscreen"; label: @tr("Fullscreen"); icon: "maximize"; }
+                    ShortcutPreview { action: "screenshot"; label: @tr("Screenshot"); icon: "screenshot"; }
+                    ShortcutPreview { action: "chooseWallpaper"; label: @tr("Wallpapers"); icon: "image"; }
+                    ShortcutPreview { action: "openControlCenter"; label: @tr("Control center"); icon: "dashboard"; }
+                    ShortcutPreview { action: "openClipboard"; label: @tr("Clipboard"); icon: "clipboard"; }
+                }
+            }
+        }
+        if Compositor.shortcuts.length == 0: VerticalLayout {
+            spacing: Style.spacing-md;
+            Tip { icon: "apps"; title: @tr("Launcher"); text: @tr("Click the diamond in the panel or the apps button in the dock."); }
+            Tip { icon: "dashboard"; title: @tr("Dashboard"); text: @tr("Click the moon in the panel for quick settings, media, performance and notifications."); }
+            Tip { icon: "dock"; title: @tr("Dock"); text: @tr("Right-click applications in the launcher or dock to pin them."); }
+            Tip { icon: "settings"; title: @tr("Settings"); text: @tr("Change the theme, wallpaper, language and lock behaviour."); }
+        }
         Rectangle { vertical-stretch: 1; }
         HorizontalLayout {
             alignment: end;
