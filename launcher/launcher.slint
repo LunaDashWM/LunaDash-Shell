@@ -1,4 +1,5 @@
-// The application launcher: type to search, arrows to move, Enter to start.
+// The application launcher: a list of applications (icon, name and what each is). Type to
+// search, Up / Down to move, Enter to start.
 
 import { Apps, AppInfo, Store, Compositor } from "@slintlu";
 import { Style } from "../style/style.slint";
@@ -7,50 +8,55 @@ import { Prefs } from "../state/prefs.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
 
-component AppTile inherits Rectangle {
-    in property <length> icon-size: 56px;
+// One application: its icon, its name and what it is (generic name, else comment).
+component AppRow inherits Rectangle {
     in property <image> icon;
+    in property <length> icon-size: 36px;
     in property <string> name;
+    in property <string> detail;
     in property <bool> selected;
     in property <bool> pinned;
     callback clicked();
     callback pin();
-    border-radius: root.selected ? Style.radius-large : Style.radius-medium;
-    background: root.selected ? Style.tonal : touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
+    border-radius: Style.radius-small;
+    background: root.selected ? Style.accent : touch.pressed ? Style.pressed : touch.has-hover ? Style.hover : Style.elevated;
     animate background { duration: Style.motion-fast; }
-    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
-    VerticalLayout {
-        padding: 8px;
-        spacing: 8px;
-        alignment: center;
-        Image {
-            source: root.icon;
-            width: root.icon-size;
-            height: root.icon-size;
-            x: (parent.width - self.width) / 2;
-            image-fit: contain;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 14px;
+        spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            Image {
+                source: root.icon;
+                width: root.icon-size;
+                height: root.icon-size;
+                image-fit: contain;
+            }
         }
-        // Up to two lines, so longer names ("KDE Partition Manager") stay readable. CJK
-        // fallback fonts have taller lines than Latin ones: leave room for two of them, or
-        // the wrapped and elided name loses its first line.
-        Text {
-            text: root.name;
-            color: Style.text;
-            font-size: Style.font-size;
-            height: 2 * Style.font-size * 1.6;
-            horizontal-alignment: center;
-            vertical-alignment: top;
-            wrap: word-wrap;
-            overflow: elide;
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: 1px;
+            Text {
+                text: root.name;
+                color: root.selected ? Style.accent-ink : Style.text;
+                font-size: Style.font-size;
+                font-weight: 600;
+                overflow: elide;
+            }
+            if root.detail != "": Text {
+                text: root.detail;
+                color: root.selected ? Style.accent-ink.with-alpha(0.78) : Style.muted;
+                font-size: Style.font-small;
+                overflow: elide;
+            }
         }
-    }
-    if root.pinned: Rectangle {
-        x: parent.width - 16px;
-        y: 8px;
-        width: 7px;
-        height: 7px;
-        border-radius: 3.5px;
-        background: Style.accent;
+        // Pinned to the dock.
+        if root.pinned: VerticalLayout {
+            alignment: center;
+            Icon { name: "dock"; width: 16px; height: 16px; color: root.selected ? Style.accent-ink : Style.muted; }
+        }
     }
     touch := TouchArea {
         clicked => { root.clicked(); }
@@ -67,17 +73,28 @@ export component Launcher inherits Overlay {
     namespace: "lunadash-launcher";
     // Rises out of the bottom of the screen frame, its search field along that edge.
     edge: "bottom";
-    content-width: 820px;
+    content-width: 720px;
     content-height: 560px;
 
     property <string> query;
     property <int> selected: 0;
-    // Compact fits more, smaller tiles.
+    // Compact fits more, smaller rows.
     property <bool> compact: Prefs.launcher-density == "compact";
-    property <int> columns: root.compact ? 8 : 6;
+    property <length> row-height: root.compact ? 42px : 52px;
+    property <length> row-gap: 4px;
     // Mentioning Apps.all refreshes the results when the background scan finishes.
     property <[AppInfo]> results: Apps.all.length >= 0 ? Apps.search(root.query, root.compact ? 64 : 48) : [];
 
+    // Scrolls the list so the selected row is visible.
+    function reveal() {
+        let top = root.selected * (root.row-height + root.row-gap);
+        if top < -list.content-y {
+            list.content-y = -top;
+        } else if top + root.row-height > -list.content-y + list.height {
+            list.content-y = -(top + root.row-height - list.height);
+        }
+    }
+    changed selected => { root.reveal(); }
     function launch(id: string) {
         Apps.launch(id);
         UI.close-all();
@@ -90,6 +107,7 @@ export component Launcher inherits Overlay {
             search.text = "";
             root.query = "";
             root.selected = 0;
+            list.content-y = 0;
             search.focus();
         }
     }
@@ -99,12 +117,14 @@ export component Launcher inherits Overlay {
         spacing: Style.spacing-lg;
         HorizontalLayout {
             spacing: 8px;
-            Icon {
-                y: (parent.height - self.height) / 2;
-                name: root.query == "" ? "grid" : "search";
-                width: 20px;
-                height: 20px;
-                color: Style.accent;
+            VerticalLayout {
+                alignment: center;
+                Icon {
+                    name: root.query == "" ? "grid" : "search";
+                    width: 20px;
+                    height: 20px;
+                    color: Style.accent;
+                }
             }
             Text {
                 text: root.query == "" ? @tr("Frequently used") : @tr("{} results", root.results.length);
@@ -114,52 +134,76 @@ export component Launcher inherits Overlay {
                 vertical-alignment: center;
             }
             Rectangle { horizontal-stretch: 1; }
-            Rectangle {
-                width: count.preferred-width + 20px;
-                height: 26px;
-                y: (parent.height - self.height) / 2;
-                border-radius: 13px;
-                background: Style.tonal;
-                count := Text {
-                    text: Apps.all.length;
-                    color: Style.on-tonal;
-                    font-size: Style.font-small;
-                    font-weight: 600;
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: count.preferred-width + 20px;
+                    height: 26px;
+                    border-radius: 13px;
+                    background: Style.tonal;
+                    count := Text {
+                        text: Apps.all.length;
+                        color: Style.on-tonal;
+                        font-size: Style.font-small;
+                        font-weight: 600;
+                    }
                 }
             }
         }
         // The drawer shares the bar's translucent colour, and edge drawers are not blurred, so
-        // the grid sits on an opaque surface: windows behind must not show through the names.
-        Rectangle {
+        // the list sits on an opaque surface: windows behind must not show through the names.
+        sheet := Rectangle {
             vertical-stretch: 1;
-            border-radius: Style.radius-large;
+            border-radius: Style.radius-large * 0.6;
             background: Style.surface;
             clip: true;
-            Flickable {
+            property <bool> scrolls: rows.preferred-height > list.height;
+            list := Flickable {
                 x: Style.spacing-sm;
                 y: Style.spacing-sm;
-                width: parent.width - 2 * Style.spacing-sm;
+                width: parent.width - 2 * Style.spacing-sm - (sheet.scrolls ? 14px : 0px);
                 height: parent.height - 2 * Style.spacing-sm;
-                property <length> tile: self.width / root.columns;
-                // Tiles are a little taller than wide: room for a two-line name.
-                property <length> tile-height: self.tile * 1.15;
-                content-height: Math.ceil(root.results.length / root.columns) * self.tile-height * 1.0;
-                for app[i] in root.results: AppTile {
-                    x: Math.mod(i, root.columns) * parent.tile;
-                    y: Math.floor(i / root.columns) * parent.tile-height;
-                    width: parent.tile - 6px;
-                    height: parent.tile-height - 6px;
-                    icon: app.icon;
-                    icon-size: root.compact ? 44px : 56px;
-                    name: app.name;
-                    selected: i == root.selected;
-                    pinned: root.is-pinned(app.id);
-                    clicked => { root.launch(app.id); }
-                    pin => {
-                        if root.is-pinned(app.id) {
-                            Store.list-remove("dock-pinned", app.id);
-                        } else {
-                            Store.list-add("dock-pinned", app.id);
+                content-height: rows.preferred-height;
+                rows := VerticalLayout {
+                    spacing: root.row-gap;
+                    alignment: start;
+                    for app[i] in root.results: AppRow {
+                        height: root.row-height;
+                        icon: app.icon;
+                        icon-size: root.compact ? 28px : 36px;
+                        name: app.name;
+                        detail: app.generic-name != "" ? app.generic-name : app.comment;
+                        selected: i == root.selected;
+                        pinned: root.is-pinned(app.id);
+                        clicked => { root.launch(app.id); }
+                        pin => {
+                            if root.is-pinned(app.id) {
+                                Store.list-remove("dock-pinned", app.id);
+                            } else {
+                                Store.list-add("dock-pinned", app.id);
+                            }
+                        }
+                    }
+                }
+            }
+            // A scrollbar: the thumb shows where the list is; drag or click the track to move.
+            if sheet.scrolls: track := Rectangle {
+                property <length> range: rows.preferred-height - list.height;
+                property <length> thumb-height: max(32px, self.height * list.height / rows.preferred-height);
+                x: sheet.width - self.width - 4px;
+                y: Style.spacing-sm;
+                width: 8px;
+                height: sheet.height - 2 * Style.spacing-sm;
+                Rectangle {
+                    y: (track.height - track.thumb-height) * clamp(-list.content-y / track.range, 0, 1);
+                    height: track.thumb-height;
+                    border-radius: self.width / 2;
+                    background: drag.pressed ? Style.text.with-alpha(0.55) : Style.muted.with-alpha(drag.has-hover ? 0.55 : 0.4);
+                }
+                drag := TouchArea {
+                    pointer-event(event) => {
+                        if event.kind == PointerEventKind.down || (event.kind == PointerEventKind.move && self.pressed) {
+                            list.content-y = -track.range * clamp((self.mouse-y - track.thumb-height / 2) / (track.height - track.thumb-height), 0, 1);
                         }
                     }
                 }
@@ -178,7 +222,10 @@ export component Launcher inherits Overlay {
                 padding-left: 20px;
                 padding-right: 20px;
                 spacing: 12px;
-                Icon { name: "search"; width: 20px; height: 20px; y: (parent.height - self.height) / 2; color: Style.muted; }
+                VerticalLayout {
+                    alignment: center;
+                    Icon { name: "search"; width: 20px; height: 20px; color: Style.muted; }
+                }
                 Rectangle {
                     search := TextInput {
                         width: 100%;
@@ -198,19 +245,19 @@ export component Launcher inherits Overlay {
                         }
                         key-pressed(event) => {
                             if event.text == Key.DownArrow {
-                                root.selected = min(root.results.length - 1, root.selected + root.columns);
-                                return accept;
-                            }
-                            if event.text == Key.UpArrow {
-                                root.selected = max(0, root.selected - root.columns);
-                                return accept;
-                            }
-                            if event.text == Key.RightArrow && self.cursor-position-byte-offset >= self.text.character-count {
                                 root.selected = min(root.results.length - 1, root.selected + 1);
                                 return accept;
                             }
-                            if event.text == Key.LeftArrow && root.selected > 0 && self.text == "" {
-                                root.selected -= 1;
+                            if event.text == Key.UpArrow {
+                                root.selected = max(0, root.selected - 1);
+                                return accept;
+                            }
+                            if event.text == Key.PageDown {
+                                root.selected = min(root.results.length - 1, root.selected + 8);
+                                return accept;
+                            }
+                            if event.text == Key.PageUp {
+                                root.selected = max(0, root.selected - 8);
                                 return accept;
                             }
                             if event.text == Key.Escape {

@@ -27,8 +27,14 @@ Sway, where it keeps its own settings.
 - **Dashboard** — overview, media player, per-core performance and notification history, with
   quick toggles (Wi-Fi, Bluetooth, do not disturb, keep awake, dark mode) and volume /
   brightness sliders.
-- **Launcher** — fuzzy search over installed applications, frequently used first; right-click
-  to pin to the dock.
+- **Launcher** — a list of installed applications with their icon, name and description,
+  frequently used first; fuzzy search, Up / Down / Page Up / Page Down to move, right-click to
+  pin to the dock.
+- **Desktop menu** — right-click the desktop for applications, terminal, files, wallpaper,
+  dashboard, settings, lock and power. Settings → Desktop menu shows, hides and reorders the
+  entries, adds separators and adds commands of your own. Those commands start without a
+  shell (SlintLu's `Shell.run`): quotes group words, but pipes, variables and `;` reach the
+  program as text.
 - **Dock** — off by default (Settings → Dock): pinned applications and open windows grouped
   per application; click to open, focus or cycle windows.
 - **Wallpaper** — a picker with thumbnails for any folder and an optional desktop clock. A new
@@ -38,7 +44,8 @@ Sway, where it keeps its own settings.
 - **Lock screen** — PAM authentication, automatic locking after inactivity and before sleep.
 - **Polkit dialog**, **power menu**, **volume / brightness OSD**, **welcome card**.
 - **Settings** — appearance (mode, palettes, transparency, animations), wallpaper, bar
-  (position, screen frame) and dock, notifications, power and lock, language and about.
+  (position, screen frame), dock, desktop menu, notifications, power and lock, language and
+  about.
 - **Translations** — English and Traditional Chinese (`i18n/zh_TW.po`).
 
 Settings are stored by SlintLu in `$XDG_STATE_HOME/slintlu`. The colours come from
