@@ -11,6 +11,16 @@ export global Apply {
         if Prefs.palette != "" {
             Theme.set-palette(Prefs.palette);
         }
+        Theme.set-font-family(Prefs.font-family);
+    }
+    // The shell's font; "" goes back to theme.json's or the desktop's.
+    public function set-font(family: string) {
+        if family == "" {
+            Store.remove("font-family");
+        } else {
+            Store.set-string("font-family", family);
+        }
+        Theme.set-font-family(family);
     }
     public function all() {
         root.theme();

@@ -103,6 +103,7 @@ component Page inherits VerticalLayout {
 component AppearancePage inherits Page {
     title: @tr("Appearance");
     subtitle: @tr("Colours, glass and the feel of the whole desktop.");
+    property <string> font-query;
     Group {
         title: @tr("THEME");
         Setting {
@@ -185,6 +186,27 @@ component AppearancePage inherits Page {
                     }
                 }
             }
+        }
+    }
+    Group {
+        title: @tr("FONT · {}", Theme.font-family == "" ? @tr("Default") : Theme.font-family);
+        HorizontalLayout {
+            padding: 6px;
+            TextField { icon: "search"; placeholder: @tr("Search installed fonts"); text <=> root.font-query; }
+        }
+        ListRow {
+            icon: "edit";
+            title: @tr("Default");
+            subtitle: @tr("theme.json's font, else the desktop's");
+            selected: Prefs.font-family == "";
+            clicked => { Apply.set-font(""); }
+        }
+        // Theme.fonts fills in shortly after start: depending on it lists them once known.
+        for family in Theme.fonts.length > 0 ? Theme.search-fonts(root.font-query, 8) : []: ListRow {
+            icon: "edit";
+            title: family;
+            selected: Prefs.font-family == family;
+            clicked => { Apply.set-font(family); }
         }
     }
     Group {

@@ -65,6 +65,8 @@ export global Prefs {
     // "auto", "dark" or "light", and a palette name ("" for the LunaDash palettes).
     out property <string> theme-mode: Store.get-string("theme-mode", "auto", Store.revision);
     out property <string> palette: Store.get-string("palette", "", Store.revision);
+    // A font family for the whole shell; "" uses theme.json's, else the desktop's.
+    out property <string> font-family: Store.get-string("font-family", "", Store.revision);
 
     // Notifications
     out property <bool> toasts: Store.get-bool("toasts", true, Store.revision);
