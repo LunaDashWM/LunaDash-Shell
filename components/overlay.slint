@@ -16,6 +16,8 @@ export component Overlay inherits PanelWindow {
     in property <string> edge: "center";
     in property <bool> dim: root.edge == "center";
     callback escape();
+    // After it opened and took the keyboard: move focus to a field here.
+    callback opened();
     layer: Layer.overlay;
     keyboard-mode: KeyboardMode.exclusive;
     exclusive-mode: ExclusiveMode.ignore;
@@ -81,7 +83,10 @@ export component Overlay inherits PanelWindow {
     }
     changed shown => {
         root.entrance = self.shown ? 1 : 0;
-        if self.shown { scope.focus(); }
+        if self.shown {
+            scope.focus();
+            root.opened();
+        }
     }
     init => { root.entrance = self.shown ? 1 : 0; }
 }

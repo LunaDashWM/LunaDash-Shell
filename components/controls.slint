@@ -449,3 +449,36 @@ export component TextField inherits Rectangle {
         }
     }
 }
+
+// One key of a shortcut, drawn like a keycap.
+export component Keycap inherits Rectangle {
+    in property <string> key;
+    // Key names as LunaDash writes them, shown the way the keyboard labels them.
+    pure function label(key: string) -> string {
+        key == "Meta" ? "Super"
+            : key == "Return" ? "Enter"
+            : key == "bracketleft" ? "["
+            : key == "bracketright" ? "]"
+            : key == "period" ? "."
+            : key == "comma" ? ","
+            : key == "grave" ? "`"
+            : key == "minus" ? "-"
+            : key == "equal" ? "="
+            : key == "Space" ? "Space"
+            : key == "Escape" ? "Esc"
+            : key == "Ctrl" ? "Ctrl"
+            : key
+    }
+    width: max(26px, caption.preferred-width + 14px);
+    height: 26px;
+    border-radius: 6px;
+    background: Style.elevated;
+    border-width: 1px;
+    border-color: Style.hairline;
+    caption := Text {
+        text: root.label(root.key);
+        color: Style.text;
+        font-size: Style.font-small;
+        font-weight: 600;
+    }
+}

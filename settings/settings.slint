@@ -7,7 +7,7 @@ import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
-import { Switch, SectionTitle, IconButton, TextButton, TextField, ListRow, Card, Reveal, RangeSlider, Swatches } from "../components/controls.slint";
+import { Switch, SectionTitle, IconButton, TextButton, TextField, ListRow, Card, Reveal, RangeSlider, Swatches, Keycap } from "../components/controls.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
 import { Apply } from "../state/apply.slint";
 import { DesktopMenu } from "../state/desktop-menu.slint";
@@ -628,6 +628,219 @@ component WindowsPage inherits Page {
     }
 }
 
+// One compositor action and the keys bound to it, with a button to record new ones.
+component ShortcutRow inherits Rectangle {
+    in property <string> action;
+    in property <string> label;
+    in property <bool> recording;
+    callback change();
+    min-height: 50px;
+    HorizontalLayout {
+        padding-top: 6px;
+        padding-bottom: 6px;
+        spacing: Style.spacing-md;
+        Text {
+            text: root.label;
+            color: Style.text;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        if root.recording: Text {
+            text: @tr("Press the new shortcut…");
+            color: Style.accent;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+        // Slint cannot filter a model: every shortcut gets an empty slot except the match.
+        if !root.recording: HorizontalLayout {
+            alignment: end;
+            for shortcut in Compositor.shortcuts: HorizontalLayout {
+                spacing: Style.spacing-xs;
+                if shortcut.action == root.action: HorizontalLayout {
+                    spacing: Style.spacing-xs;
+                    for key in shortcut.keys: Keycap { key: key; y: (parent.height - self.height) / 2; }
+                }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            TextButton { text: root.recording ? @tr("Cancel") : @tr("Change"); clicked => { root.change(); } }
+        }
+    }
+}
+
+component ShortcutsPage inherits Page {
+    title: @tr("Keyboard shortcuts");
+    subtitle: @tr("Choose Change, then press the keys. Global shortcuts use Super or Alt; Esc cancels.");
+    // The action being recorded, or "".
+    property <string> recording;
+    property <string> message;
+
+    // The key's name as LunaDash writes it (an xkb keysym name), or "" when unsupported.
+    pure function key-name(text: string) -> string {
+        text == Key.Return ? "Return" : text == Key.Tab ? "Tab" : text == Key.Space ? "Space"
+            : text == Key.Backspace ? "BackSpace" : text == Key.Delete ? "Delete" : text == Key.Insert ? "Insert"
+            : text == Key.Home ? "Home" : text == Key.End ? "End" : text == Key.PageUp ? "Prior" : text == Key.PageDown ? "Next"
+            : text == Key.LeftArrow ? "Left" : text == Key.RightArrow ? "Right" : text == Key.UpArrow ? "Up" : text == Key.DownArrow ? "Down"
+            : text == Key.F1 ? "F1" : text == Key.F2 ? "F2" : text == Key.F3 ? "F3" : text == Key.F4 ? "F4"
+            : text == Key.F5 ? "F5" : text == Key.F6 ? "F6" : text == Key.F7 ? "F7" : text == Key.F8 ? "F8"
+            : text == Key.F9 ? "F9" : text == Key.F10 ? "F10" : text == Key.F11 ? "F11" : text == Key.F12 ? "F12"
+            : text == "[" ? "bracketleft" : text == "]" ? "bracketright" : text == "." ? "period" : text == "," ? "comma"
+            : text == "`" ? "grave" : text == "/" ? "slash" : text == ";" ? "semicolon" : text == "'" ? "apostrophe"
+            : text == "\\" ? "backslash" : text == "=" ? "=" : text == "-" ? "-"
+            : text == "!" ? "exclam" : text == "@" ? "at" : text == "#" ? "numbersign" : text == "$" ? "dollar"
+            : text == "%" ? "percent" : text == "^" ? "asciicircum" : text == "&" ? "ampersand" : text == "*" ? "asterisk"
+            : text == "(" ? "parenleft" : text == ")" ? "parenright" : text == "_" ? "underscore" : text == "+" ? "plus"
+            : text == "{" ? "braceleft" : text == "}" ? "braceright" : text == "|" ? "bar" : text == ":" ? "colon"
+            : text == "\"" ? "quotedbl" : text == "<" ? "less" : text == ">" ? "greater" : text == "?" ? "question"
+            : text == "~" ? "asciitilde"
+            : text.character-count == 1 && text.to-uppercase() != text.to-lowercase() ? text.to-uppercase()
+            : text.character-count == 1 && text >= "0" && text <= "9" ? text
+            : ""
+    }
+    function start(action: string) {
+        if root.recording == action {
+            root.stop();
+            return;
+        }
+        root.recording = action;
+        root.message = "";
+        Compositor.command("shortcut-capture", "true");
+        capture.focus();
+    }
+    function stop() {
+        root.recording = "";
+        Compositor.command("shortcut-capture", "false");
+    }
+
+    capture := FocusScope {
+        height: 0px;
+        key-pressed(event) => {
+            if root.recording == "" {
+                return reject;
+            }
+            if event.text == Key.Escape && !event.modifiers.meta && !event.modifiers.alt {
+                root.stop();
+                return accept;
+            }
+            // A modifier alone is the start of a combination.
+            if event.text == Key.Shift || event.text == Key.ShiftR || event.text == Key.Control
+                || event.text == Key.ControlR || event.text == Key.Alt || event.text == Key.AltGr
+                || event.text == Key.Meta || event.text == Key.MetaR {
+                return accept;
+            }
+            let key = root.key-name(event.text);
+            if key == "" {
+                root.message = @tr("That key cannot be used in a shortcut.");
+                return accept;
+            }
+            if !event.modifiers.meta && !event.modifiers.alt {
+                root.message = @tr("Global shortcuts need Super or Alt.");
+                return accept;
+            }
+            let combination = (event.modifiers.meta ? "Meta+" : "") + (event.modifiers.control ? "Ctrl+" : "")
+                + (event.modifiers.alt ? "Alt+" : "") + (event.modifiers.shift ? "Shift+" : "") + key;
+            let owner = Compositor.shortcut-owner(combination);
+            if owner != "" && owner != root.recording {
+                root.message = @tr("{} is already used by another action.", combination);
+                return accept;
+            }
+            Compositor.command("shortcuts", "{\"" + root.recording + "\":\"" + combination + "\"}");
+            root.message = "";
+            root.stop();
+            accept
+        }
+    }
+    changed visible => {
+        if !self.visible && root.recording != "" { root.stop(); }
+    }
+
+    if root.message != "": Rectangle {
+        height: note.preferred-height + 20px;
+        border-radius: Style.radius-small;
+        background: Style.accent-soft;
+        note := Text {
+            x: 14px;
+            width: parent.width - 28px;
+            text: root.message;
+            color: Style.text;
+            wrap: word-wrap;
+            vertical-alignment: center;
+        }
+    }
+    Group {
+        title: @tr("WINDOWS");
+        ShortcutRow { action: "closeWindow"; label: @tr("Close window"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "maximizeWindow"; label: @tr("Maximize window"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "toggleFullscreen"; label: @tr("Fullscreen"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "minimizeWindow"; label: @tr("Minimize window"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "focusLeft"; label: @tr("Focus left"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "focusRight"; label: @tr("Focus right"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "focusUp"; label: @tr("Focus up"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "focusDown"; label: @tr("Focus down"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "reorderLeft"; label: @tr("Move window left"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "reorderRight"; label: @tr("Move window right"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "centerColumn"; label: @tr("Center column"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "widenColumn"; label: @tr("Widen column"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "narrowColumn"; label: @tr("Narrow column"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "toggleTilingMode"; label: @tr("Switch tiling mode"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "toggleScratchpad"; label: @tr("Scratchpad"); recording: root.recording == self.action; change => { root.start(self.action); } }
+    }
+    Group {
+        title: @tr("OPEN");
+        ShortcutRow { action: "launchLauncher"; label: @tr("Launcher"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "toggleOverview"; label: @tr("Overview"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "launchTerminal"; label: @tr("Terminal"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "launchFiles"; label: @tr("Files"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "openControlCenter"; label: @tr("Control center"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "openClipboard"; label: @tr("Clipboard"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "openPowerMenu"; label: @tr("Power menu"); recording: root.recording == self.action; change => { root.start(self.action); } }
+    }
+    Group {
+        title: @tr("DESKTOP");
+        ShortcutRow { action: "screenshot"; label: @tr("Screenshot"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "chooseWallpaper"; label: @tr("Wallpapers"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "randomWallpaper"; label: @tr("Random wallpaper"); recording: root.recording == self.action; change => { root.start(self.action); } }
+        Divider { }
+        ShortcutRow { action: "toggleEyeCare"; label: @tr("Eye care"); recording: root.recording == self.action; change => { root.start(self.action); } }
+    }
+    HorizontalLayout {
+        alignment: end;
+        padding-bottom: Style.spacing-lg;
+        TextButton {
+            text: @tr("Restore defaults");
+            clicked => {
+                root.stop();
+                root.message = "";
+                Compositor.command("reset-shortcuts", "");
+            }
+        }
+    }
+}
+
 component DisplayPage inherits Page {
     title: @tr("Display");
     subtitle: @tr("Night light and the pointer.");
@@ -821,6 +1034,7 @@ export component Settings inherits Overlay {
         { id: "dock", icon: "dock", label: @tr("Dock"), lunadash: false },
         { id: "menu", icon: "list", label: @tr("Desktop menu"), lunadash: false },
         { id: "windows", icon: "window", label: @tr("Windows"), lunadash: true },
+        { id: "shortcuts", icon: "keyboard", label: @tr("Keyboard shortcuts"), lunadash: true },
         { id: "display", icon: "monitor", label: @tr("Display"), lunadash: true },
         { id: "notifications", icon: "bell", label: @tr("Notifications"), lunadash: false },
         { id: "power", icon: "power", label: @tr("Power & lock"), lunadash: false },
@@ -863,6 +1077,7 @@ export component Settings inherits Overlay {
                 if UI.settings-page == "dock": Reveal { DockPage { } }
                 if UI.settings-page == "menu": Reveal { DesktopMenuPage { } }
                 if UI.settings-page == "windows": Reveal { WindowsPage { } }
+                if UI.settings-page == "shortcuts": Reveal { ShortcutsPage { } }
                 if UI.settings-page == "display": Reveal { DisplayPage { } }
                 if UI.settings-page == "notifications": Reveal { NotificationsPage { } }
                 if UI.settings-page == "power": Reveal { PowerPage { } }
