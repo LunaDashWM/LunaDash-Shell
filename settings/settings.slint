@@ -588,21 +588,8 @@ component WindowsPage inherits Page {
     title: @tr("Windows");
     subtitle: @tr("How LunaDash arranges and draws application windows.");
     property <int> revision: Compositor.preferences-revision;
-    property <bool> scroll: Compositor.preference-string("tilingMode", "fill", root.revision) == "scroll";
     Group {
         title: @tr("LAYOUT");
-        Setting {
-            title: @tr("Tiling");
-            description: root.scroll
-                ? @tr("Normal: windows keep their width in columns that scroll sideways, like niri. Super+Shift+Space switches.")
-                : @tr("Fill: windows split the screen between them and fill it. Super+Shift+Space switches.");
-            Segmented {
-                labels: [@tr("Fill"), @tr("Normal")];
-                selected: root.scroll ? 1 : 0;
-                chosen(i) => { Compositor.set-preference-string("tilingMode", i == 1 ? "scroll" : "fill"); }
-            }
-        }
-        Divider { }
         Setting {
             title: @tr("Gaps");
             RangeSlider { minimum: 4; maximum: 32; step: 2; unit: "px"; value: Compositor.preference-number("gap", 12, root.revision); committed(v) => { Compositor.set-preference-number("gap", v); } }
@@ -770,6 +757,17 @@ component ShortcutsPage inherits Page {
         }
     }
     Group {
+        title: @tr("KEYBOARD");
+        Setting {
+            title: @tr("NumLock on at startup");
+            description: @tr("Turns NumLock on when you log in or plug in a keyboard. Also numLock in desktop-preferences.json.");
+            Switch {
+                on: Compositor.preference-bool("numLock", false, Compositor.preferences-revision);
+                toggled => { Compositor.set-preference-bool("numLock", !self.on); }
+            }
+        }
+    }
+    Group {
         title: @tr("WINDOWS");
         ShortcutRow { action: "closeWindow"; label: @tr("Close window"); recording: root.recording == self.action; change => { root.start(self.action); } }
         Divider { }
@@ -797,7 +795,6 @@ component ShortcutsPage inherits Page {
         Divider { }
         ShortcutRow { action: "narrowColumn"; label: @tr("Narrow column"); recording: root.recording == self.action; change => { root.start(self.action); } }
         Divider { }
-        ShortcutRow { action: "toggleTilingMode"; label: @tr("Switch tiling mode"); recording: root.recording == self.action; change => { root.start(self.action); } }
         Divider { }
         ShortcutRow { action: "toggleScratchpad"; label: @tr("Scratchpad"); recording: root.recording == self.action; change => { root.start(self.action); } }
     }
