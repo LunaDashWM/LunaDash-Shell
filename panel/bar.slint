@@ -667,6 +667,9 @@ component BarWindow inherits PanelWindow {
             UI.toggle-popup-at("clipboard", root.status-anchor);
         } else if Compositor.request == "power-menu" {
             UI.toggle-overlay("power");
+        } else if Compositor.request == "welcome" {
+            // `lunadashctl setup` (setup again) and the demo session.
+            UI.open-overlay("welcome");
         }
     }
 
@@ -682,8 +685,9 @@ component BarWindow inherits PanelWindow {
         // hidden), so only the one in use does it.
         if UI.primary && root.active {
             Apply.all();
-            // LunaDash has its own first-run setup; the card is for other compositors.
-            if !Prefs.welcome-done && !Compositor.has-commands {
+            // The first run, on every compositor: on LunaDash closing it also finishes
+            // the desktop's setup (Welcome).
+            if !Prefs.welcome-done {
                 UI.open-overlay("welcome");
             }
         }

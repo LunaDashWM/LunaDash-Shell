@@ -106,8 +106,16 @@ export component Welcome inherits Overlay {
     content-width: 680px;
     content-height: 500px;
 
-    function done() {
+    // Seen: not shown again, and LunaDash's first-run setup is complete, so later
+    // sessions start the user's startup applications.
+    function finish() {
         Store.set-bool("welcome-done", true);
+        if Compositor.has-commands {
+            Compositor.command("finish-setup", "");
+        }
+    }
+    function done() {
+        root.finish();
         UI.close-all();
     }
     escape => { root.done(); }
@@ -140,13 +148,19 @@ export component Welcome inherits Overlay {
                     spacing: 2px;
                     Text { text: @tr("Author"); color: Style.muted; font-size: Style.font-small; horizontal-alignment: right; }
                     Text { text: Author.name; color: Style.text; font-weight: 600; horizontal-alignment: right; }
-                    Text {
-                        text: Author.github;
-                        color: link-touch.has-hover ? Style.text : Style.accent;
-                        font-size: Style.font-small;
-                        horizontal-alignment: right;
+                    HorizontalLayout {
+                        horizontal-stretch: 1;
+                        alignment: end;
                         link-touch := TouchArea {
+                            width: 20px;
+                            height: 20px;
                             mouse-cursor: pointer;
+                            Icon {
+                                name: "globe";
+                                width: 16px;
+                                height: 16px;
+                                color: link-touch.has-hover ? Style.text : Style.accent;
+                            }
                             clicked => { Shell.exec("xdg-open https://" + Author.github); }
                         }
                     }
@@ -205,7 +219,7 @@ export component Welcome inherits Overlay {
         HorizontalLayout {
             alignment: end;
             spacing: Style.spacing-sm;
-            TextButton { text: @tr("Open settings"); clicked => { Store.set-bool("welcome-done", true); UI.open-settings("appearance"); } }
+            TextButton { text: @tr("Open settings"); clicked => { root.finish(); UI.open-settings("appearance"); } }
             TextButton { text: @tr("Get started"); primary: true; clicked => { root.done(); } }
         }
     }
