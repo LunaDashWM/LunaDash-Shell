@@ -3,7 +3,7 @@
 // window, tray, clock, system status, settings and power. Its popouts slide out of it beside
 // the item that opened them.
 
-import { PanelWindow, ExclusiveMode, MediaPlayerInfo, Shell, Workspaces, WindowInfo, Switcher, Audio, Network, Bluetooth, Battery, Notifications, Tray, Compositor, ClipboardHistory, Clock, Apps, AppInfo, Media, System } from "@slintlu";
+import { PanelWindow, ExclusiveMode, MediaPlayerInfo, Shell, Workspaces, WindowInfo, Switcher, Audio, Network, Bluetooth, Battery, Notifications, Tray, Compositor, ClipboardHistory, Clock, Apps, AppInfo, Media, System, Shared } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -667,6 +667,10 @@ component BarWindow inherits PanelWindow {
             UI.toggle-popup-at("clipboard", root.status-anchor);
         } else if Compositor.request == "power-menu" {
             UI.toggle-overlay("power");
+        } else if Compositor.request == "screencast" {
+            // The argument is where lunadash-screencast-chooser waits for the answer.
+            Shared.set-string("screencast-reply", Compositor.request-argument);
+            UI.open-overlay("screencast");
         } else if Compositor.request == "welcome" {
             // `lunadashctl setup` (setup again) and the demo session.
             UI.open-overlay("welcome");

@@ -1,0 +1,126 @@
+// Screen sharing: which screen or window an application may record. The compositor's portal
+// (lunadash-screencast-chooser) lists the sources in Shared and asks for this overlay; the
+// choice, or "cancel" when it closes without one, goes back through the same script.
+
+import { Shared, Shell } from "@slintlu";
+import { Style } from "../style/style.slint";
+import { UI } from "../state/ui.slint";
+import { Overlay } from "../components/overlay.slint";
+import { Icon } from "../components/icon.slint";
+import { TextButton, SectionTitle } from "../components/controls.slint";
+
+component SourceRow inherits Rectangle {
+    in property <string> label;
+    in property <string> icon;
+    callback clicked();
+    height: 52px;
+    border-radius: Style.radius-small;
+    background: touch.pressed ? Style.pressed : touch.has-hover ? Style.hover : Style.elevated;
+    animate background { duration: Style.motion-fast; }
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 14px;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 32px;
+                height: 32px;
+                border-radius: 16px;
+                background: Style.accent-soft;
+                Icon { name: root.icon; width: 18px; height: 18px; color: Style.accent; }
+            }
+        }
+        Text {
+            text: root.label;
+            color: Style.text;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+        VerticalLayout {
+            alignment: center;
+            Icon { name: "chevron-right"; width: 16px; height: 16px; color: Style.muted; }
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+export component ScreenCastPicker inherits Overlay {
+    name: "screencast";
+    namespace: "lunadash-screencast";
+    content-width: 560px;
+    content-height: 520px;
+
+    property <[string]> labels: Shared.get-list("screencast-labels", Shared.revision);
+    property <[string]> kinds: Shared.get-list("screencast-kinds", Shared.revision);
+    // The pipe lunadash-screencast-chooser waits on.
+    property <string> reply: Shared.get-string("screencast-reply", "", Shared.revision);
+    property <bool> answered;
+
+    function answer(choice: string) {
+        if root.reply != "" && !root.answered {
+            root.answered = true;
+            Shell.run("lunadash-screencast-chooser --answer " + root.reply + " " + choice);
+            Shared.set-string("screencast-reply", "");
+        }
+    }
+    function choose(index: int) {
+        root.answer(index);
+        UI.close-all();
+    }
+    changed shown => {
+        if self.shown {
+            root.answered = false;
+        } else {
+            // Closed without a choice (Esc, a click beside it): the application is told no.
+            root.answer("cancel");
+        }
+    }
+
+    VerticalLayout {
+        padding: Style.spacing-xl;
+        spacing: Style.spacing-md;
+        HorizontalLayout {
+            spacing: 12px;
+            VerticalLayout {
+                alignment: center;
+                Icon { name: "monitor"; width: 24px; height: 24px; color: Style.accent; }
+            }
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
+                Text { text: @tr("Share your screen"); color: Style.text; font-size: Style.font-title; font-weight: 600; }
+                Text { text: @tr("An application wants to record a screen or a window."); color: Style.muted; font-size: Style.font-small; wrap: word-wrap; }
+            }
+        }
+        Flickable {
+            vertical-stretch: 1;
+            content-height: sources.preferred-height;
+            sources := VerticalLayout {
+                spacing: 6px;
+                alignment: start;
+                SectionTitle { text: @tr("SCREENS"); }
+                for label[i] in root.labels: SourceRow {
+                    visible: root.kinds[i] == "monitor";
+                    height: self.visible ? 52px : 0px;
+                    label: label;
+                    icon: "monitor";
+                    clicked => { root.choose(i); }
+                }
+                SectionTitle { text: @tr("WINDOWS"); }
+                for label[i] in root.labels: SourceRow {
+                    visible: root.kinds[i] != "monitor";
+                    height: self.visible ? 52px : 0px;
+                    label: label;
+                    icon: "window";
+                    clicked => { root.choose(i); }
+                }
+            }
+        }
+        HorizontalLayout {
+            alignment: end;
+            TextButton { text: @tr("Cancel"); clicked => { UI.close-all(); } }
+        }
+    }
+}
