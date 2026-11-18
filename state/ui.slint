@@ -49,7 +49,7 @@ export global UI {
     }
     public function open-settings(page: string) {
         Shared.set-string("settings-page",
-            page == "wallpaper" || page == "panel" || page == "dock" || page == "menu" || page == "windows"
+            page == "account" || page == "wallpaper" || page == "panel" || page == "dock" || page == "menu" || page == "windows"
                 || page == "shortcuts" || page == "display" || page == "notifications" || page == "power"
                 || page == "language" || page == "about" ? page : "appearance");
         root.open-overlay("settings");

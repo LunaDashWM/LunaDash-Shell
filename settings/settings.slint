@@ -1,7 +1,7 @@
 // Settings: appearance, wallpaper, panel, dock, desktop menu, windows, display, notifications,
 // power, language and about. Pages group their settings in cards.
 
-import { Theme, Store, Idle, Session, Notifications, I18n, Shell, System, Compositor } from "@slintlu";
+import { Theme, Store, Idle, Session, Notifications, I18n, Shell, System, Compositor, Brightness, Files } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -98,6 +98,80 @@ component Page inherits VerticalLayout {
     if root.subtitle != "": Text { text: root.subtitle; color: Style.muted; font-size: Style.font-small; wrap: word-wrap; }
     Rectangle { height: Style.spacing-lg; }
     @children
+}
+
+// The account picture as a circle, or a person without one.
+component Avatar inherits Rectangle {
+    in property <length> size: 88px;
+    width: root.size;
+    height: root.size;
+    border-radius: root.size / 2;
+    background: Style.primary-container;
+    clip: true;
+    if Session.avatar.width > 0: Image {
+        width: 100%;
+        height: 100%;
+        source: Session.avatar;
+        image-fit: cover;
+    }
+    if Session.avatar.width == 0: Icon {
+        name: "user";
+        width: root.size * 0.5;
+        height: root.size * 0.5;
+        color: Style.on-primary-container;
+    }
+}
+
+component AccountPage inherits Page {
+    title: @tr("Account");
+    subtitle: @tr("Your name and picture, shown on the lock screen and the login screen.");
+    // The file chooser answers asynchronously.
+    property <bool> picking;
+    property <int> chosen-serial: Files.chosen-serial;
+    changed chosen-serial => {
+        if root.picking && Files.chosen != "" {
+            Session.set-avatar(Files.chosen);
+        }
+        root.picking = false;
+    }
+    Group {
+        title: @tr("PROFILE");
+        HorizontalLayout {
+            padding: Style.spacing-md;
+            spacing: Style.spacing-lg;
+            Avatar { size: 88px; }
+            VerticalLayout {
+                alignment: center;
+                spacing: 4px;
+                Text {
+                    text: Session.real-name != "" ? Session.real-name : Session.user;
+                    color: Style.text;
+                    font-size: Style.font-title;
+                    font-weight: 600;
+                    overflow: elide;
+                }
+                Text { text: Session.user + "@" + System.hostname; color: Style.muted; overflow: elide; }
+                HorizontalLayout {
+                    alignment: start;
+                    padding-top: 8px;
+                    TextButton {
+                        text: @tr("Change picture");
+                        icon: "image";
+                        clicked => {
+                            root.picking = true;
+                            Files.choose(@tr("Choose a picture"), "png,jpg,jpeg,webp,bmp", false, Files.user-dir("pictures"));
+                        }
+                    }
+                }
+                if Session.avatar-error != "": Text {
+                    text: Session.avatar-error;
+                    color: Style.danger;
+                    font-size: Style.font-small;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
 }
 
 component AppearancePage inherits Page {
@@ -862,8 +936,19 @@ component ShortcutsPage inherits Page {
 
 component DisplayPage inherits Page {
     title: @tr("Display");
-    subtitle: @tr("Night light and the pointer.");
+    subtitle: @tr("Brightness, night light and the pointer.");
     property <int> revision: Compositor.preferences-revision;
+    if Brightness.available: Group {
+        title: @tr("BRIGHTNESS");
+        Setting {
+            title: @tr("Screen brightness");
+            RangeSlider {
+                minimum: 2; maximum: 100; step: 1; unit: "%"; track-width: 200px;
+                value: Math.round(Brightness.level * 100);
+                committed(v) => { Brightness.set(v / 100); }
+            }
+        }
+    }
     Group {
         title: @tr("NIGHT LIGHT");
         Setting {
@@ -1047,6 +1132,7 @@ export component Settings inherits Overlay {
     content-height: 700px;
 
     property <[{id: string, icon: string, label: string, lunadash: bool}]> pages: [
+        { id: "account", icon: "user", label: @tr("Account"), lunadash: false },
         { id: "appearance", icon: "palette", label: @tr("Appearance"), lunadash: false },
         { id: "wallpaper", icon: "image", label: @tr("Wallpaper"), lunadash: false },
         { id: "panel", icon: "panel", label: @tr("Panel"), lunadash: false },
@@ -1072,7 +1158,7 @@ export component Settings inherits Overlay {
                 HorizontalLayout {
                     padding-bottom: Style.spacing-lg;
                     spacing: 10px;
-                    Image { source: @image-url("../assets/lunadash.png"); width: 28px; height: 28px; image-fit: contain; }
+                    Image { source: @image-url("../assets/lunadash-mark.svg"); width: 30px; height: 30px; image-fit: contain; }
                     Text { text: @tr("Settings"); color: Style.text; font-size: Style.font-title; font-weight: 600; vertical-alignment: center; }
                 }
                 for page in root.pages: ListRow {
@@ -1090,6 +1176,7 @@ export component Settings inherits Overlay {
             content-height: content.preferred-height;
             content := VerticalLayout {
                 padding: Style.spacing-xl;
+                if UI.settings-page == "account": Reveal { AccountPage { } }
                 if UI.settings-page == "appearance": Reveal { AppearancePage { } }
                 if UI.settings-page == "wallpaper": Reveal { WallpaperPage { } }
                 if UI.settings-page == "panel": Reveal { PanelPage { } }
