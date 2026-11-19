@@ -56,16 +56,12 @@ component ShortcutPreview inherits Card {
             horizontal-stretch: 1;
             overflow: elide;
         }
-        // Slint cannot filter a model: every shortcut gets an empty slot except the match.
+        // The first keys bound to the action; reading the bindings follows their changes.
         HorizontalLayout {
             alignment: end;
-            for shortcut in Compositor.shortcuts: HorizontalLayout {
-                spacing: Style.spacing-xs;
-                if shortcut.action == root.action: HorizontalLayout {
-                    spacing: Style.spacing-xs;
-                    for key in shortcut.keys: Keycap { key: key; y: (parent.height - self.height) / 2; }
-                }
-            }
+            spacing: Style.spacing-xs;
+            for key in Compositor.bindings.length >= 0 ? Compositor.keys-for("normal", root.action) : []:
+                Keycap { key: key; y: (parent.height - self.height) / 2; }
         }
     }
 }
@@ -153,7 +149,7 @@ export component Welcome inherits Overlay {
             }
         }
 
-        if Compositor.shortcuts.length > 0: VerticalLayout {
+        if Compositor.bindings.length > 0: VerticalLayout {
             spacing: Style.spacing-sm;
             SectionTitle { text: @tr("KEYBOARD SHORTCUTS"); }
             HorizontalLayout {
@@ -161,24 +157,24 @@ export component Welcome inherits Overlay {
                 VerticalLayout {
                     spacing: Style.spacing-sm;
                     horizontal-stretch: 1;
-                    ShortcutPreview { action: "launchLauncher"; label: @tr("Launcher"); icon: "apps"; }
-                    ShortcutPreview { action: "toggleOverview"; label: @tr("Overview"); icon: "grid"; }
-                    ShortcutPreview { action: "launchTerminal"; label: @tr("Terminal"); icon: "terminal"; }
-                    ShortcutPreview { action: "launchFiles"; label: @tr("Files"); icon: "folder"; }
-                    ShortcutPreview { action: "closeWindow"; label: @tr("Close window"); icon: "close"; }
+                    ShortcutPreview { action: "toggle-launcher"; label: @tr("Launcher"); icon: "apps"; }
+                    ShortcutPreview { action: "toggle-overview"; label: @tr("Overview"); icon: "grid"; }
+                    ShortcutPreview { action: "spawn-default terminal"; label: @tr("Terminal"); icon: "terminal"; }
+                    ShortcutPreview { action: "spawn-default files"; label: @tr("Files"); icon: "folder"; }
+                    ShortcutPreview { action: "close-window"; label: @tr("Close window"); icon: "close"; }
                 }
                 VerticalLayout {
                     spacing: Style.spacing-sm;
                     horizontal-stretch: 1;
-                    ShortcutPreview { action: "toggleFullscreen"; label: @tr("Fullscreen"); icon: "maximize"; }
+                    ShortcutPreview { action: "fullscreen-window"; label: @tr("Fullscreen"); icon: "maximize"; }
                     ShortcutPreview { action: "screenshot"; label: @tr("Screenshot"); icon: "screenshot"; }
-                    ShortcutPreview { action: "chooseWallpaper"; label: @tr("Wallpapers"); icon: "image"; }
-                    ShortcutPreview { action: "openControlCenter"; label: @tr("Control center"); icon: "dashboard"; }
-                    ShortcutPreview { action: "openClipboard"; label: @tr("Clipboard"); icon: "clipboard"; }
+                    ShortcutPreview { action: "choose-wallpaper"; label: @tr("Wallpapers"); icon: "image"; }
+                    ShortcutPreview { action: "open-control-center"; label: @tr("Control center"); icon: "dashboard"; }
+                    ShortcutPreview { action: "open-clipboard"; label: @tr("Clipboard"); icon: "clipboard"; }
                 }
             }
         }
-        if Compositor.shortcuts.length == 0: VerticalLayout {
+        if Compositor.bindings.length == 0: VerticalLayout {
             spacing: Style.spacing-md;
             Tip { icon: "apps"; title: @tr("Launcher"); text: @tr("Click the diamond in the panel or the apps button in the dock."); }
             Tip { icon: "dashboard"; title: @tr("Dashboard"); text: @tr("Click the moon in the panel for quick settings, media, performance and notifications."); }
