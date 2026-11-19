@@ -404,10 +404,11 @@ export component ListRow inherits Rectangle {
     touch := TouchArea { clicked => { root.clicked(); } }
 }
 
-// A single-line text field, with a hint while it is empty.
+// A single-line text field, with a hint while it is empty; `password` hides what is typed.
 export component TextField inherits Rectangle {
     in property <string> placeholder;
     in property <string> icon;
+    in property <bool> password;
     in-out property <string> text;
     callback accepted();
 
@@ -444,6 +445,7 @@ export component TextField inherits Rectangle {
                 font-size: Style.font-size;
                 vertical-alignment: center;
                 single-line: true;
+                input-type: root.password ? InputType.password : InputType.text;
                 accepted => { root.accepted(); }
             }
         }

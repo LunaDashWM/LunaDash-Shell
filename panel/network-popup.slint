@@ -1,14 +1,44 @@
 // Network connection and Bluetooth devices.
 
-import { Network, Bluetooth } from "@slintlu";
+import { Network, Bluetooth, WifiNetwork } from "@slintlu";
+import { UI } from "../state/ui.slint";
+import { Icon } from "../components/icon.slint";
 import { Style } from "../style/style.slint";
 import { PanelPopup } from "popup.slint";
-import { QuickToggle, SectionTitle, ListRow, TextButton } from "../components/controls.slint";
+import { QuickToggle, SectionTitle, ListRow, TextButton, TextField, IconButton } from "../components/controls.slint";
 
 export component NetworkPopup inherits PanelPopup {
     name: "network";
     namespace: "lunadash-network";
     preferred-width: 360px;
+
+    // The network whose password is asked for, or "".
+    property <string> asking;
+    // Clicking a network: the connected one disconnects, a secured new one asks for its
+    // password, the rest connect.
+    function choose(network: WifiNetwork) {
+        if network.active {
+            Network.disconnect-wifi();
+        } else if network.secure && !network.known {
+            root.asking = root.asking == network.ssid ? "" : network.ssid;
+        } else {
+            root.join(network.ssid, "");
+        }
+    }
+    function join(ssid: string, password: string) {
+        root.asking = "";
+        Network.connect-wifi(ssid, password);
+    }
+    // The list is fresh while the popup shows: scanned on opening, then every 15 s.
+    property <bool> showing: UI.popup == root.name && UI.on-active-screen && Network.wifi-enabled;
+    changed showing => {
+        if self.showing {
+            Network.scan();
+        } else {
+            root.asking = "";
+        }
+    }
+    Timer { interval: 15s; running: root.showing; triggered => { Network.scan(); } }
 
     SectionTitle { text: @tr("NETWORK"); }
     if !Network.available: Text { text: @tr("NetworkManager is not running."); color: Style.muted; wrap: word-wrap; }
@@ -26,6 +56,69 @@ export component NetworkPopup inherits PanelPopup {
             detail: Network.wifi-enabled ? @tr("On") : @tr("Off");
             on: Network.wifi-enabled;
             clicked => { Network.set-wifi-enabled(!Network.wifi-enabled); }
+        }
+        if Network.wifi-enabled: VerticalLayout {
+            spacing: 2px;
+            HorizontalLayout {
+                spacing: 8px;
+                Text {
+                    text: Network.scanning ? @tr("Looking for networks…") : @tr("Wi-Fi networks");
+                    color: Style.muted;
+                    font-size: Style.font-small;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                IconButton { icon: "reboot"; size: 26px; clicked => { Network.scan(); } }
+            }
+            for network in Network.networks: VerticalLayout {
+                ListRow {
+                    icon: "wifi";
+                    title: network.ssid;
+                    subtitle: (Network.connecting == network.ssid ? @tr("Connecting…")
+                        : network.active ? @tr("Connected") : network.known ? @tr("Saved")
+                        : network.secure ? @tr("Secured") : @tr("Open"))
+                        + " · " + Math.round(network.strength * 100) + "%";
+                    selected: network.active;
+                    clicked => { root.choose(network); }
+                    if network.secure: Icon {
+                        name: "lock";
+                        width: 14px;
+                        height: 14px;
+                        y: (parent.height - self.height) / 2;
+                        color: Style.muted;
+                    }
+                }
+                // A secured network without a saved connection asks for its password here.
+                if root.asking == network.ssid: HorizontalLayout {
+                    padding-left: 10px;
+                    padding-bottom: 6px;
+                    spacing: 8px;
+                    password := TextField {
+                        horizontal-stretch: 1;
+                        password: true;
+                        placeholder: @tr("Password");
+                        icon: "lock";
+                        accepted => { root.join(network.ssid, self.text); }
+                    }
+                    TextButton {
+                        text: @tr("Connect");
+                        primary: true;
+                        enabled: password.text != "";
+                        clicked => { root.join(network.ssid, password.text); }
+                    }
+                }
+            }
+            if !Network.scanning && Network.networks.length == 0: Text {
+                text: @tr("No Wi-Fi networks found.");
+                color: Style.muted;
+                font-size: Style.font-small;
+            }
+            if Network.error != "": Text {
+                text: Network.error;
+                color: Style.danger;
+                font-size: Style.font-small;
+                wrap: word-wrap;
+            }
         }
     }
     SectionTitle { text: @tr("BLUETOOTH"); }

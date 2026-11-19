@@ -1,7 +1,7 @@
 // The wallpaper, with an optional large clock in the corner. Right-clicking it opens the
 // desktop menu (desktop-menu.slint).
 
-import { PanelWindow, Layer, ExclusiveMode, Files, Compositor, Store, Shared, Clock, Shell } from "@slintlu";
+import { PanelWindow, Layer, ExclusiveMode, Files, Compositor, Store, Shared, Clock, Shell, Session } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { Time } from "../state/time.slint";
@@ -44,11 +44,11 @@ export global Wallpapers {
     }
     // Opens the desktop's file chooser; `Wallpaper` applies what the user picks.
     public function pick-file() {
-        Shared.set-string("wallpaper-pick", "file");
+        Shared.set-string("file-pick", "wallpaper");
         Files.choose(@tr("Choose a wallpaper"), root.extensions, false, Prefs.wallpaper-dir);
     }
     public function pick-folder() {
-        Shared.set-string("wallpaper-pick", "folder");
+        Shared.set-string("file-pick", "wallpaper-folder");
         Files.choose(@tr("Choose a wallpaper folder"), "", true, Prefs.wallpaper-dir);
     }
     // LunaDash's wallpaper library folder (Super+W), rescanned right away.
@@ -59,7 +59,7 @@ export global Wallpapers {
         }
     }
     public function pick-library() {
-        Shared.set-string("wallpaper-pick", "library");
+        Shared.set-string("file-pick", "library");
         Files.choose(@tr("Choose the wallpaper library folder"), "", true, Compositor.wallpaper-directory);
     }
     public function set-favorite(path: string, favorite: bool) {
@@ -86,16 +86,20 @@ export component Wallpaper inherits PanelWindow {
     anchor-right: true;
     default-font-family: Style.font;
 
-    // The file chooser answers asynchronously; one window applies the choice.
+    // The file chooser answers asynchronously, maybe after the page that asked has closed:
+    // this window, always there, applies the choice ("file-pick" says what it is for).
     property <int> chosen-serial: Files.chosen-serial;
     changed chosen-serial => {
-        if UI.primary && Shared.get-string("wallpaper-pick", "", Shared.revision) != "" {
-            if Shared.get-string("wallpaper-pick", "", Shared.revision) == "library" {
+        if UI.primary {
+            let pick = Shared.get-string("file-pick", "", Shared.revision);
+            if pick == "library" {
                 Wallpapers.set-library(Files.chosen);
-            } else {
+            } else if pick == "avatar" {
+                Session.set-avatar(Files.chosen);
+            } else if pick != "" {
                 Wallpapers.open(Files.chosen);
             }
-            Shared.set-string("wallpaper-pick", "");
+            Shared.set-string("file-pick", "");
         }
     }
 

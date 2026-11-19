@@ -52,26 +52,19 @@ export global Apply {
         }
     }
 
-    // LunaDash's desktop language when the compositor has one ("en_US" means the untranslated
-    // English texts), else the shell's own choice.
+    // The shell's language, as chosen in Settings ("" for the untranslated English texts).
     public function language() {
-        if Compositor.language != "" {
-            I18n.set-language(Compositor.language == "en_US" ? "" : Compositor.language);
-        } else if Prefs.language != "" {
+        if Prefs.language != "" {
             I18n.set-language(Prefs.language);
         }
     }
-    // Chooses a language ("" for English): on LunaDash for the whole desktop.
+    // Chooses the shell's language ("" for English); it applies at once.
     public function choose-language(language: string) {
-        if Compositor.has-commands {
-            Compositor.command("language", language == "" ? "en_US" : language);
+        if language == "" {
+            Store.remove("language");
         } else {
-            if language == "" {
-                Store.remove("language");
-            } else {
-                Store.set-string("language", language);
-            }
-            I18n.set-language(language);
+            Store.set-string("language", language);
         }
+        I18n.set-language(language);
     }
 }

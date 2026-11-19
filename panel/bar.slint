@@ -677,13 +677,6 @@ component BarWindow inherits PanelWindow {
         }
     }
 
-    property <string> desktop-language: Compositor.language;
-    changed desktop-language => {
-        if UI.primary && root.active {
-            Apply.language();
-        }
-    }
-
     ready => {
         // Shell-wide settings are applied once, from the primary screen. Both bars exist (one
         // hidden), so only the one in use does it.

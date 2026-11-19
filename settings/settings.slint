@@ -1,7 +1,7 @@
 // Settings: appearance, wallpaper, panel, dock, desktop menu, windows, display, notifications,
 // power, language and about. Pages group their settings in cards.
 
-import { Theme, Store, Idle, Session, Notifications, I18n, Shell, System, Compositor, Brightness, Files, KeyBindingInfo } from "@slintlu";
+import { Theme, Store, Idle, Session, Notifications, I18n, Shell, System, Compositor, Brightness, Files, KeyBindingInfo, Shared } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -125,15 +125,6 @@ component Avatar inherits Rectangle {
 component AccountPage inherits Page {
     title: @tr("Account");
     subtitle: @tr("Your name and picture, shown on the lock screen and the login screen.");
-    // The file chooser answers asynchronously.
-    property <bool> picking;
-    property <int> chosen-serial: Files.chosen-serial;
-    changed chosen-serial => {
-        if root.picking && Files.chosen != "" {
-            Session.set-avatar(Files.chosen);
-        }
-        root.picking = false;
-    }
     Group {
         title: @tr("PROFILE");
         HorizontalLayout {
@@ -158,7 +149,8 @@ component AccountPage inherits Page {
                         text: @tr("Change picture");
                         icon: "image";
                         clicked => {
-                            root.picking = true;
+                            // The wallpaper window applies the choice (it outlives this page).
+                            Shared.set-string("file-pick", "avatar");
                             Files.choose(@tr("Choose a picture"), "png,jpg,jpeg,webp,bmp", false, Files.user-dir("pictures"));
                         }
                     }
