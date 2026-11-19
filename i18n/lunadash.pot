@@ -1174,13 +1174,6 @@ msgstr ""
 msgid "KEYBOARD"
 msgstr ""
 
-#: settings/settings.slint:925
-msgid "NumLock on at startup"
-msgstr ""
-
-#: settings/settings.slint:926
-msgid "Turns NumLock on when you log in or plug in a keyboard. Also numLock in desktop-preferences.json."
-msgstr ""
 
 #: settings/settings.slint:946
 msgid "WORKSPACES"

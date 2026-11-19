@@ -1174,13 +1174,6 @@ msgstr "{} 已經用於 {}。"
 msgid "KEYBOARD"
 msgstr "鍵盤"
 
-#: settings/settings.slint:925
-msgid "NumLock on at startup"
-msgstr "開機時開啟 NumLock"
-
-#: settings/settings.slint:926
-msgid "Turns NumLock on when you log in or plug in a keyboard. Also numLock in desktop-preferences.json."
-msgstr "登入或插上鍵盤時開啟 NumLock。也可在 desktop-preferences.json 設定 numLock。"
 
 #: settings/settings.slint:946
 msgid "WORKSPACES"

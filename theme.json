@@ -1,42 +1,42 @@
 {
-  "dark": "lunadash-dark",
-  "light": "lunadash-light",
-  "mode": "auto",
-  "system-accent": false,
-  "radius": 16,
-  "font-size": 13,
-  "palettes": {
-    "lunadash-dark": {
-      "dark": true,
-      "background": "#111318",
-      "surface": "#191c22",
-      "surface-alt": "#22262e",
-      "border": "#586172",
-      "text": "#e2e5ed",
-      "text-muted": "#bdc5d3",
-      "accent": "#9ccbfb",
-      "red": "#ffb4ab",
-      "green": "#b4d7ad",
-      "yellow": "#efcd8c",
-      "blue": "#9ccbfb",
-      "magenta": "#d3bfe6",
-      "cyan": "#a6d8dc"
-    },
-    "lunadash-light": {
-      "dark": false,
-      "background": "#f7f9ff",
-      "surface": "#eceff6",
-      "surface-alt": "#e0e4ec",
-      "border": "#8a94a6",
-      "text": "#181c22",
-      "text-muted": "#424954",
-      "accent": "#2f628c",
-      "red": "#ba1a1a",
-      "green": "#3a6a33",
-      "yellow": "#7a5900",
-      "blue": "#2f628c",
-      "magenta": "#6d5677",
-      "cyan": "#1e6a6f"
+    "dark": "lunadash-dark",
+    "light": "lunadash-light",
+    "mode": "auto",
+    "system-accent": false,
+    "radius": 16,
+    "font-size": 13,
+    "palettes": {
+        "lunadash-dark": {
+            "dark": true,
+            "background": "#111318",
+            "surface": "#191c22",
+            "surface-alt": "#22262e",
+            "border": "#586172",
+            "text": "#e2e5ed",
+            "text-muted": "#bdc5d3",
+            "accent": "#9ccbfb",
+            "red": "#ffb4ab",
+            "green": "#b4d7ad",
+            "yellow": "#efcd8c",
+            "blue": "#9ccbfb",
+            "magenta": "#d3bfe6",
+            "cyan": "#a6d8dc"
+        },
+        "lunadash-light": {
+            "dark": false,
+            "background": "#f7f9ff",
+            "surface": "#eceff6",
+            "surface-alt": "#e0e4ec",
+            "border": "#8a94a6",
+            "text": "#181c22",
+            "text-muted": "#424954",
+            "accent": "#2f628c",
+            "red": "#ba1a1a",
+            "green": "#3a6a33",
+            "yellow": "#7a5900",
+            "blue": "#2f628c",
+            "magenta": "#6d5677",
+            "cyan": "#1e6a6f"
+        }
     }
-  }
 }

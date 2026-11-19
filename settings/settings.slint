@@ -920,17 +920,6 @@ component ShortcutsPage inherits Page {
         }
     }
     Group {
-        title: @tr("KEYBOARD");
-        Setting {
-            title: @tr("NumLock on at startup");
-            description: @tr("Turns NumLock on when you log in or plug in a keyboard. Also numLock in desktop-preferences.json.");
-            Switch {
-                on: Compositor.preference-bool("numLock", false, Compositor.preferences-revision);
-                toggled => { Compositor.set-preference-bool("numLock", !self.on); }
-            }
-        }
-    }
-    Group {
         title: @tr("WINDOWS");
         for binding in Compositor.bindings: VerticalLayout {
             if binding.mode == "normal" && root.category(binding.name) == "windows": BindingRow {
