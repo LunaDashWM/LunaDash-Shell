@@ -593,6 +593,7 @@ component ClockItem inherits Rectangle {
             color: root.open ? Style.accent-ink : Style.accent;
         }
         if !root.vertical: Text {
+            y: (parent.height - self.height) / 2;
             text: Time.clock;
             color: root.open ? Style.accent-ink : Style.accent;
             font-size: Style.font-size + 1px;
@@ -600,6 +601,7 @@ component ClockItem inherits Rectangle {
             vertical-alignment: center;
         }
         if !root.vertical && Prefs.clock-date: Text {
+            y: (parent.height - self.height) / 2;
             text: Time.short-date;
             color: root.open ? Style.accent-ink : Style.text;
             font-size: Style.font-size;
