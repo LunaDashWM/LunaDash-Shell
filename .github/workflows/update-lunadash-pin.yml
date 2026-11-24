@@ -1,9 +1,9 @@
 name: Update LunaDash pin
 
-# Every push to main pins it in LunaDash: packaging/shell-revision on LunaDash's dev
-# branch is set to this repository's main and committed there, so the next
-# LunaDash build uses it. Needs the LUNADASH_PIN_TOKEN secret: a fine-grained
-# token with Contents read and write on LuYishan-4/LunaDash.
+# Every push to main opens or updates a PR to pin it in LunaDash:
+# packaging/shell-revision on LunaDash's dev branch is set to this repository's
+# main. Needs the LUNADASH_PIN_TOKEN secret: a fine-grained token with Contents
+# read and write, and Pull requests write, on LuYishan-4/LunaDash.
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
           TOKEN: ${{ secrets.LUNADASH_PIN_TOKEN }}
         run: |
           if [ -z "$TOKEN" ]; then
-            echo "::error::Add the LUNADASH_PIN_TOKEN secret (Contents read and write on LuYishan-4/LunaDash)."
+            echo "::error::Add LUNADASH_PIN_TOKEN with Contents read/write and Pull requests write on LuYishan-4/LunaDash."
             exit 1
           fi
       - uses: actions/checkout@v7
@@ -36,36 +36,59 @@ jobs:
           repository: LuYishan-4/LunaDash
           ref: dev
           token: ${{ secrets.LUNADASH_PIN_TOKEN }}
-          # Kept so the pin commit can be pushed back.
+          # Kept so the automation branch can be pushed.
           persist-credentials: true
-      - name: Pin LunaDash-Shell main on LunaDash dev
+      - name: Open or update pin PR
         env:
+          GH_TOKEN: ${{ secrets.LUNADASH_PIN_TOKEN }}
+          TARGET_REPO: LuYishan-4/LunaDash
+          PIN_BRANCH: automation/update-lunadash-shell-pin
           PIN_FILE: packaging/shell-revision
         run: |
           set -euo pipefail
-          # The head of main now, not the pushed commit: a run that waited
-          # behind a newer push must not pin an older revision.
+          # Read main now, so queued runs always pin the newest shell revision.
           revision=$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main | cut -f1)
           test "${#revision}" -eq 40
+
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3; do
-            git fetch --quiet origin dev
-            git reset --quiet --hard origin/dev
-            if [ "$(cat "$PIN_FILE")" = "$revision" ]; then
-              echo "LunaDash dev already pins LunaDash-Shell $revision."
-              exit 0
-            fi
-            printf '%s\n' "$revision" > "$PIN_FILE"
-            # The pin must be fetchable the way LunaDash builds fetch it.
-            rm -rf "$RUNNER_TEMP/LunaDash-Shell"
-            bash scripts/fetch-shell.sh "$RUNNER_TEMP/LunaDash-Shell"
-            git commit --quiet -m "chore(packaging): pin LunaDash-Shell ${revision:0:7}" -- "$PIN_FILE"
-            if git push --quiet origin HEAD:dev; then
-              echo "Pinned LunaDash-Shell $revision on LunaDash dev."
-              exit 0
-            fi
-            echo "LunaDash dev moved meanwhile; retrying."
-          done
-          echo "::error::LunaDash dev kept moving; the pin was not pushed."
-          exit 1
+          git fetch --quiet origin +refs/heads/dev:refs/remotes/origin/dev
+          git checkout --quiet -B "$PIN_BRANCH" refs/remotes/origin/dev
+
+          if [ "$(cat "$PIN_FILE")" = "$revision" ]; then
+            echo "LunaDash dev already pins LunaDash-Shell $revision."
+            exit 0
+          fi
+
+          printf '%s\n' "$revision" > "$PIN_FILE"
+          # The pin must be fetchable the way LunaDash builds it.
+          rm -rf "$RUNNER_TEMP/LunaDash-Shell"
+          bash scripts/fetch-shell.sh "$RUNNER_TEMP/LunaDash-Shell"
+          git commit --quiet -m "chore(packaging): pin LunaDash-Shell ${revision:0:7}" -- "$PIN_FILE"
+
+          # This dedicated automation branch is rebuilt from dev on each run.
+          git push --quiet --force origin "HEAD:refs/heads/$PIN_BRANCH"
+
+          title="chore(packaging): pin LunaDash-Shell ${revision:0:7}"
+          body=$(cat <<EOF
+          Updates \`packaging/shell-revision\` to LunaDash-Shell commit \`$revision\`.
+
+          This PR was opened automatically from LunaDash-Shell's \`main\` branch.
+          EOF
+          )
+
+          open_pr=$(gh pr list --repo "$TARGET_REPO" --state open --head "$PIN_BRANCH" --json number --jq '.[0].number // empty')
+          if [ -n "$open_pr" ]; then
+            gh pr edit "$open_pr" --repo "$TARGET_REPO" --title "$title" --body "$body"
+            echo "Updated pin PR #$open_pr for LunaDash-Shell $revision."
+            exit 0
+          fi
+
+          closed_pr=$(gh pr list --repo "$TARGET_REPO" --state closed --head "$PIN_BRANCH" --json number,mergedAt --jq '[.[] | select(.mergedAt == null)][0].number // empty')
+          if [ -n "$closed_pr" ]; then
+            gh pr reopen "$closed_pr" --repo "$TARGET_REPO"
+            gh pr edit "$closed_pr" --repo "$TARGET_REPO" --title "$title" --body "$body"
+            echo "Reopened pin PR #$closed_pr for LunaDash-Shell $revision."
+          else
+            gh pr create --repo "$TARGET_REPO" --base dev --head "$PIN_BRANCH" --title "$title" --body "$body"
+          fi
