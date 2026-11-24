@@ -1,6 +1,6 @@
 // Clipboard history.
 
-import { ClipboardHistory } from "@slintlu";
+import { ClipboardHistory, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
 import { PanelPopup } from "popup.slint";
@@ -35,6 +35,8 @@ export component ClipboardPopup inherits PanelPopup {
                 clicked => {
                     ClipboardHistory.copy(entry.id);
                     UI.close-all();
+                    // Let the previous window regain focus, then paste the selected entry.
+                    Shell.exec("wtype -s 50 -M ctrl -k v");
                 }
                 IconButton {
                     icon: "close";

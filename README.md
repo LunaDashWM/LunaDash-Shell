@@ -80,6 +80,10 @@ curl -fsSL https://raw.githubusercontent.com/LunaDashWM/LunaDash-Shell/main/inst
 lunadash-shell
 ```
 
+Selecting an entry in the clipboard popup restores it to the clipboard and immediately sends
+`Ctrl+V` to the previously focused application. This requires the Wayland `wtype` utility;
+without it, the entry is still restored to the clipboard and can be pasted manually.
+
 Start it from your compositor's autostart, e.g. `spawn-at-startup "lunadash-shell"` in niri
 or `exec lunadash-shell` in Sway / Hyprland. The shell takes over notifications, the tray and
 polkit only when no other daemon provides them.
