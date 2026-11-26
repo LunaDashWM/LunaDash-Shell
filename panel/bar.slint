@@ -114,21 +114,20 @@ component Workspaces-Strip inherits Rectangle {
 // a middle click closes it.
 component TaskIcon inherits Rectangle {
     in property <WindowInfo> window;
-    property <AppInfo> app: Apps.get(root.window.app-id + ".desktop");
     width: 28px;
     height: 24px;
     border-radius: 8px;
     background: root.window.focused ? Style.accent-soft : touch.has-hover ? Style.hover : transparent;
     animate background { duration: Style.motion-fast; }
-    if root.app.icon.width > 0: Image {
+    if root.window.icon.width > 0: Image {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
         width: 18px;
         height: 18px;
-        source: root.app.icon;
+        source: root.window.icon;
         image-fit: contain;
     }
-    if root.app.icon.width == 0: Icon {
+    if root.window.icon.width == 0: Icon {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
         name: "window";
@@ -462,15 +461,15 @@ component WindowTitle inherits Rectangle {
     in property <bool> vertical;
     property <AppInfo> app: Apps.get(Workspaces.focused-window.app-id + ".desktop");
     property <bool> has-title: Prefs.window-title && Workspaces.focused-window.title != "";
-    if root.has-title && root.app.icon.width > 0: Image {
+    if root.has-title && Workspaces.focused-window.icon.width > 0: Image {
         x: root.vertical ? (parent.width - self.width) / 2 : 0px;
         y: root.vertical ? 0px : (parent.height - self.height) / 2;
         width: 18px;
         height: 18px;
-        source: root.app.icon;
+        source: Workspaces.focused-window.icon;
         image-fit: contain;
     }
-    if root.has-title && root.app.icon.width == 0: Icon {
+    if root.has-title && Workspaces.focused-window.icon.width == 0: Icon {
         x: root.vertical ? (parent.width - self.width) / 2 : 0px;
         y: root.vertical ? 0px : (parent.height - self.height) / 2;
         name: "window";
