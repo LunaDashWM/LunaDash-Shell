@@ -552,6 +552,7 @@ component TrayIcon inherits Rectangle {
 component ClockItem inherits Rectangle {
     in property <bool> vertical;
     property <bool> open: UI.popup == "calendar";
+    property <length> time-size: Style.font-size + 1px;
     property <length> anchor: root.vertical ? self.absolute-position.y + self.height / 2 : self.absolute-position.x + self.width / 2;
     width: root.vertical ? 36px : line.preferred-width;
     height: root.vertical ? stack.preferred-height + 12px : 36px;
@@ -592,20 +593,30 @@ component ClockItem inherits Rectangle {
             height: 15px;
             color: root.open ? Style.accent-ink : Style.accent;
         }
-        if !root.vertical: Text {
-            y: (parent.height - self.height) / 2;
-            text: Time.clock;
-            color: root.open ? Style.accent-ink : Style.accent;
-            font-size: Style.font-size + 1px;
-            font-weight: 600;
-            vertical-alignment: center;
+        // The time and the date share one baseline, where the time's capitals
+        // are centred: each text finds it from its own metrics (cap height over
+        // font size is the same at every size) and puts its ascent above it.
+        // Centring each line box instead leaves them a pixel or two apart.
+        if !root.vertical: Rectangle {
+            width: time.preferred-width;
+            time := Text {
+                y: (parent.height + self.font-metrics.cap-height / self.font-size * root.time-size) / 2 - self.font-metrics.ascent;
+                text: Time.clock;
+                color: root.open ? Style.accent-ink : Style.accent;
+                font-size: root.time-size;
+                font-weight: 600;
+                vertical-alignment: top;
+            }
         }
-        if !root.vertical && Prefs.clock-date: Text {
-            y: (parent.height - self.height) / 2;
-            text: Time.short-date;
-            color: root.open ? Style.accent-ink : Style.text;
-            font-size: Style.font-size;
-            vertical-alignment: center;
+        if !root.vertical && Prefs.clock-date: Rectangle {
+            width: date.preferred-width;
+            date := Text {
+                y: (parent.height + self.font-metrics.cap-height / self.font-size * root.time-size) / 2 - self.font-metrics.ascent;
+                text: Time.short-date;
+                color: root.open ? Style.accent-ink : Style.text;
+                font-size: Style.font-size;
+                vertical-alignment: top;
+            }
         }
     }
     touch := TouchArea { clicked => { UI.toggle-popup-at("calendar", root.anchor); } }
