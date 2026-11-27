@@ -1413,10 +1413,56 @@ component LanguagePage inherits Page {
     }
 }
 
+// One fact about the machine on the About page: an icon, what it is, its value, more detail
+// below, and a meter when it fills up.
+component InfoTile inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <string> value;
+    in property <string> detail;
+    in property <float> meter: -1;
+    horizontal-stretch: 1;
+
+    border-radius: Style.radius-medium + 4px;
+    background: Style.surface;
+    HorizontalLayout {
+        padding: Style.spacing-md + 2px;
+        spacing: Style.spacing-md;
+        Rectangle {
+            width: 40px;
+            height: 40px;
+            y: 0;
+            border-radius: 14px * Style.corner-scale;
+            background: Style.tonal;
+            Icon { name: root.icon; width: 20px; height: 20px; color: Style.on-tonal; }
+        }
+        VerticalLayout {
+            alignment: start;
+            spacing: 3px;
+            Text { text: root.label; color: Style.muted; font-size: Style.font-small; }
+            Text { text: root.value != "" ? root.value : "—"; color: Style.text; font-size: Style.font-size + 1px; font-weight: 600; overflow: elide; }
+            if root.detail != "": Text { text: root.detail; color: Style.muted; font-size: Style.font-small; overflow: elide; }
+            @children
+            if root.meter >= 0: Rectangle {
+                height: 6px;
+                border-radius: 3px;
+                background: Style.elevated;
+                Rectangle {
+                    x: 0;
+                    width: parent.width * clamp(root.meter, 0, 1);
+                    border-radius: 3px;
+                    background: root.meter > 0.9 ? Style.danger : Style.accent;
+                    animate width { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+                }
+            }
+        }
+    }
+}
+
 component AboutPage inherits Page {
     title: @tr("About");
     Card {
-        height: 132px;
+        height: 140px;
         clip: true;
         Rectangle {
             background: @linear-gradient(120deg, Style.accent.with-alpha(0.22) 0%, transparent 70%);
@@ -1444,29 +1490,120 @@ component AboutPage inherits Page {
             }
             VerticalLayout {
                 alignment: center;
+                horizontal-stretch: 1;
                 spacing: 2px;
                 Text { text: "LunaDash"; color: Style.text; font-size: 28px; font-weight: 700; }
                 Text { text: @tr("Desktop shell written in Slint, running on SlintLu {}", Shell.version); color: Style.muted; wrap: word-wrap; }
+                HorizontalLayout {
+                    padding-top: Style.spacing-sm;
+                    spacing: Style.spacing-xs + 2px;
+                    alignment: start;
+                    for chip in [
+                        { icon: "user", text: Session.user + "@" + System.hostname },
+                        { icon: "clock", text: @tr("Up {}", System.uptime) },
+                    ]: Rectangle {
+                        height: 26px;
+                        width: chip-row.preferred-width;
+                        border-radius: 13px;
+                        background: Style.surface.with-alpha(0.7);
+                        chip-row := HorizontalLayout {
+                            padding-left: 9px;
+                            padding-right: 11px;
+                            spacing: 6px;
+                            Icon { name: chip.icon; width: 14px; height: 14px; y: (parent.height - self.height) / 2; color: Style.accent; }
+                            Text { text: chip.text; color: Style.text; font-size: Style.font-small; vertical-alignment: center; }
+                        }
+                    }
+                }
             }
         }
     }
     Rectangle { height: Style.spacing-lg; }
-    Group {
-        title: @tr("SYSTEM");
-        for row in [
-            { label: @tr("System"), value: System.os },
-            { label: @tr("Kernel"), value: System.kernel },
-            { label: @tr("Host"), value: System.hostname },
-            { label: @tr("Compositor"), value: Compositor.name },
-            { label: @tr("Renderer"), value: Shell.renderer },
-            { label: @tr("Memory"), value: System.memory-text },
-            { label: @tr("Uptime"), value: System.uptime },
-        ]: HorizontalLayout {
-            height: 36px;
-            Text { text: row.label; color: Style.muted; width: 160px; vertical-alignment: center; }
-            Text { text: row.value; color: Style.text; vertical-alignment: center; overflow: elide; }
+    SectionTitle { text: @tr("HARDWARE"); }
+    Rectangle { height: Style.spacing-sm; }
+    VerticalLayout {
+        spacing: Style.spacing-sm;
+        HorizontalLayout {
+            spacing: Style.spacing-sm;
+            InfoTile {
+                width: (parent.width - Style.spacing-sm) / 2;
+                icon: "cpu";
+                label: @tr("Processor");
+                value: System.processor;
+                detail: @tr("{} cores · {} threads", System.processor-cores, System.processor-threads)
+                    + (System.processor-speed != "" ? " · " + System.processor-speed : "");
+                meter: System.cpu;
+            }
+            InfoTile {
+                width: (parent.width - Style.spacing-sm) / 2;
+                icon: "gpu";
+                label: @tr("Graphics");
+                value: System.gpus.length > 0 ? System.gpus[0] : "";
+                detail: System.gpu-drivers.length > 0 ? System.gpu-drivers[0] : "";
+                meter: System.gpu-available ? System.gpu : -1;
+                if System.gpu-available && System.gpu-memory-text != "": Text {
+                    text: @tr("Video memory {}", System.gpu-memory-text);
+                    color: Style.muted;
+                    font-size: Style.font-small;
+                    overflow: elide;
+                }
+                for gpu[i] in System.gpus: Text {
+                    visible: i > 0;
+                    height: i > 0 ? self.preferred-height : 0px;
+                    text: gpu + " · " + System.gpu-drivers[i];
+                    color: Style.muted;
+                    font-size: Style.font-small;
+                    overflow: elide;
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: Style.spacing-sm;
+            InfoTile {
+                width: (parent.width - Style.spacing-sm) / 2;
+                icon: "memory";
+                label: @tr("Memory");
+                value: System.memory-total;
+                detail: @tr("{} in use", System.memory-text);
+                meter: System.memory;
+            }
+            InfoTile {
+                width: (parent.width - Style.spacing-sm) / 2;
+                icon: "disk";
+                label: @tr("Storage");
+                value: System.disk-text;
+                detail: @tr("{}% of the system disk used", Math.round(System.disk * 100));
+                meter: System.disk;
+            }
+        }
+        InfoTile {
+            icon: "monitor";
+            label: Shell.screens.length == 1 ? @tr("Display") : @tr("Displays");
+            value: Shell.screens.length > 0 ? Shell.screens[0].description : "";
+            for screen in Shell.screens: Text {
+                text: screen.name + " · " + screen.width + " × " + screen.height + " · " + @tr("scale {}", screen.scale);
+                color: Style.muted;
+                font-size: Style.font-small;
+            }
         }
     }
+    Rectangle { height: Style.spacing-lg; }
+    SectionTitle { text: @tr("SOFTWARE"); }
+    Rectangle { height: Style.spacing-sm; }
+    VerticalLayout {
+        spacing: Style.spacing-sm;
+        HorizontalLayout {
+            spacing: Style.spacing-sm;
+            InfoTile { width: (parent.width - Style.spacing-sm) / 2; icon: "diamond"; label: @tr("Operating system"); value: System.os; detail: System.architecture; }
+            InfoTile { width: (parent.width - Style.spacing-sm) / 2; icon: "terminal"; label: @tr("Kernel"); value: System.kernel; detail: System.packages != "" ? @tr("{} packages", System.packages) : ""; }
+        }
+        HorizontalLayout {
+            spacing: Style.spacing-sm;
+            InfoTile { width: (parent.width - Style.spacing-sm) / 2; icon: "window"; label: @tr("Desktop"); value: Compositor.name; detail: @tr("{} renderer", Shell.renderer); }
+            InfoTile { width: (parent.width - Style.spacing-sm) / 2; icon: "layers"; label: @tr("Shell"); value: "SlintLu " + Shell.version; detail: Shell.env("SHELL"); }
+        }
+    }
+    Rectangle { height: Style.spacing-lg; }
     HorizontalLayout {
         spacing: Style.spacing-sm;
         alignment: start;
