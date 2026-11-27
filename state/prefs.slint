@@ -17,7 +17,7 @@ export global Prefs {
     out property <string> wallpaper-transition: Store.get-string("wallpaper-transition", "random", Store.revision);
 
     // Bar and screen frame
-    // "top" or "left".
+    // "top", "bottom", "left" or "right".
     out property <string> bar-position: Store.get-string("bar-position", "top", Store.revision);
     // A frame in the bar's colour around the whole screen, out of which the panels open.
     out property <bool> screen-frame: Store.get-bool("screen-frame", true, Store.revision);
@@ -25,9 +25,6 @@ export global Prefs {
     out property <int> bar-opacity: Store.get-number("bar-opacity", 80, Store.revision);
     // "dots" or "numbers".
     out property <string> workspace-style: Store.get-string("workspace-style", "numbers", Store.revision);
-    out property <bool> window-title: Store.get-bool("window-title", true, Store.revision);
-    // Every window's icon after the workspaces, like a waybar taskbar.
-    out property <bool> taskbar: Store.get-bool("taskbar", true, Store.revision);
     out property <bool> clock-date: Store.get-bool("clock-date", true, Store.revision);
     out property <bool> clock-24h: Store.get-bool("clock-24h", true, Store.revision);
     out property <bool> clock-seconds: Store.get-bool("clock-seconds", false, Store.revision);

@@ -1,25 +1,18 @@
-// The bar, in the frame's colour: along the top edge (`Bar`, the default) or down the left
-// one (`SideBar`). In reading order — the LunaDash mark (launcher), workspaces, the focused
-// window, tray, clock, system status, settings and power. Its popouts slide out of it beside
-// the item that opened them.
+// The bar, in the frame's colour: along the top or bottom edge (`Bar`) or down a side one
+// (`SideBar`). Its items, in reading order, are the user's arrangement (PanelLayout); by
+// default the LunaDash mark (launcher), workspaces, taskbar, the focused window, tray, clock,
+// system status, settings and power. Its popouts slide out of it beside the item that opened
+// them.
 
 import { PanelWindow, ExclusiveMode, MediaPlayerInfo, Shell, Workspaces, WindowInfo, Switcher, Audio, Network, Bluetooth, Battery, Notifications, Tray, Compositor, ClipboardHistory, Clock, Apps, AppInfo, Media, System, Shared } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
+import { PanelLayout } from "../state/panel-layout.slint";
 import { UI } from "../state/ui.slint";
 import { Time } from "../state/time.slint";
 import { Apply } from "../state/apply.slint";
 import { Icon } from "../components/icon.slint";
 import { IconButton } from "../components/controls.slint";
-
-// Bar items are 30–36 px squares; in a horizontal bar they are centred vertically and the
-// other way round.
-component Slot inherits Rectangle {
-    in property <bool> vertical;
-    in property <length> size: 36px;
-    width: root.vertical ? Style.bar-width : root.size;
-    height: root.vertical ? root.size : Style.bar-width;
-}
 
 // The workspaces as a pill of buttons, like waybar's: occupied ones on a tonal track, the
 // active one a primary-coloured capsule. The windows themselves are in the taskbar after it.
@@ -156,14 +149,26 @@ component TaskIcon inherits Rectangle {
 }
 
 component Taskbar inherits Rectangle {
-    width: row.preferred-width;
-    height: 32px;
+    in property <bool> vertical;
+    width: root.vertical ? 32px : row.preferred-width;
+    height: root.vertical ? column.preferred-height : 32px;
     border-radius: 16px;
     background: Style.surface;
+    column := VerticalLayout {
+        padding: 4px;
+        spacing: 2px;
+        if root.vertical: VerticalLayout {
+            spacing: 2px;
+            for window in Workspaces.windows: TaskIcon { window: window; }
+        }
+    }
     row := HorizontalLayout {
         padding: 4px;
         spacing: 2px;
-        for window in Workspaces.windows: TaskIcon { window: window; }
+        if !root.vertical: HorizontalLayout {
+            spacing: 2px;
+            for window in Workspaces.windows: TaskIcon { window: window; }
+        }
     }
 }
 
@@ -460,7 +465,7 @@ component UsageChip inherits Rectangle {
 component WindowTitle inherits Rectangle {
     in property <bool> vertical;
     property <AppInfo> app: Apps.get(Workspaces.focused-window.app-id + ".desktop");
-    property <bool> has-title: Prefs.window-title && Workspaces.focused-window.title != "";
+    property <bool> has-title: Workspaces.focused-window.title != "";
     if root.has-title && Workspaces.focused-window.icon.width > 0: Image {
         x: root.vertical ? (parent.width - self.width) / 2 : 0px;
         y: root.vertical ? 0px : (parent.height - self.height) / 2;
@@ -647,12 +652,120 @@ component SwitcherButton inherits IconButton {
     right-clicked => { Switcher.open(true); }
 }
 
+// An application's launcher: its icon; a click starts it.
+component AppButton inherits Rectangle {
+    in property <string> app;
+    // Mentioning Apps.all looks the application up again once the background scan has found it.
+    property <AppInfo> info: Apps.all.length >= 0 ? Apps.get(root.app) : Apps.get(root.app);
+    width: 30px;
+    height: 30px;
+    border-radius: 15px;
+    background: touch.pressed ? Style.pressed : touch.has-hover ? Style.hover : transparent;
+    animate background { duration: Style.motion-fast; }
+    if root.info.icon.width > 0: Image { width: 20px; height: 20px; source: root.info.icon; image-fit: contain; }
+    if root.info.icon.width == 0: Icon { name: "apps"; width: 17px; height: 17px; color: Style.text; }
+    touch := TouchArea { clicked => { Apps.launch(root.app); } }
+}
+
+// One of the user's commands: a terminal icon, and its name beside it in a top or bottom bar.
+component CommandButton inherits Rectangle {
+    in property <string> item;
+    in property <bool> vertical;
+    property <string> label: PanelLayout.command-label(root.item);
+    property <bool> compact: root.vertical || root.label == "";
+    width: root.compact ? 30px : row.preferred-width;
+    height: 30px;
+    border-radius: 15px;
+    background: touch.pressed ? Style.pressed : touch.has-hover ? Style.hover : transparent;
+    animate background { duration: Style.motion-fast; }
+    if root.compact: Icon { name: "terminal"; width: 17px; height: 17px; color: Style.text; }
+    row := HorizontalLayout {
+        padding-left: 9px;
+        padding-right: 12px;
+        spacing: 6px;
+        if !root.compact: Icon { y: (parent.height - self.height) / 2; name: "terminal"; width: 16px; height: 16px; color: Style.text; }
+        if !root.compact: Text {
+            text: root.label;
+            max-width: 160px;
+            color: Style.text;
+            font-size: Style.font-small;
+            font-weight: 500;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    touch := TouchArea { clicked => { PanelLayout.activate(root.item); } }
+}
+
+// One item of the bar (see PanelLayout), centred across it, with half the bar's spacing on
+// either side. Items with nothing to show (no windows for the taskbar, no tray icons …) take no
+// room; the window title and spacers take the free space.
+component BarItem inherits Rectangle {
+    in property <string> id;
+    in property <bool> vertical;
+    // The status pill moved: where the clipboard popout lines up when a shortcut opens it.
+    callback status-moved(anchor: length);
+    property <bool> grows: PanelLayout.stretches(root.id);
+    property <length> extent: root.vertical ? box.preferred-height : box.preferred-width;
+    property <length> length: root.extent > 0 ? root.extent + PanelLayout.spacing : 0px;
+    min-width: root.vertical ? Style.bar-width : root.grows ? 0px : root.length;
+    max-width: root.vertical ? Style.bar-width : root.grows ? 100000px : root.length;
+    min-height: !root.vertical ? Style.bar-width : root.grows ? 0px : root.length;
+    max-height: !root.vertical ? Style.bar-width : root.grows ? 100000px : root.length;
+    horizontal-stretch: !root.vertical && root.grows ? 1 : 0;
+    vertical-stretch: root.vertical && root.grows ? 1 : 0;
+
+    if root.id == "title": WindowTitle {
+        x: root.vertical ? 0px : PanelLayout.spacing / 2;
+        y: root.vertical ? PanelLayout.spacing / 2 : 0px;
+        width: parent.width - (root.vertical ? 0px : PanelLayout.spacing);
+        height: parent.height - (root.vertical ? PanelLayout.spacing : 0px);
+        vertical: root.vertical;
+    }
+    box := HorizontalLayout {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: self.preferred-width;
+        height: self.preferred-height;
+        if root.id == "launcher": LunaButton { }
+        if root.id == "workspaces" && Workspaces.available: Workspaces-Strip { vertical: root.vertical; }
+        if root.id == "taskbar" && Workspaces.available && Workspaces.windows.length > 0: Taskbar { vertical: root.vertical; }
+        if root.id == "switcher" && Switcher.available: SwitcherButton { }
+        if root.id == "media" && !root.vertical && Media.available && (Media.player.title != "" || Media.player.identity != ""): MediaChip { }
+        if root.id == "usage" && !root.vertical: UsageChip { }
+        if root.id == "tray" && !root.vertical: HorizontalLayout {
+            spacing: 2px;
+            for item in Tray.items: TrayIcon { visible: item.status != "passive"; id: item.id; icon: item.icon; is-menu: item.item-is-menu; }
+        }
+        if root.id == "tray" && root.vertical: VerticalLayout {
+            spacing: 2px;
+            for item in Tray.items: TrayIcon { visible: item.status != "passive"; id: item.id; icon: item.icon; is-menu: item.item-is-menu; }
+        }
+        if root.id == "clock": ClockItem { vertical: root.vertical; }
+        if root.id == "status": StatusPill {
+            vertical: root.vertical;
+            changed anchor => { root.status-moved(self.anchor); }
+        }
+        if root.id == "settings": SettingsButton { }
+        if root.id == "power": PowerButton { }
+        if root.id == "separator": Rectangle {
+            width: root.vertical ? 20px : 1px;
+            height: root.vertical ? 1px : 20px;
+            background: Style.hairline;
+        }
+        if PanelLayout.is-app(root.id): AppButton { app: PanelLayout.app-id(root.id); }
+        if PanelLayout.is-command(root.id): CommandButton { item: root.id; vertical: root.vertical; }
+    }
+}
+
 // What both bars share: the frame colour, the shell-wide startup work and the compositor's
 // keyboard shortcuts. Only the bar in use (`active`) acts on them.
 component BarWindow inherits PanelWindow {
     in property <bool> active;
     // Where the clipboard popout lines up when a shortcut opens it.
-    in property <length> status-anchor;
+    in-out property <length> status-anchor;
+    // Beside the frame at either end, less the half spacing the end items bring.
+    out property <length> end-padding: Style.frame-width + max(0px, 6px - PanelLayout.spacing / 2);
     namespace: "lunadash-bar";
     exclusive-mode: ExclusiveMode.ignore;
     shown: root.active;
@@ -714,37 +827,16 @@ export component Bar inherits BarWindow {
     anchor-left: true;
     anchor-right: true;
     preferred-height: Style.bar-width;
-    status-anchor: status.anchor;
 
     HorizontalLayout {
-        padding-left: Style.frame-width + 6px;
-        padding-right: Style.frame-width + 6px;
-        spacing: Style.spacing-sm;
+        padding-left: root.end-padding;
+        padding-right: root.end-padding;
         alignment: stretch;
-
-        Slot { size: 36px; LunaButton { } }
-        if Workspaces.available: Slot { size: ws.width; ws := Workspaces-Strip { vertical: false; } }
-        if Workspaces.available && Prefs.taskbar && Workspaces.windows.length > 0: Slot { size: tasks.width; tasks := Taskbar { } }
-        if Switcher.available: Slot { size: 30px; SwitcherButton { } }
-        WindowTitle {
-            horizontal-stretch: 1;
-            min-width: 0px;
+        for id in PanelLayout.entries: BarItem {
+            id: id;
             vertical: false;
+            status-moved(anchor) => { root.status-anchor = anchor; }
         }
-        if Media.available && (Media.player.title != "" || Media.player.identity != ""): Slot { size: media.width; media := MediaChip { } }
-        Slot { size: usage.width; usage := UsageChip { } }
-        if Tray.items.length > 0: HorizontalLayout {
-            spacing: 2px;
-            for item in Tray.items: Slot {
-                visible: item.status != "passive";
-                size: 30px;
-                TrayIcon { id: item.id; icon: item.icon; is-menu: item.item-is-menu; }
-            }
-        }
-        Slot { size: clock.width; clock := ClockItem { vertical: false; } }
-        Slot { size: status.width; status := StatusPill { vertical: false; } }
-        Slot { size: 30px; SettingsButton { } }
-        Slot { size: 30px; PowerButton { } }
     }
 }
 
@@ -757,34 +849,15 @@ export component SideBar inherits BarWindow {
     anchor-left: Style.bar-edge == "left";
     anchor-right: Style.bar-edge == "right";
     preferred-width: Style.bar-width;
-    status-anchor: status.anchor;
 
     VerticalLayout {
-        padding-top: Style.frame-width + 6px;
-        padding-bottom: Style.frame-width + 6px;
-        spacing: Style.spacing-md;
+        padding-top: root.end-padding;
+        padding-bottom: root.end-padding;
         alignment: stretch;
-
-        Slot { vertical: true; size: 36px; LunaButton { } }
-        if Workspaces.available: Slot { vertical: true; size: ws.height; ws := Workspaces-Strip { vertical: true; } }
-        if Switcher.available: Slot { vertical: true; size: 30px; SwitcherButton { } }
-        WindowTitle {
-            vertical-stretch: 1;
-            min-height: 0px;
+        for id in PanelLayout.entries: BarItem {
+            id: id;
             vertical: true;
+            status-moved(anchor) => { root.status-anchor = anchor; }
         }
-        if Tray.items.length > 0: VerticalLayout {
-            spacing: 2px;
-            for item in Tray.items: Slot {
-                visible: item.status != "passive";
-                vertical: true;
-                size: 30px;
-                TrayIcon { id: item.id; icon: item.icon; is-menu: item.item-is-menu; }
-            }
-        }
-        Slot { vertical: true; size: clock.height; clock := ClockItem { vertical: true; } }
-        Slot { vertical: true; size: status.height; status := StatusPill { vertical: true; } }
-        Slot { vertical: true; size: 30px; SettingsButton { } }
-        Slot { vertical: true; size: 30px; PowerButton { } }
     }
 }

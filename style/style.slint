@@ -9,6 +9,7 @@
 
 import { Theme } from "@slintlu";
 import { Prefs } from "../state/prefs.slint";
+import { PanelLayout } from "../state/panel-layout.slint";
 
 export global Style {
     // Accent choices offered in Settings; `accent-hex` is what LunaDash's compositor stores.
@@ -87,7 +88,7 @@ export global Style {
     // The screen edge the bar runs along: "top", "bottom", "left" or "right".
     out property <string> bar-edge: Prefs.bar-position == "bottom" || Prefs.bar-position == "left" || Prefs.bar-position == "right" ? Prefs.bar-position : "top";
     out property <bool> bar-horizontal: root.bar-edge == "top" || root.bar-edge == "bottom";
-    out property <length> bar-width: 48px;
+    out property <length> bar-width: PanelLayout.thickness;
     out property <length> panel-height: root.bar-width;
     // How far the desktop area inside the bar and the frame lies from each screen edge.
     out property <length> inner-left: root.bar-edge == "left" ? root.bar-width : root.frame-width;

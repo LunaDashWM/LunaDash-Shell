@@ -1,0 +1,173 @@
+// The bar's items: which it shows, in which order, and how large and far apart they are.
+//
+// The user's arrangement is the Store list "panel-items": built-in item ids, "spacer" (empty
+// space that grows), "separator", "app-<n>" for application launchers, whose desktop file is
+// stored under "panel-app:<id>", and "command-<n>" for commands of their own, whose label and
+// command line are stored under "panel-label:<id>" and "panel-command:<id>". Until it is first edited (Settings → Panel) the
+// bar shows `builtins`. Commands run through Shell.run, which starts the program with its
+// arguments and never hands the line to a shell.
+
+import { Store, Shell, Apps } from "@slintlu";
+
+export global PanelLayout {
+    // Every built-in item, in their default order: the bar until it is first edited.
+    out property <[string]> builtins: ["launcher", "workspaces", "taskbar", "switcher", "title", "media",
+        "usage", "tray", "clock", "status", "settings", "power"];
+    out property <bool> edited: Store.get-bool("panel-items-edited", false, Store.revision);
+    out property <[string]> entries: root.edited ? Store.get-list("panel-items", Store.revision) : root.builtins;
+
+    // The bar's thickness and the space between its items.
+    out property <length> thickness: clamp(Store.get-number("bar-size", 48, Store.revision), 40, 64) * 1px;
+    out property <length> spacing: clamp(Store.get-number("bar-spacing", 8, Store.revision), 0, 24) * 1px;
+
+    public pure function is-command(id: string) -> bool {
+        id.starts-with("command-")
+    }
+    public pure function is-app(id: string) -> bool {
+        id.starts-with("app-")
+    }
+    // The desktop file of an application launcher.
+    public pure function app-id(id: string) -> string {
+        root.is-app(id) ? Store.get-string("panel-app:" + id, "", Store.revision) : ""
+    }
+    // The command line of one of the user's items ("" for the others).
+    public pure function command(id: string) -> string {
+        root.is-command(id) ? Store.get-string("panel-command:" + id, "", Store.revision) : ""
+    }
+    public pure function command-label(id: string) -> string {
+        Store.get-string("panel-label:" + id, "", Store.revision)
+    }
+    // Items that grow to fill the bar's free space.
+    public pure function stretches(id: string) -> bool {
+        id == "title" || id == "spacer"
+    }
+    // Items too wide for a side bar.
+    public pure function only-horizontal(id: string) -> bool {
+        id == "media" || id == "usage"
+    }
+    public pure function label(id: string) -> string {
+        id == "launcher" ? @tr("Applications")
+            : id == "workspaces" ? @tr("Workspaces")
+            : id == "taskbar" ? @tr("Taskbar")
+            : id == "switcher" ? @tr("Window switcher")
+            : id == "title" ? @tr("Window title")
+            : id == "media" ? @tr("Media")
+            : id == "usage" ? @tr("Processor and memory")
+            : id == "tray" ? @tr("System tray")
+            : id == "clock" ? @tr("Clock")
+            : id == "status" ? @tr("Status")
+            : id == "settings" ? @tr("Settings")
+            : id == "power" ? @tr("Power")
+            : id == "spacer" ? @tr("Spacer")
+            : id == "separator" ? @tr("Separator")
+            : root.is-app(id) ? (Apps.all.length >= 0 ? Apps.get(root.app-id(id)).name : "")
+            : root.command-label(id) != "" ? root.command-label(id) : root.command(id)
+    }
+    public pure function description(id: string) -> string {
+        id == "launcher" ? @tr("The LunaDash mark. Right-click opens the dashboard.")
+            : id == "workspaces" ? @tr("A button for every workspace.")
+            : id == "taskbar" ? @tr("Every window's icon.")
+            : id == "switcher" ? @tr("Opens the window switcher.")
+            : id == "title" ? @tr("The focused window's icon and title. Takes the free space.")
+            : id == "media" ? @tr("What is playing, with play and pause.")
+            : id == "usage" ? @tr("Two small meters.")
+            : id == "tray" ? @tr("Icons of applications running in the background.")
+            : id == "clock" ? @tr("Opens the calendar.")
+            : id == "status" ? @tr("Clipboard, network, Bluetooth, sound, battery and notifications.")
+            : id == "spacer" ? @tr("Empty space that grows, pushing the items after it to the end.")
+            : id == "separator" ? @tr("A line between groups of items.")
+            : root.is-app(id) ? @tr("Starts the application.")
+            : root.command(id)
+    }
+    public pure function icon(id: string) -> string {
+        id == "launcher" ? "apps"
+            : id == "workspaces" ? "workspace"
+            : id == "taskbar" ? "window"
+            : id == "switcher" ? "window"
+            : id == "title" ? "maximize"
+            : id == "media" ? "music"
+            : id == "usage" ? "cpu"
+            : id == "tray" ? "grid"
+            : id == "clock" ? "calendar"
+            : id == "status" ? "wifi"
+            : id == "settings" ? "settings"
+            : id == "power" ? "power"
+            : id == "spacer" ? "panel"
+            : id == "separator" ? "minus"
+            : root.is-app(id) ? "apps"
+            : "terminal"
+    }
+    // A built-in item the user has taken out of the bar.
+    public pure function hidden(id: string) -> bool {
+        root.edited && !Store.list-contains("panel-items", id, Store.revision)
+    }
+
+    public function activate(id: string) {
+        if root.is-app(id) {
+            Apps.launch(root.app-id(id));
+        } else if root.command(id) != "" {
+            Shell.run(root.command(id));
+        }
+    }
+
+    // Editing (Settings → Panel). The first change stores the default arrangement, so it
+    // applies to what the bar showed.
+    function begin-edit() {
+        if !root.edited {
+            Store.set-list("panel-items", root.builtins);
+            Store.set-bool("panel-items-edited", true);
+        }
+    }
+    public function move(index: int, offset: int) {
+        root.begin-edit();
+        Store.list-move("panel-items", index, index + offset);
+    }
+    public function remove(index: int) {
+        root.begin-edit();
+        if index >= 0 && index < root.entries.length {
+            let id = root.entries[index];
+            Store.list-remove-at("panel-items", index);
+            if root.is-command(id) {
+                Store.remove("panel-label:" + id);
+                Store.remove("panel-command:" + id);
+            } else if root.is-app(id) {
+                Store.remove("panel-app:" + id);
+            }
+        }
+    }
+    // Puts a built-in item, a spacer or a separator at the end.
+    public function add(id: string) {
+        root.begin-edit();
+        Store.list-insert("panel-items", -1, id);
+    }
+    // A fresh id for one of the user's items.
+    function next-id(kind: string) -> string {
+        let id = kind + "-" + Store.get-number("panel-next", 1, Store.revision);
+        Store.set-number("panel-next", Store.get-number("panel-next", 1, Store.revision) + 1);
+        id
+    }
+    public function add-app(desktop-file: string) {
+        root.begin-edit();
+        let id = root.next-id("app");
+        Store.set-string("panel-app:" + id, desktop-file);
+        Store.list-insert("panel-items", -1, id);
+    }
+    public function add-command(label: string, command: string) {
+        root.begin-edit();
+        let id = root.next-id("command");
+        Store.set-string("panel-label:" + id, label);
+        Store.set-string("panel-command:" + id, command);
+        Store.list-insert("panel-items", -1, id);
+    }
+    public function update-command(id: string, label: string, command: string) {
+        Store.set-string("panel-label:" + id, label);
+        Store.set-string("panel-command:" + id, command);
+    }
+    // Back to the default items and sizes.
+    public function reset() {
+        Store.remove("panel-items");
+        Store.remove("panel-items-edited");
+        Store.remove("bar-size");
+        Store.remove("bar-spacing");
+    }
+}
