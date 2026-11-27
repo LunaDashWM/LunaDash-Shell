@@ -37,15 +37,22 @@ Sway, where it keeps its own settings.
   program as text.
 - **Dock** — off by default (Settings → Dock): pinned applications and open windows grouped
   per application; click to open, focus or cycle windows.
-- **Wallpaper** — a picker with thumbnails for any folder and an optional desktop clock. A new
-  wallpaper is revealed over the old one by a fade, wipe, growing disc or zoom (random by
-  default; Settings → Wallpaper → Transition).
+- **Wallpaper** — a picker with thumbnails for any folder. A new wallpaper is revealed over the
+  old one by a fade, wipe, growing disc or zoom (random by default; Settings → Wallpaper →
+  Transition).
+- **Desktop widgets** — a clock, an analogue clock, a calendar, a greeting, resource gauges,
+  network traffic, graphics card meters, now playing, a picture frame and a note on the
+  wallpaper. The widgets button on the bar (or the desktop menu) opens an editor to move,
+  resize, reshape, add and remove them; nothing changes until you save.
+- **Style profiles** — save the look of the desktop (appearance, bar, dock, desktop menu,
+  wallpaper and widgets) under a name and switch between looks (Settings → Style profiles).
 - **Notifications** — pop-ups with actions and images, history, do not disturb.
 - **Lock screen** — PAM authentication, automatic locking after inactivity and before sleep.
 - **Polkit dialog**, **power menu**, **volume / brightness OSD**, **welcome card**.
-- **Settings** — appearance (mode, palettes, transparency, animations), wallpaper, bar
-  (position, screen frame), dock, desktop menu, notifications, power and lock, language and
-  about.
+- **Settings** — appearance (mode, palettes, transparency, animations), style profiles,
+  wallpaper, desktop widgets, bar (position, screen frame), dock, desktop menu, notifications,
+  power and lock, language and about (the machine's processor, graphics, memory, storage,
+  displays and software).
 - **Translations** — English and Traditional Chinese (`i18n/zh_TW.po`).
 
 Settings are stored by SlintLu in `$XDG_STATE_HOME/slintlu`. The colours come from
