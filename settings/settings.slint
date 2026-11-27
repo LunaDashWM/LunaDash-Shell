@@ -1162,12 +1162,23 @@ component AboutPage inherits Page {
         HorizontalLayout {
             padding: Style.spacing-xl;
             spacing: Style.spacing-lg;
-            Image {
-                source: @image-url("../assets/lunadash.png");
+            Rectangle {
                 width: 84px;
-                height: 84px;
-                y: (parent.height - self.height) / 2;
-                image-fit: contain;
+                Rectangle {
+                    width: 128px;
+                    height: 128px;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: self.width / 2;
+                    background: @radial-gradient(circle, #9db8ff40 0%, #9db8ff00 70%);
+                }
+                Image {
+                    source: @image-url("../assets/luna-mark.svg");
+                    width: 84px;
+                    height: 84px;
+                    y: (parent.height - self.height) / 2;
+                    image-fit: contain;
+                }
             }
             VerticalLayout {
                 alignment: center;
