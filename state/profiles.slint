@@ -1,0 +1,50 @@
+// Style profiles: named looks of the shell the user saves and switches between. A profile keeps
+// the settings whose keys start with one of `prefixes` (SlintLu stores the copies apart from the
+// settings): appearance, the bar, the dock, the desktop menu, the wallpaper and the widgets.
+
+import { Store, Theme, Compositor } from "@slintlu";
+import { Prefs } from "prefs.slint";
+import { Apply } from "apply.slint";
+import { Wallpapers } from "../wallpaper/wallpaper.slint";
+
+export global Profiles {
+    out property <[string]> prefixes: ["theme-mode", "palette", "accent", "font-family", "transparency", "glass-opacity",
+        "corners", "text-scale", "animations", "animation-speed", "bar-", "screen-frame", "workspace-style", "clock-",
+        "week-starts-monday", "dock", "panel-", "desktop-menu", "wallpaper", "widget", "toast-position", "launcher-density"];
+    out property <[string]> names: Store.profiles(Store.revision);
+    // The profile last saved or loaded.
+    out property <string> active: Store.get-string("profile", "", Store.revision);
+
+    public function save(name: string) {
+        // On LunaDash the wallpaper is the desktop's: keep its current one with the profile.
+        if Wallpapers.managed {
+            Store.set-string("wallpaper", Wallpapers.path);
+        }
+        Store.save-profile(name, root.prefixes);
+        Store.set-string("profile", name);
+    }
+    public function load(name: string) {
+        Store.load-profile(name, root.prefixes);
+        Store.set-string("profile", name);
+        Apply.theme();
+        if Prefs.palette == "" {
+            Theme.set-palette(Theme.dark ? "lunadash-dark" : "lunadash-light");
+        }
+        if Compositor.has-commands {
+            Compositor.set-preference-string("themeMode", Prefs.theme-mode);
+            Compositor.set-preference-bool("animations", Prefs.animations);
+        }
+        if Prefs.accent >= 0 {
+            Apply.set-accent(Prefs.accent);
+        }
+        if Wallpapers.managed && Prefs.wallpaper != "" {
+            Wallpapers.choose(Prefs.wallpaper);
+        }
+    }
+    public function remove(name: string) {
+        Store.delete-profile(name);
+        if root.active == name {
+            Store.remove("profile");
+        }
+    }
+}

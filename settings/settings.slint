@@ -13,6 +13,7 @@ import { Apply } from "../state/apply.slint";
 import { DesktopMenu } from "../state/desktop-menu.slint";
 import { PanelLayout } from "../state/panel-layout.slint";
 import { Widgets, WidgetKind } from "../state/widgets.slint";
+import { Profiles } from "../state/profiles.slint";
 
 component Segmented inherits Rectangle {
     in property <[string]> labels;
@@ -465,6 +466,88 @@ component WidgetsPage inherits Page {
                 Widgets.edit();
                 Widgets.add(kind.id, Shell.screen.name,
                     (Shell.screen.width * 1px - Widgets.default-width(kind.id)) / 2, (Shell.screen.height * 1px - Widgets.default-height(kind.id)) / 2);
+            }
+        }
+    }
+}
+
+component ProfilesPage inherits Page {
+    title: @tr("Style profiles");
+    subtitle: @tr("Save the look of your desktop — colours, font, panel, dock, wallpaper and widgets — under a name, and switch between looks at any time.");
+    property <string> confirm-delete;
+    Card {
+        HorizontalLayout {
+            padding: Style.spacing-lg;
+            spacing: Style.spacing-sm;
+            name := TextField {
+                horizontal-stretch: 1;
+                icon: "layers";
+                placeholder: @tr("Name for the current look");
+                accepted => { root.save(); }
+            }
+            TextButton { horizontal-stretch: 0; y: (parent.height - self.height) / 2; icon: "plus"; text: @tr("Save"); primary: true; enabled: name.text != ""; clicked => { root.save(); } }
+        }
+    }
+    function save() {
+        if name.text != "" {
+            Profiles.save(name.text);
+            name.text = "";
+        }
+    }
+    Rectangle { height: Style.spacing-lg; }
+    SectionTitle { text: @tr("SAVED PROFILES"); }
+    Rectangle { height: Style.spacing-sm; }
+    if Profiles.names.length == 0: Card {
+        height: 96px;
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px;
+            Text { text: @tr("No profiles yet"); color: Style.text; font-weight: 600; horizontal-alignment: center; }
+            Text { text: @tr("Set up the desktop the way you like it, then save it above."); color: Style.muted; font-size: Style.font-small; horizontal-alignment: center; }
+        }
+    }
+    VerticalLayout {
+        spacing: Style.spacing-sm;
+        for profile in Profiles.names: row := Rectangle {
+            property <bool> active: Profiles.active == profile;
+            height: 64px;
+            border-radius: Style.radius-medium + 4px;
+            background: self.active ? Style.tonal : Style.surface;
+            border-width: self.active ? 1px : 0px;
+            border-color: Style.accent.with-alpha(0.5);
+            animate background { duration: Style.motion-fast; }
+            HorizontalLayout {
+                padding-left: Style.spacing-md;
+                padding-right: Style.spacing-md;
+                spacing: Style.spacing-md;
+                Rectangle {
+                    width: 40px;
+                    height: 40px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 14px * Style.corner-scale;
+                    background: row.active ? Style.accent : Style.elevated;
+                    Icon { name: row.active ? "check" : "layers"; width: 20px; height: 20px; color: row.active ? Style.accent-ink : Style.text; }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    horizontal-stretch: 1;
+                    Text { text: profile; color: Style.text; font-weight: 600; overflow: elide; }
+                    Text { text: row.active ? @tr("In use") : @tr("Saved look"); color: Style.muted; font-size: Style.font-small; }
+                }
+                if root.confirm-delete != profile: HorizontalLayout {
+                    spacing: Style.spacing-xs;
+                    alignment: end;
+                    TextButton { y: (parent.height - self.height) / 2; text: @tr("Apply"); primary: true; clicked => { Profiles.load(profile); } }
+                    TextButton { y: (parent.height - self.height) / 2; text: @tr("Update"); clicked => { Profiles.save(profile); } }
+                    IconButton { y: (parent.height - self.height) / 2; icon: "trash"; size: 34px; tint: Style.danger; clicked => { root.confirm-delete = profile; } }
+                }
+                if root.confirm-delete == profile: HorizontalLayout {
+                    spacing: Style.spacing-xs;
+                    alignment: end;
+                    Text { text: @tr("Delete this profile?"); color: Style.text; vertical-alignment: center; }
+                    TextButton { y: (parent.height - self.height) / 2; text: @tr("Delete"); danger: true; clicked => { Profiles.remove(profile); root.confirm-delete = ""; } }
+                    TextButton { y: (parent.height - self.height) / 2; text: @tr("Keep"); clicked => { root.confirm-delete = ""; } }
+                }
             }
         }
     }
@@ -1723,6 +1806,7 @@ export component Settings inherits Overlay {
     property <[{id: string, icon: string, label: string, lunadash: bool}]> pages: [
         { id: "account", icon: "user", label: @tr("Account"), lunadash: false },
         { id: "appearance", icon: "palette", label: @tr("Appearance"), lunadash: false },
+        { id: "profiles", icon: "layers", label: @tr("Style profiles"), lunadash: false },
         { id: "wallpaper", icon: "image", label: @tr("Wallpaper"), lunadash: false },
         { id: "widgets", icon: "widgets", label: @tr("Desktop widgets"), lunadash: false },
         { id: "panel", icon: "panel", label: @tr("Panel"), lunadash: false },
@@ -1801,6 +1885,7 @@ export component Settings inherits Overlay {
                 padding: Style.spacing-xl;
                 if UI.settings-page == "account": Section { direction: root.direction; AccountPage { } }
                 if UI.settings-page == "appearance": Section { direction: root.direction; AppearancePage { } }
+                if UI.settings-page == "profiles": Section { direction: root.direction; ProfilesPage { } }
                 if UI.settings-page == "wallpaper": Section { direction: root.direction; WallpaperPage { } }
                 if UI.settings-page == "widgets": Section { direction: root.direction; WidgetsPage { } }
                 if UI.settings-page == "panel": Section { direction: root.direction; PanelPage { } }
