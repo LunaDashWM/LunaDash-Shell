@@ -995,6 +995,10 @@ component ShortcutsPage inherits Page {
             : name == "expel-window-from-column" ? @tr("Take the window out of its column")
             : name == "center-column" ? @tr("Center the column")
             : name == "set-column-width" ? @tr("Column width {}", argument)
+            : name == "tile-window" && argument == "left" ? @tr("Tile the window to the left")
+            : name == "tile-window" && argument == "right" ? @tr("Tile the window to the right")
+            : name == "tile-window" && argument == "up" ? @tr("Tile the window to the top")
+            : name == "tile-window" && argument == "down" ? @tr("Tile the window to the bottom")
             : name == "maximize-column" ? @tr("Maximize")
             : name == "fullscreen-window" ? @tr("Fullscreen")
             : name == "close-window" ? @tr("Close window")
@@ -1032,6 +1036,7 @@ component ShortcutsPage inherits Page {
             || name == "focus-window-down" || name == "move-column-left" || name == "move-column-right"
             || name == "consume-or-expel-window-left" || name == "consume-or-expel-window-right"
             || name == "expel-window-from-column" || name == "center-column" || name == "set-column-width"
+            || name == "tile-window"
             || name == "maximize-column" || name == "fullscreen-window" || name == "close-window"
             || name == "minimize-window" || name == "toggle-scratchpad" ? "windows"
             : "apps"
