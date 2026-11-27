@@ -1,0 +1,524 @@
+// The desktop widgets themselves (see state/widgets.slint for the layout). Each fills the
+// space it is given and scales its type with it. They follow the System and Clock services,
+// which change every two seconds and every minute at most.
+
+import { Clock, System, Session, Media, Files, Battery, Shell } from "@slintlu";
+import { Style } from "../style/style.slint";
+import { Prefs } from "../state/prefs.slint";
+import { Time } from "../state/time.slint";
+import { Icon } from "../components/icon.slint";
+import { IconButton } from "../components/controls.slint";
+
+// The time, large and bold, and when there is room a bar and the month, day and weekday
+// stacked beside it.
+component ClockFace inherits Rectangle {
+    in property <color> ink;
+    property <bool> dated: root.width > root.height * 2.3;
+    property <float> s: root.dated ? min(root.width / 540px, root.height / 150px) : min(root.width / 300px, root.height / 140px);
+    HorizontalLayout {
+        alignment: center;
+        spacing: 22px * root.s;
+        HorizontalLayout {
+            spacing: 6px * root.s;
+            Text {
+                text: Time.hm(Clock.hour, Clock.minute);
+                color: root.ink;
+                font-size: 112px * root.s;
+                font-weight: 700;
+                vertical-alignment: center;
+            }
+            if !Prefs.clock-24h: Text {
+                text: Clock.hour < 12 ? "AM" : "PM";
+                color: root.ink;
+                font-size: 30px * root.s;
+                font-weight: 500;
+                vertical-alignment: center;
+            }
+        }
+        if root.dated: Rectangle {
+            width: 4px * max(0.75, root.s);
+            height: 100px * root.s;
+            y: (parent.height - self.height) / 2;
+            background: root.ink.with-alpha(0.7);
+            border-radius: self.width / 2;
+        }
+        if root.dated: VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            Text {
+                text: Clock.format-date(Clock.year, Clock.month, Clock.day, "%B").to-uppercase();
+                color: root.ink;
+                font-size: 30px * root.s;
+                font-weight: 700;
+                letter-spacing: 3px * root.s;
+            }
+            Text { text: Time.two(Clock.day); color: root.ink.with-alpha(0.85); font-size: 28px * root.s; font-weight: 500; }
+            Text { text: Clock.format-date(Clock.year, Clock.month, Clock.day, "%A"); color: root.ink.with-alpha(0.85); font-size: 28px * root.s; }
+        }
+    }
+}
+
+// A hand from the centre of a 100 × 100 dial, `turn` of a full circle round from twelve.
+component Hand inherits Path {
+    in property <float> turn;
+    in property <float> reach;
+    viewbox-width: 100;
+    viewbox-height: 100;
+    stroke-line-cap: round;
+    commands: "M 50 50 L " + (50 + root.reach * sin(root.turn * 360deg)) + " " + (50 - root.reach * cos(root.turn * 360deg));
+}
+
+// Hands on a scalloped dial, the quarter hours as large faint numbers and the day in a badge.
+component AnalogFace inherits Rectangle {
+    in property <color> ink;
+    property <length> size: min(root.width, root.height);
+    Rectangle {
+        width: root.size;
+        height: root.size;
+        Path {
+            viewbox-width: 100;
+            viewbox-height: 100;
+            fill: Style.primary-container;
+            commands: "M 50.0 7.0 A 16.5 16.5 0 0 1 77.6 17.1 A 16.5 16.5 0 0 1 92.3 42.5 A 16.5 16.5 0 0 1 87.2 71.5 A 16.5 16.5 0 0 1 64.7 90.4 A 16.5 16.5 0 0 1 35.3 90.4 A 16.5 16.5 0 0 1 12.8 71.5 A 16.5 16.5 0 0 1 7.7 42.5 A 16.5 16.5 0 0 1 22.4 17.1 A 16.5 16.5 0 0 1 50.0 7.0 Z";
+        }
+        for mark in [{ t: "12", x: 0.5, y: 0.22 }, { t: "3", x: 0.78, y: 0.5 }, { t: "6", x: 0.5, y: 0.78 }, { t: "9", x: 0.22, y: 0.5 }]: Text {
+            x: parent.width * mark.x - self.width / 2;
+            y: parent.height * mark.y - self.height / 2;
+            text: mark.t;
+            color: Style.on-primary-container.with-alpha(0.32);
+            font-size: root.size * 0.17;
+            font-weight: 800;
+        }
+        Hand {
+            turn: (Math.mod(Clock.hour, 12) + Clock.minute / 60) / 12;
+            reach: 21;
+            stroke: Style.on-primary-container;
+            stroke-width: root.size * 0.055;
+        }
+        Hand {
+            turn: Clock.minute / 60;
+            reach: 31;
+            stroke: Style.accent;
+            stroke-width: root.size * 0.04;
+        }
+        Rectangle {
+            width: root.size * 0.07;
+            height: self.width;
+            border-radius: self.width / 2;
+            background: Style.on-primary-container;
+        }
+        Rectangle {
+            x: parent.width * 0.68;
+            y: parent.height * 0.74;
+            width: root.size * 0.22;
+            height: self.width;
+            border-radius: self.width / 2;
+            background: Style.accent;
+            Text { text: Time.two(Clock.day); color: Style.accent-ink; font-size: root.size * 0.09; font-weight: 700; }
+        }
+    }
+}
+
+// The month's name, the weekdays and this week's days, or the whole month when there is room.
+component CalendarFace inherits Rectangle {
+    in property <color> ink;
+    property <bool> full: root.height > 230px;
+    property <bool> monday: Prefs.week-starts-monday;
+    // Where today falls in Clock.month-grid: the grid starts with the week of the 1st.
+    property <int> first-weekday: Math.mod(Clock.weekday - 1 - Math.mod(Clock.day - 1, 7) + 7, 7) + 1;
+    property <int> offset: root.monday ? root.first-weekday - 1 : Math.mod(root.first-weekday, 7);
+    property <int> week: Math.floor((root.offset + Clock.day - 1) / 7);
+    property <length> pad: 14px;
+    property <length> cell-width: (root.width - 2 * root.pad) / 7;
+    property <length> header: 34px;
+    property <length> names: 22px;
+    property <length> cell-height: root.full ? (root.height - root.pad * 2 - root.header - root.names) / 6 : root.height - root.pad * 2 - root.header - root.names;
+    Rectangle {
+        x: root.pad;
+        y: root.pad;
+        width: month.preferred-width + 24px;
+        height: 28px;
+        border-radius: 14px;
+        background: Style.accent;
+        month := Text { text: Clock.format-date(Clock.year, Clock.month, 1, @tr("%B %Y")); color: Style.accent-ink; font-weight: 600; }
+    }
+    for name[i] in (root.monday ? [@tr("Mon"), @tr("Tue"), @tr("Wed"), @tr("Thu"), @tr("Fri"), @tr("Sat"), @tr("Sun")]
+            : [@tr("Sun"), @tr("Mon"), @tr("Tue"), @tr("Wed"), @tr("Thu"), @tr("Fri"), @tr("Sat")]): Text {
+        x: root.pad + i * root.cell-width;
+        y: root.pad + root.header;
+        width: root.cell-width;
+        height: root.names;
+        text: name;
+        color: root.ink.with-alpha(0.6);
+        font-size: Style.font-small;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    for day[i] in Clock.month-grid(Clock.year, Clock.month, root.monday): Rectangle {
+        property <int> line: Math.floor(i / 7) - (root.full ? 0 : root.week);
+        visible: root.full || self.line == 0;
+        x: root.pad + Math.mod(i, 7) * root.cell-width;
+        y: root.pad + root.header + root.names + self.line * root.cell-height;
+        width: root.cell-width;
+        height: root.cell-height;
+        Rectangle {
+            width: min(parent.width, parent.height) - 4px;
+            height: self.width;
+            border-radius: self.width / 2;
+            background: day.today ? Style.accent : transparent;
+        }
+        Text {
+            text: day.day;
+            color: day.today ? Style.accent-ink : !day.in-month ? root.ink.with-alpha(0.35) : root.ink;
+            font-weight: day.today ? 700 : 400;
+        }
+    }
+}
+
+// The account picture, a greeting for the time of day and the date.
+component GreetingFace inherits Rectangle {
+    in property <color> ink;
+    property <length> picture: min(root.height - 24px, root.width * 0.34);
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 16px;
+        Rectangle {
+            width: root.picture;
+            height: root.picture;
+            y: (parent.height - self.height) / 2;
+            border-radius: 22px * Style.corner-scale;
+            background: Style.primary-container;
+            clip: true;
+            if Session.avatar.width > 0: Image { width: 100%; height: 100%; source: Session.avatar; image-fit: cover; }
+            if Session.avatar.width == 0: Icon { name: "user"; width: 45%; height: 45%; color: Style.on-primary-container; }
+        }
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            Text {
+                text: @tr("Hi, {}!", Session.real-name != "" ? Session.real-name : Session.user);
+                color: root.ink;
+                font-size: Style.font-title;
+                font-weight: 700;
+                overflow: elide;
+            }
+            Text {
+                text: Clock.hour < 5 || Clock.hour >= 22 ? @tr("Good night") : Clock.hour < 12 ? @tr("Good morning")
+                    : Clock.hour < 18 ? @tr("Good afternoon") : @tr("Good evening");
+                color: root.ink.with-alpha(0.85);
+                font-size: Style.font-size + 2px;
+                overflow: elide;
+            }
+            Text { text: @tr("Today · {}", Time.short-date); color: root.ink.with-alpha(0.6); font-size: Style.font-small; overflow: elide; }
+        }
+    }
+}
+
+// A percentage with its icon in a badge, end4 style.
+component Gauge inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <string> value;
+    in property <float> level;
+    in property <color> ink;
+    border-radius: 20px * Style.corner-scale;
+    background: Style.elevated.with-alpha(0.7);
+    clip: true;
+    // The level fills the tile from below.
+    Rectangle {
+        y: parent.height * (1 - clamp(root.level, 0, 1));
+        height: parent.height * clamp(root.level, 0, 1);
+        background: Style.accent.with-alpha(0.16);
+        animate y, height { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+    }
+    Rectangle {
+        x: parent.width - self.width - 10px;
+        y: 10px;
+        width: min(30px, parent.height * 0.32);
+        height: self.width;
+        border-radius: self.width * 0.36;
+        background: root.level > 0.9 ? Style.danger : Style.accent;
+        Icon { name: root.icon; width: 60%; height: 60%; color: Style.accent-ink; }
+    }
+    VerticalLayout {
+        padding: 12px;
+        alignment: end;
+        Text { text: root.value; color: root.ink; font-size: min(26px, root.height * 0.24); font-weight: 700; }
+        Text { text: root.label; color: root.ink.with-alpha(0.65); font-size: Style.font-small; }
+    }
+}
+
+component ResourcesFace inherits Rectangle {
+    in property <color> ink;
+    property <int> columns: root.width > root.height * 2.2 ? 4 : 2;
+    property <length> gap: 8px;
+    property <length> tile-width: (root.width - 2 * root.gap - (root.columns - 1) * root.gap) / root.columns;
+    property <length> tile-height: (root.height - 2 * root.gap - (root.columns == 4 ? 0 : root.gap)) / (root.columns == 4 ? 1 : 2);
+    for tile[i] in [
+        { icon: "cpu", label: @tr("Processor"), value: Math.round(System.cpu * 100) + "%", level: System.cpu },
+        { icon: "memory", label: @tr("Memory"), value: Math.round(System.memory * 100) + "%", level: System.memory },
+        { icon: "disk", label: @tr("Disk"), value: Math.round(System.disk * 100) + "%", level: System.disk },
+        Battery.available ? { icon: Battery.charging ? "battery-charging" : "battery", label: @tr("Battery"), value: Math.round(Battery.level * 100) + "%", level: Battery.level }
+            : { icon: "thermometer", label: @tr("Temperature"), value: Math.round(System.temperature) + "°C", level: System.temperature / 100 },
+    ]: Gauge {
+        x: root.gap + Math.mod(i, root.columns) * (root.tile-width + root.gap);
+        y: root.gap + Math.floor(i / root.columns) * (root.tile-height + root.gap);
+        width: root.tile-width;
+        height: root.tile-height;
+        icon: tile.icon;
+        label: tile.label;
+        value: tile.value;
+        level: tile.level;
+        ink: root.ink;
+    }
+}
+
+// Bars for a minute of samples (0..1), newest on the right.
+component History inherits Rectangle {
+    in property <[float]> values;
+    in property <color> tint;
+    in property <float> thickness: 0.6;
+    property <length> step: root.width / max(1, root.values.length);
+    for value[i] in root.values: Rectangle {
+        x: i * root.step + root.step * (1 - root.thickness) / 2;
+        width: root.step * root.thickness;
+        height: max(2px, root.height * clamp(value, 0, 1));
+        y: root.height - self.height;
+        border-radius: min(self.width / 2, 3px);
+        background: root.tint;
+    }
+}
+
+component NetworkFace inherits Rectangle {
+    in property <color> ink;
+    // Upload, beside the accent's download.
+    property <color> second: Style.accent.mix(Style.danger, 0.45);
+    VerticalLayout {
+        padding: 14px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 14px;
+            for rate in [{ icon: "download", text: System.download-text, color: Style.accent }, { icon: "upload", text: System.upload-text, color: root.second }]: HorizontalLayout {
+                spacing: 6px;
+                Rectangle {
+                    width: 26px;
+                    height: 26px;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: 9px;
+                    background: rate.color;
+                    Icon { name: rate.icon; width: 16px; height: 16px; color: Style.accent-ink; }
+                }
+                Text { text: rate.text; color: root.ink; font-size: Style.font-title; font-weight: 700; vertical-alignment: center; }
+            }
+        }
+        Rectangle {
+            vertical-stretch: 1;
+            History { values: System.download-history; tint: Style.accent.with-alpha(0.85); thickness: 0.62; }
+            History { values: System.upload-history; tint: root.second.with-alpha(0.9); thickness: 0.26; }
+        }
+        Text { text: @tr("Peak {} in the last minute", System.network-peak-text); color: root.ink.with-alpha(0.6); font-size: Style.font-small; overflow: elide; }
+    }
+}
+
+// A rounded label with an icon.
+component Chip inherits Rectangle {
+    in property <string> icon;
+    in property <string> text;
+    in property <color> ink;
+    height: 24px;
+    width: row.preferred-width;
+    border-radius: 12px;
+    background: Style.elevated.with-alpha(0.8);
+    row := HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 10px;
+        spacing: 5px;
+        Icon { name: root.icon; width: 13px; height: 13px; y: (parent.height - self.height) / 2; color: Style.accent; }
+        Text { text: root.text; color: root.ink; font-size: Style.font-small; vertical-alignment: center; }
+    }
+}
+
+component GpuFace inherits Rectangle {
+    in property <color> ink;
+    VerticalLayout {
+        padding: 14px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 8px;
+            Icon { name: "gpu"; width: 18px; height: 18px; y: (parent.height - self.height) / 2; color: Style.accent; }
+            Text { text: System.gpus.length > 0 ? System.gpus[0] : @tr("Graphics card"); color: root.ink.with-alpha(0.75); font-size: Style.font-small; overflow: elide; vertical-alignment: center; }
+        }
+        if !System.gpu-available: Text {
+            vertical-stretch: 1;
+            text: @tr("This card does not report its load, or it is asleep.");
+            color: root.ink.with-alpha(0.6);
+            wrap: word-wrap;
+        }
+        if System.gpu-available: HorizontalLayout {
+            spacing: 14px;
+            VerticalLayout {
+                alignment: center;
+                Text { text: Math.round(System.gpu * 100) + "%"; color: root.ink; font-size: 34px; font-weight: 700; }
+                Text { text: @tr("Load"); color: root.ink.with-alpha(0.65); font-size: Style.font-small; }
+            }
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
+                spacing: 6px;
+                Text { text: @tr("Video memory · {}", System.gpu-memory-text); color: root.ink.with-alpha(0.8); font-size: Style.font-small; overflow: elide; }
+                Rectangle {
+                    height: 8px;
+                    border-radius: 4px;
+                    background: Style.elevated;
+                    Rectangle {
+                        x: 0;
+                        width: parent.width * clamp(System.gpu-memory, 0, 1);
+                        border-radius: 4px;
+                        background: Style.accent;
+                        animate width { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    alignment: start;
+                    if System.gpu-temperature > 0: Chip { icon: "thermometer"; text: Math.round(System.gpu-temperature) + "°C"; ink: root.ink; }
+                    if System.gpu-power > 0: Chip { icon: "power"; text: Math.round(System.gpu-power) + " W"; ink: root.ink; }
+                    if System.gpu-clock > 0: Chip { icon: "cpu"; text: Math.round(System.gpu-clock) + " MHz"; ink: root.ink; }
+                }
+            }
+        }
+        if System.gpu-available: History {
+            vertical-stretch: 1;
+            min-height: 20px;
+            values: System.gpu-history;
+            tint: Style.accent.with-alpha(0.8);
+        }
+    }
+}
+
+component MediaFace inherits Rectangle {
+    in property <color> ink;
+    property <bool> playing-something: Media.available && (Media.player.title != "" || Media.player.identity != "");
+    HorizontalLayout {
+        padding: 10px;
+        spacing: 14px;
+        Rectangle {
+            width: parent.height - 20px;
+            border-radius: 18px * Style.corner-scale;
+            background: Style.primary-container;
+            clip: true;
+            if Media.player.art.width > 0: Image { width: 100%; height: 100%; source: Media.player.art; image-fit: cover; }
+            if Media.player.art.width == 0: Icon { name: "music"; width: 40%; height: 40%; color: Style.on-primary-container; }
+        }
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            Text {
+                text: root.playing-something ? (Media.player.title != "" ? Media.player.title : Media.player.identity) : @tr("Nothing playing");
+                color: root.ink;
+                font-size: Style.font-size + 2px;
+                font-weight: 600;
+                overflow: elide;
+            }
+            Text {
+                text: root.playing-something ? Media.player.artist : @tr("Music and videos show up here.");
+                color: root.ink.with-alpha(0.65);
+                font-size: Style.font-small;
+                overflow: elide;
+            }
+            if root.playing-something: HorizontalLayout {
+                padding-top: 6px;
+                spacing: 6px;
+                alignment: start;
+                IconButton { icon: "previous"; size: 32px; clicked => { Media.previous(); } }
+                IconButton { icon: Media.player.playing ? "pause" : "play"; size: 32px; active: true; clicked => { Media.play-pause(); } }
+                IconButton { icon: "next"; size: 32px; clicked => { Media.next(); } }
+            }
+        }
+    }
+}
+
+// The picture, cut to the widget's shape by SlintLu (`clip` keeps square corners) at the
+// size it settled at; while it is being resized the last cut stretches along.
+component PictureFace inherits Rectangle {
+    in property <string> path;
+    in property <color> ink;
+    in property <length> settled-width;
+    in property <length> settled-height;
+    in property <[length]> radii;
+    property <float> scale: max(1, Shell.screen.scale);
+    property <image> picture: root.path == "" ? Files.thumbnail("", 0, 0)
+        : Files.shaped(root.path, root.settled-width / 1px * root.scale, root.settled-height / 1px * root.scale,
+            [root.radii[0] / 1px * root.scale, root.radii[1] / 1px * root.scale, root.radii[2] / 1px * root.scale, root.radii[3] / 1px * root.scale],
+            Files.revision);
+    if root.picture.width > 0: Image { width: 100%; height: 100%; source: root.picture; image-fit: fill; }
+    if root.picture.width == 0: VerticalLayout {
+        alignment: center;
+        spacing: 8px;
+        Icon { name: "image"; width: 32px; height: 32px; x: (parent.width - self.width) / 2; color: Style.accent; }
+        Text { text: @tr("Choose a picture while arranging widgets"); color: root.ink.with-alpha(0.7); font-size: Style.font-small; horizontal-alignment: center; wrap: word-wrap; }
+    }
+}
+
+component NoteFace inherits Rectangle {
+    in property <string> note;
+    in property <color> ink;
+    Text {
+        x: 18px;
+        width: parent.width - 36px;
+        height: parent.height - 24px;
+        text: root.note != "" ? root.note : @tr("Write something while arranging widgets");
+        color: root.note != "" ? root.ink : root.ink.with-alpha(0.6);
+        font-size: clamp(root.height * 0.2, 13px, 40px);
+        font-weight: 600;
+        wrap: word-wrap;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+}
+
+// One widget: its shape's surface with the face of its kind.
+export component DesktopWidget inherits Rectangle {
+    in property <string> kind;
+    in property <string> shape: "rounded";
+    // A picture frame's file and a note's text.
+    in property <string> picture;
+    in property <string> note;
+    // The size the picture is cut for (the editor keeps it while resizing).
+    in property <length> settled-width: self.width;
+    in property <length> settled-height: self.height;
+    property <length> short: min(root.width, root.height);
+    property <length> round: root.shape == "round" ? root.short / 2 : root.shape == "square" ? 10px * Style.corner-scale
+        : min(root.short / 2, 28px * Style.corner-scale);
+    property <bool> bare: root.shape == "none";
+    // On bare wallpaper the text is light, like the clock it replaces.
+    property <color> ink: root.bare ? Style.accent.mix(#ffffff, 0.2) : Style.text;
+    property <length> top-left: root.bare ? 0px : root.shape == "arch" ? min(root.width / 2, root.height) : root.shape == "leaf" ? root.short * 0.42 : root.round;
+    property <length> top-right: root.bare ? 0px : root.shape == "arch" ? min(root.width / 2, root.height) : root.shape == "leaf" ? root.short * 0.1 : root.round;
+    property <length> bottom-right: root.bare ? 0px : root.shape == "arch" ? 14px * Style.corner-scale : root.shape == "leaf" ? root.short * 0.42 : root.round;
+    property <length> bottom-left: root.bare ? 0px : root.shape == "arch" ? 14px * Style.corner-scale : root.shape == "leaf" ? root.short * 0.1 : root.round;
+    border-top-left-radius: root.top-left;
+    border-top-right-radius: root.top-right;
+    border-bottom-right-radius: root.bottom-right;
+    border-bottom-left-radius: root.bottom-left;
+    background: root.bare ? transparent : Style.surface.with-alpha(0.88);
+    animate border-top-left-radius, border-top-right-radius, border-bottom-left-radius, border-bottom-right-radius {
+        duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0);
+    }
+    if root.kind == "clock": ClockFace { ink: root.bare ? Style.accent.mix(#ffffff, 0.55) : Style.text; }
+    if root.kind == "analog": AnalogFace { ink: root.ink; }
+    if root.kind == "calendar": CalendarFace { ink: root.ink; }
+    if root.kind == "greeting": GreetingFace { ink: root.ink; }
+    if root.kind == "resources": ResourcesFace { ink: root.ink; }
+    if root.kind == "network": NetworkFace { ink: root.ink; }
+    if root.kind == "gpu": GpuFace { ink: root.ink; }
+    if root.kind == "media": MediaFace { ink: root.ink; }
+    if root.kind == "picture": PictureFace {
+        path: root.picture;
+        ink: root.ink;
+        settled-width: root.settled-width;
+        settled-height: root.settled-height;
+        radii: [root.top-left, root.top-right, root.bottom-right, root.bottom-left];
+    }
+    if root.kind == "note": NoteFace { note: root.note; ink: root.ink; }
+}

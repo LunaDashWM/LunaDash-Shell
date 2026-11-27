@@ -1,0 +1,153 @@
+// Desktop widgets: which are on the desktop, where, how large and in which shape.
+//
+// The layout lives in the Store under keys starting with "widget": the list "widgets" of ids
+// ("<kind>-<n>") in painting order and, per id, "widget-kind:", "widget-x:", "widget-y:",
+// "widget-w:", "widget-h:" (logical px on its screen), "widget-screen:", "widget-shape:" and,
+// for pictures and notes, "widget-image:" and "widget-text:". The editor (widgets/editor.slint)
+// works on a copy in Shared and stores it when the user saves. Until the first save the desktop
+// shows the clock alone, or nothing when the desktop clock was switched off before widgets.
+
+import { Store, Shared, Shell } from "@slintlu";
+import { UI } from "ui.slint";
+import { Style } from "../style/style.slint";
+
+export struct WidgetKind {
+    id: string,
+    label: string,
+    description: string,
+    icon: string,
+}
+
+export global Widgets {
+    out property <[string]> prefixes: ["widget"];
+    out property <[WidgetKind]> kinds: [
+        { id: "clock", label: @tr("Clock"), description: @tr("The time, large, with the date beside it."), icon: "clock" },
+        { id: "analog", label: @tr("Analogue clock"), description: @tr("Hands on a scalloped dial."), icon: "clock" },
+        { id: "calendar", label: @tr("Calendar"), description: @tr("This week, or the whole month when tall."), icon: "calendar" },
+        { id: "greeting", label: @tr("Greeting"), description: @tr("Your picture, a greeting and today's date."), icon: "user" },
+        { id: "resources", label: @tr("Resources"), description: @tr("Processor, memory, disk and temperature."), icon: "cpu" },
+        { id: "network", label: @tr("Network traffic"), description: @tr("Download and upload speed over the last minute."), icon: "network" },
+        { id: "gpu", label: @tr("Graphics card"), description: @tr("Load, video memory, temperature and power."), icon: "gpu" },
+        { id: "media", label: @tr("Now playing"), description: @tr("Cover, title and playback buttons."), icon: "music" },
+        { id: "picture", label: @tr("Picture frame"), description: @tr("A picture of your choice in any shape."), icon: "image" },
+        { id: "note", label: @tr("Note"), description: @tr("A few words of your own."), icon: "text" },
+    ];
+    // Shapes a widget can take, from the default on.
+    out property <[string]> shapes: ["rounded", "square", "round", "arch", "leaf", "none"];
+    public pure function ids(draft: bool) -> [string] {
+        draft ? Shared.get-list("widgets", Shared.revision)
+            : Store.get-bool("widgets-edited", false, Store.revision) ? Store.get-list("widgets", Store.revision)
+            : Store.get-bool("desktop-clock", true, Store.revision) ? ["clock-1"] : Store.get-list("widgets", Store.revision)
+    }
+    // Values of one widget, from the Store or the editor's draft. The first clock, shown before
+    // the layout was ever saved, has no stored kind.
+    public pure function text(draft: bool, key: string, id: string, fallback: string) -> string {
+        draft ? Shared.get-string(key + ":" + id, fallback, Shared.revision) : Store.get-string(key + ":" + id, fallback, Store.revision)
+    }
+    public pure function number(draft: bool, key: string, id: string, fallback: float) -> float {
+        draft ? Shared.get-number(key + ":" + id, fallback, Shared.revision) : Store.get-number(key + ":" + id, fallback, Store.revision)
+    }
+    public pure function kind(draft: bool, id: string) -> string {
+        root.text(draft, "widget-kind", id, "clock")
+    }
+    // The screen a widget is on: its own, or the first one when that is not connected.
+    public pure function on-screen(draft: bool, id: string, screen: string) -> bool {
+        root.screen-of(root.text(draft, "widget-screen", id, "")) == screen
+    }
+    pure function screen-of(name: string) -> string {
+        name != "" && root.connected(name) ? name : Shell.screens.length > 0 ? Shell.screens[0].name : ""
+    }
+    // Past the end, Shell.screens gives an unnamed screen.
+    pure function connected(name: string) -> bool {
+        Shell.screens[0].name == name || Shell.screens[1].name == name || Shell.screens[2].name == name
+            || Shell.screens[3].name == name || Shell.screens[4].name == name || Shell.screens[5].name == name
+    }
+
+    // Where a widget is on a screen of this size, kept on it. The first clock starts at the
+    // bottom left, where the desktop clock was.
+    public pure function width(draft: bool, id: string) -> length {
+        root.number(draft, "widget-w", id, root.default-width(root.kind(draft, id)) / 1px) * 1px
+    }
+    public pure function height(draft: bool, id: string) -> length {
+        root.number(draft, "widget-h", id, root.default-height(root.kind(draft, id)) / 1px) * 1px
+    }
+    public pure function x(draft: bool, id: string, area: length) -> length {
+        clamp(root.number(draft, "widget-x", id, (Style.inner-left + 48px) / 1px) * 1px, 0px, max(0px, area - root.width(draft, id)))
+    }
+    public pure function y(draft: bool, id: string, area: length) -> length {
+        let height = root.height(draft, id);
+        clamp(root.number(draft, "widget-y", id, (area - Style.inner-bottom - Style.dock-reserve - 48px - height) / 1px) * 1px,
+            0px, max(0px, area - height))
+    }
+
+    // Size a new widget starts with, and the smallest it can be.
+    public pure function default-width(kind: string) -> length {
+        kind == "clock" ? 520px : kind == "analog" ? 220px : kind == "calendar" ? 330px : kind == "greeting" ? 340px
+            : kind == "resources" ? 440px : kind == "network" ? 330px : kind == "gpu" ? 340px : kind == "media" ? 380px
+            : kind == "picture" ? 260px : 340px
+    }
+    public pure function default-height(kind: string) -> length {
+        kind == "clock" ? 150px : kind == "analog" ? 220px : kind == "calendar" ? 150px : kind == "greeting" ? 120px
+            : kind == "resources" ? 130px : kind == "network" ? 180px : kind == "gpu" ? 200px : kind == "media" ? 130px
+            : kind == "picture" ? 260px : 120px
+    }
+    public pure function min-width(kind: string) -> length {
+        kind == "clock" ? 160px : kind == "analog" || kind == "picture" ? 100px : kind == "resources" ? 200px : 180px
+    }
+    public pure function min-height(kind: string) -> length {
+        kind == "analog" || kind == "picture" ? 100px : kind == "calendar" ? 120px : kind == "network" || kind == "gpu" ? 130px : 80px
+    }
+    public pure function default-shape(kind: string) -> string {
+        kind == "clock" ? "none" : kind == "analog" ? "round" : "rounded"
+    }
+
+    // Editing. `edit` copies the layout into Shared; the changes stay there until `save`.
+    public function edit() {
+        Shared.copy-from-store(root.prefixes);
+        if !Store.get-bool("widgets-edited", false, Store.revision) {
+            Shared.set-list("widgets", root.ids(false));
+        }
+        UI.open-overlay("widgets");
+    }
+    public function save() {
+        Shared.set-bool("widgets-edited", true);
+        Shared.copy-to-store(root.prefixes);
+        UI.close-all();
+    }
+    public function add(kind: string, screen: string, x: length, y: length) -> string {
+        let n = Shared.get-number("widget-next", 1, Shared.revision);
+        Shared.set-number("widget-next", n + 1);
+        let id = kind + "-" + n;
+        Shared.set-string("widget-kind:" + id, kind);
+        Shared.set-string("widget-screen:" + id, screen);
+        Shared.set-string("widget-shape:" + id, root.default-shape(kind));
+        root.place(id, x, y, root.default-width(kind), root.default-height(kind));
+        Shared.list-add("widgets", id);
+        id
+    }
+    public function place(id: string, x: length, y: length, width: length, height: length) {
+        Shared.set-number("widget-x:" + id, Math.round(x / 8px) * 8);
+        Shared.set-number("widget-y:" + id, Math.round(y / 8px) * 8);
+        Shared.set-number("widget-w:" + id, Math.round(width / 8px) * 8);
+        Shared.set-number("widget-h:" + id, Math.round(height / 8px) * 8);
+    }
+    public function set(id: string, key: string, value: string) {
+        Shared.set-string(key + ":" + id, value);
+    }
+    // Paints it above the others.
+    public function raise(id: string) {
+        Shared.list-add("widgets", id);
+    }
+    public function remove(id: string) {
+        Shared.list-remove("widgets", id);
+        Shared.remove("widget-kind:" + id);
+        Shared.remove("widget-screen:" + id);
+        Shared.remove("widget-shape:" + id);
+        Shared.remove("widget-image:" + id);
+        Shared.remove("widget-text:" + id);
+        Shared.remove("widget-x:" + id);
+        Shared.remove("widget-y:" + id);
+        Shared.remove("widget-w:" + id);
+        Shared.remove("widget-h:" + id);
+    }
+}

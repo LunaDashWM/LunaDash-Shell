@@ -12,6 +12,7 @@ import { Wallpapers } from "../wallpaper/wallpaper.slint";
 import { Apply } from "../state/apply.slint";
 import { DesktopMenu } from "../state/desktop-menu.slint";
 import { PanelLayout } from "../state/panel-layout.slint";
+import { Widgets, WidgetKind } from "../state/widgets.slint";
 
 component Segmented inherits Rectangle {
     in property <[string]> labels;
@@ -302,7 +303,7 @@ component AppearancePage inherits Page {
 
 component WallpaperPage inherits Page {
     title: @tr("Wallpaper");
-    subtitle: @tr("Images and videos behind everything, and the clock on top of them.");
+    subtitle: @tr("Images and videos behind everything.");
     Rectangle {
         height: 220px;
         border-radius: Style.radius-medium;
@@ -390,29 +391,82 @@ component WallpaperPage inherits Page {
             RangeSlider { minimum: 0; maximum: 60; step: 5; unit: "%"; value: Prefs.wallpaper-dim; committed(v) => { Store.set-number("wallpaper-dim", v); } }
         }
     }
-    Group {
-        title: @tr("DESKTOP CLOCK");
-        Setting { title: @tr("Desktop clock"); description: @tr("A large clock on the wallpaper."); Switch { on: Prefs.desktop-clock; toggled => { Store.set-bool("desktop-clock", !Prefs.desktop-clock); } } }
-        if Prefs.desktop-clock: Divider { }
-        if Prefs.desktop-clock: Setting {
-            title: @tr("Position");
-            Segmented {
-                labels: [@tr("Bottom left"), @tr("Bottom right"), @tr("Top left"), @tr("Centre")];
-                selected: Prefs.desktop-clock-position == "bottom-right" ? 1 : Prefs.desktop-clock-position == "top-left" ? 2 : Prefs.desktop-clock-position == "center" ? 3 : 0;
-                chosen(i) => { Store.set-string("desktop-clock-position", i == 1 ? "bottom-right" : i == 2 ? "top-left" : i == 3 ? "center" : "bottom-left"); }
+}
+
+// What a desktop widget kind is, with a button that adds one.
+component KindTile inherits Rectangle {
+    in property <WidgetKind> kind;
+    callback add();
+    horizontal-stretch: 1;
+    height: 72px;
+    border-radius: Style.radius-medium + 4px;
+    background: touch.has-hover ? Style.elevated : Style.surface;
+    animate background { duration: Style.motion-fast; }
+    HorizontalLayout {
+        padding: Style.spacing-md;
+        spacing: Style.spacing-md;
+        Rectangle {
+            width: 44px;
+            height: 44px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 15px * Style.corner-scale;
+            background: Style.tonal;
+            Icon { name: root.kind.icon; width: 22px; height: 22px; color: Style.on-tonal; }
+        }
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            Text { text: root.kind.label; color: Style.text; font-weight: 600; overflow: elide; }
+            Text { text: root.kind.description; color: Style.muted; font-size: Style.font-small; overflow: elide; }
+        }
+        VerticalLayout {
+            alignment: center;
+            Icon { name: "plus"; width: 18px; height: 18px; color: touch.has-hover ? Style.accent : Style.muted; }
+        }
+    }
+    touch := TouchArea { clicked => { root.add(); } }
+}
+
+component WidgetsPage inherits Page {
+    title: @tr("Desktop widgets");
+    subtitle: @tr("Clocks, meters, pictures and notes on the wallpaper. Arrange them with the widgets button on the panel, or from the desktop menu.");
+    property <[string]> placed: Widgets.ids(false);
+    Card {
+        clip: true;
+        Rectangle { background: @linear-gradient(120deg, Style.accent.with-alpha(0.18) 0%, transparent 70%); }
+        HorizontalLayout {
+            padding: Style.spacing-xl;
+            spacing: Style.spacing-lg;
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
+                spacing: 4px;
+                Text {
+                    text: root.placed.length == 0 ? @tr("No widgets on the desktop") : root.placed.length == 1 ? @tr("1 widget on the desktop") : @tr("{} widgets on the desktop", root.placed.length);
+                    color: Style.text;
+                    font-size: Style.font-title;
+                    font-weight: 600;
+                }
+                Text { text: @tr("Move them, change their size and shape, add and remove them; nothing changes until you save."); color: Style.muted; font-size: Style.font-small; wrap: word-wrap; }
+            }
+            TextButton { horizontal-stretch: 0; y: (parent.height - self.height) / 2; icon: "widgets"; text: @tr("Arrange widgets"); primary: true; clicked => { Widgets.edit(); } }
+        }
+    }
+    Rectangle { height: Style.spacing-lg; }
+    SectionTitle { text: @tr("ADD A WIDGET"); }
+    Rectangle { height: Style.spacing-sm; }
+    GridLayout {
+        spacing: Style.spacing-sm;
+        for kind[i] in Widgets.kinds: KindTile {
+            row: i / 2;
+            col: Math.mod(i, 2);
+            kind: kind;
+            add => {
+                Widgets.edit();
+                Widgets.add(kind.id, Shell.screen.name,
+                    (Shell.screen.width * 1px - Widgets.default-width(kind.id)) / 2, (Shell.screen.height * 1px - Widgets.default-height(kind.id)) / 2);
             }
         }
-        if Prefs.desktop-clock: Divider { }
-        if Prefs.desktop-clock: Setting {
-            title: @tr("Size");
-            Segmented {
-                labels: [@tr("Small"), @tr("Medium"), @tr("Large")];
-                selected: Prefs.desktop-clock-size == "small" ? 0 : Prefs.desktop-clock-size == "medium" ? 1 : 2;
-                chosen(i) => { Store.set-string("desktop-clock-size", i == 0 ? "small" : i == 1 ? "medium" : "large"); }
-            }
-        }
-        if Prefs.desktop-clock: Divider { }
-        if Prefs.desktop-clock: Setting { title: @tr("Show the date"); Switch { on: Prefs.desktop-clock-date; toggled => { Store.set-bool("desktop-clock-date", !Prefs.desktop-clock-date); } } }
     }
 }
 
@@ -1670,6 +1724,7 @@ export component Settings inherits Overlay {
         { id: "account", icon: "user", label: @tr("Account"), lunadash: false },
         { id: "appearance", icon: "palette", label: @tr("Appearance"), lunadash: false },
         { id: "wallpaper", icon: "image", label: @tr("Wallpaper"), lunadash: false },
+        { id: "widgets", icon: "widgets", label: @tr("Desktop widgets"), lunadash: false },
         { id: "panel", icon: "panel", label: @tr("Panel"), lunadash: false },
         { id: "panel-items", icon: "grid", label: @tr("Panel items"), lunadash: false },
         { id: "dock", icon: "dock", label: @tr("Dock"), lunadash: false },
@@ -1747,6 +1802,7 @@ export component Settings inherits Overlay {
                 if UI.settings-page == "account": Section { direction: root.direction; AccountPage { } }
                 if UI.settings-page == "appearance": Section { direction: root.direction; AppearancePage { } }
                 if UI.settings-page == "wallpaper": Section { direction: root.direction; WallpaperPage { } }
+                if UI.settings-page == "widgets": Section { direction: root.direction; WidgetsPage { } }
                 if UI.settings-page == "panel": Section { direction: root.direction; PanelPage { } }
                 if UI.settings-page == "panel-items": Section { direction: root.direction; PanelItemsPage { } }
                 if UI.settings-page == "dock": Section { direction: root.direction; DockPage { } }

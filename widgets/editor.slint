@@ -1,0 +1,445 @@
+// Arranging the desktop widgets (state/widgets.slint): the wallpaper as it is, the widgets on it
+// to drag, resize and reshape, and sheets to add widgets, choose pictures and write notes.
+// Everything happens on a draft in Shared; Save keeps it, Cancel or Escape drops it.
+
+import { PanelWindow, Layer, KeyboardMode, ExclusiveMode, Shell, Files, FileEntry } from "@slintlu";
+import { Style } from "../style/style.slint";
+import { Prefs } from "../state/prefs.slint";
+import { UI } from "../state/ui.slint";
+import { Widgets } from "../state/widgets.slint";
+import { Icon } from "../components/icon.slint";
+import { IconButton, TextButton } from "../components/controls.slint";
+import { Wallpapers } from "../wallpaper/wallpaper.slint";
+import { DesktopWidget } from "widgets.slint";
+
+// A widget being arranged: drag it to move it, drag its corner to resize it. The draft changes
+// when the pointer is released (snapped to an 8 px grid), so the widgets are not rebuilt while
+// they move.
+component Arranged inherits Rectangle {
+    in property <string> id;
+    in property <bool> selected;
+    in property <length> area-width;
+    in property <length> area-height;
+    callback select();
+    property <string> kind: Widgets.kind(true, root.id);
+    property <length> dx;
+    property <length> dy;
+    property <length> dw;
+    property <length> dh;
+    property <length> base-width: Widgets.width(true, root.id);
+    property <length> base-height: Widgets.height(true, root.id);
+    out property <length> shown-width: clamp(root.base-width + root.dw, Widgets.min-width(root.kind), root.area-width);
+    out property <length> shown-height: clamp(root.base-height + root.dh, Widgets.min-height(root.kind), root.area-height);
+    x: clamp(Widgets.x(true, root.id, root.area-width) + root.dx, 0px, root.area-width - root.shown-width);
+    y: clamp(Widgets.y(true, root.id, root.area-height) + root.dy, 0px, root.area-height - root.shown-height);
+    width: root.shown-width;
+    height: root.shown-height;
+
+    function commit() {
+        Widgets.place(root.id, self.x, self.y, root.shown-width, root.shown-height);
+        root.dx = 0;
+        root.dy = 0;
+        root.dw = 0;
+        root.dh = 0;
+    }
+
+    DesktopWidget {
+        kind: root.kind;
+        shape: Widgets.text(true, "widget-shape", root.id, Widgets.default-shape(root.kind));
+        picture: Widgets.text(true, "widget-image", root.id, "");
+        note: Widgets.text(true, "widget-text", root.id, "");
+        settled-width: root.base-width;
+        settled-height: root.base-height;
+    }
+    Rectangle {
+        x: -4px;
+        y: -4px;
+        width: parent.width + 8px;
+        height: parent.height + 8px;
+        border-radius: Style.radius-medium + 4px;
+        border-width: root.selected ? 2px : 1px;
+        border-color: root.selected ? Style.accent : #ffffff.with-alpha(move.has-hover ? 0.7 : 0.35);
+        background: move.pressed ? #ffffff10 : transparent;
+        animate border-color { duration: Style.motion-fast; }
+    }
+    move := TouchArea {
+        mouse-cursor: MouseCursor.move;
+        moved => {
+            root.dx += self.mouse-x - self.pressed-x;
+            root.dy += self.mouse-y - self.pressed-y;
+        }
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left {
+                if event.kind == PointerEventKind.down {
+                    root.select();
+                } else if event.kind == PointerEventKind.up {
+                    root.commit();
+                }
+            }
+        }
+    }
+    if root.selected: Rectangle {
+        x: parent.width - self.width / 2;
+        y: parent.height - self.height / 2;
+        width: 22px;
+        height: 22px;
+        border-radius: 11px;
+        background: Style.accent;
+        border-width: 3px;
+        border-color: Style.accent-ink;
+        TouchArea {
+            mouse-cursor: MouseCursor.nwse-resize;
+            moved => {
+                root.dw += self.mouse-x - self.pressed-x;
+                root.dh += self.mouse-y - self.pressed-y;
+            }
+            pointer-event(event) => {
+                if event.button == PointerEventButton.left && event.kind == PointerEventKind.up {
+                    root.commit();
+                }
+            }
+        }
+    }
+}
+
+// A shape to choose, drawn as itself.
+component ShapeChoice inherits Rectangle {
+    in property <string> shape;
+    in property <bool> selected;
+    callback clicked();
+    width: 34px;
+    height: 34px;
+    border-radius: 17px;
+    background: root.selected ? Style.tonal : touch.has-hover ? Style.hover : transparent;
+    animate background { duration: Style.motion-fast; }
+    Rectangle {
+        width: 18px;
+        height: 18px;
+        border-width: root.shape == "none" ? 1.5px : 0px;
+        border-color: root.selected ? Style.on-tonal : Style.text;
+        background: root.shape == "none" ? transparent : root.selected ? Style.on-tonal : Style.text;
+        border-top-left-radius: root.shape == "round" || root.shape == "arch" ? 9px : root.shape == "leaf" ? 8px : root.shape == "square" ? 2px : 5px;
+        border-top-right-radius: root.shape == "round" || root.shape == "arch" ? 9px : root.shape == "leaf" ? 2px : root.shape == "square" ? 2px : 5px;
+        border-bottom-left-radius: root.shape == "round" ? 9px : root.shape == "arch" || root.shape == "leaf" ? 2px : root.shape == "square" ? 2px : 5px;
+        border-bottom-right-radius: root.shape == "round" ? 9px : root.shape == "arch" ? 2px : root.shape == "leaf" ? 8px : root.shape == "square" ? 2px : 5px;
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A floating capsule of buttons.
+component Capsule inherits Rectangle {
+    height: 52px;
+    width: row.preferred-width;
+    border-radius: self.height / 2;
+    background: Style.glass-strong;
+    drop-shadow-blur: 18px;
+    drop-shadow-color: Style.shadow;
+    drop-shadow-offset-y: 4px;
+    row := HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 4px;
+        alignment: center;
+        @children
+    }
+}
+
+component Separator inherits Rectangle {
+    width: 9px;
+    Rectangle { width: 1px; height: 24px; background: Style.hairline; }
+}
+
+// A sheet sliding in from the right edge.
+component Sheet inherits Rectangle {
+    in property <bool> open;
+    in property <string> title;
+    in property <length> area-width;
+    in property <length> area-height;
+    callback close();
+    property <float> amount: root.open ? 1 : 0;
+    animate amount { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+    visible: self.amount > 0.001;
+    x: root.area-width - (self.width + 16px) * self.amount;
+    y: 84px;
+    width: 380px;
+    height: root.area-height - 100px;
+    border-radius: Style.radius;
+    background: Style.glass-strong;
+    drop-shadow-blur: 24px;
+    drop-shadow-color: Style.shadow;
+    drop-shadow-offset-y: 6px;
+    TouchArea { }
+    VerticalLayout {
+        padding: Style.spacing-lg;
+        spacing: Style.spacing-md;
+        HorizontalLayout {
+            spacing: Style.spacing-sm;
+            Text { text: root.title; color: Style.text; font-size: Style.font-title; font-weight: 600; vertical-alignment: center; horizontal-stretch: 1; }
+            IconButton { icon: "close"; size: 32px; clicked => { root.close(); } }
+        }
+        @children
+    }
+}
+
+export component WidgetEditor inherits PanelWindow {
+    namespace: "lunadash-widget-editor";
+    layer: Layer.overlay;
+    keyboard-mode: KeyboardMode.exclusive;
+    exclusive-mode: ExclusiveMode.ignore;
+    anchor-top: true;
+    anchor-bottom: true;
+    anchor-left: true;
+    anchor-right: true;
+    shown: UI.overlay == "widgets" && UI.on-active-screen;
+    default-font-family: Style.font;
+
+    property <string> selected;
+    // "add", "picture", "note" or "".
+    property <string> sheet;
+    property <string> folder: Files.user-dir("pictures") != "" ? Files.user-dir("pictures") : Files.home;
+    property <[FileEntry]> pictures: Files.list(root.folder, "png,jpg,jpeg,webp,bmp,gif");
+    property <string> selected-kind: Widgets.kind(true, root.selected);
+    property <float> entrance: root.shown ? 1 : 0;
+    animate entrance { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
+
+    changed shown => {
+        if self.shown {
+            root.selected = "";
+            root.sheet = "";
+            scope.focus();
+        }
+    }
+    function cancel() {
+        UI.close-all();
+    }
+    function remove-selected() {
+        if root.selected != "" {
+            Widgets.remove(root.selected);
+            root.selected = "";
+            root.sheet = "";
+        }
+    }
+
+    // The desktop as it looks, dimmed a little to show that it is being arranged.
+    Rectangle { background: Style.base; }
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: Wallpapers.current();
+        image-fit: Prefs.wallpaper-fit == "contain" ? ImageFit.contain : Prefs.wallpaper-fit == "fill" ? ImageFit.fill : ImageFit.cover;
+    }
+    Rectangle { background: #000000.with-alpha(max(Prefs.wallpaper-dim / 100, 0.22 * root.entrance)); }
+    TouchArea {
+        clicked => {
+            root.selected = "";
+            root.sheet = "";
+        }
+    }
+    scope := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape {
+                if root.sheet != "" {
+                    root.sheet = "";
+                } else {
+                    root.cancel();
+                }
+                return accept;
+            }
+            if event.text == Key.Delete {
+                root.remove-selected();
+                return accept;
+            }
+            reject
+        }
+        for id in Widgets.ids(true): Arranged {
+            visible: Widgets.on-screen(true, id, Shell.screen.name);
+            id: id;
+            selected: root.selected == id;
+            area-width: root.width;
+            area-height: root.height;
+            opacity: root.entrance;
+            select => {
+                root.selected = id;
+                if root.sheet == "picture" || root.sheet == "note" {
+                    root.sheet = "";
+                }
+            }
+        }
+
+        // What can be done with the selected widget, above it (below when it is at the top).
+        if root.selected != "": tools := Capsule {
+            property <length> wx: Widgets.x(true, root.selected, root.width);
+            property <length> wy: Widgets.y(true, root.selected, root.height);
+            x: clamp(self.wx + (Widgets.width(true, root.selected) - self.width) / 2, 12px, root.width - self.width - 12px);
+            y: self.wy > 150px ? self.wy - self.height - 14px : min(root.height - self.height - 12px, self.wy + Widgets.height(true, root.selected) + 14px);
+            for shape in Widgets.shapes: ShapeChoice {
+                y: (parent.height - self.height) / 2;
+                shape: shape;
+                selected: Widgets.text(true, "widget-shape", root.selected, Widgets.default-shape(root.selected-kind)) == shape;
+                clicked => { Widgets.set(root.selected, "widget-shape", shape); }
+            }
+            Separator { }
+            if root.selected-kind == "picture": IconButton { y: (parent.height - self.height) / 2; icon: "image"; size: 36px; active: root.sheet == "picture"; clicked => { root.sheet = "picture"; } }
+            if root.selected-kind == "note": IconButton { y: (parent.height - self.height) / 2; icon: "edit"; size: 36px; active: root.sheet == "note"; clicked => { root.sheet = "note"; } }
+            IconButton { y: (parent.height - self.height) / 2; icon: "layers"; size: 36px; clicked => { Widgets.raise(root.selected); } }
+            IconButton { y: (parent.height - self.height) / 2; icon: "trash"; size: 36px; tint: Style.danger; clicked => { root.remove-selected(); } }
+        }
+
+        // The editor's own bar, at the top.
+        Capsule {
+            x: (parent.width - self.width) / 2;
+            y: 16px - (1 - root.entrance) * 80px;
+            Rectangle { width: 6px; }
+            Icon { y: (parent.height - self.height) / 2; name: "widgets"; width: 20px; height: 20px; color: Style.accent; }
+            Text { text: @tr("Arrange widgets"); color: Style.text; font-weight: 600; vertical-alignment: center; }
+            Rectangle { width: 6px; }
+            Separator { }
+            TextButton { y: (parent.height - self.height) / 2; icon: "plus"; text: @tr("Add widget"); clicked => { root.sheet = root.sheet == "add" ? "" : "add"; } }
+            TextButton { y: (parent.height - self.height) / 2; text: @tr("Cancel"); clicked => { root.cancel(); } }
+            TextButton { y: (parent.height - self.height) / 2; icon: "check"; text: @tr("Save"); primary: true; clicked => { Widgets.save(); } }
+        }
+        Rectangle {
+            x: (parent.width - self.width) / 2;
+            y: 78px;
+            width: hint.preferred-width + 24px;
+            height: 26px;
+            border-radius: 13px;
+            background: #000000.with-alpha(0.45 * root.entrance);
+            hint := Text {
+                text: @tr("Drag a widget to move it, its corner to resize it · Delete removes it · Esc cancels");
+                color: #ffffff.with-alpha(0.9 * root.entrance);
+                font-size: Style.font-small;
+            }
+        }
+
+        Sheet {
+            area-width: root.width;
+            area-height: root.height;
+            open: root.sheet == "add";
+            title: @tr("Add a widget");
+            close => { root.sheet = ""; }
+            Flickable {
+                vertical-stretch: 1;
+                content-height: kinds.preferred-height;
+                kinds := VerticalLayout {
+                    alignment: start;
+                    spacing: Style.spacing-sm;
+                    for kind in Widgets.kinds: Rectangle {
+                        height: 68px;
+                        border-radius: Style.radius-medium + 4px;
+                        background: touch.has-hover ? Style.elevated : Style.surface;
+                        animate background { duration: Style.motion-fast; }
+                        HorizontalLayout {
+                            padding: Style.spacing-md;
+                            spacing: Style.spacing-md;
+                            Rectangle {
+                                width: 42px;
+                                height: 42px;
+                                y: (parent.height - self.height) / 2;
+                                border-radius: 14px * Style.corner-scale;
+                                background: Style.tonal;
+                                Icon { name: kind.icon; width: 21px; height: 21px; color: Style.on-tonal; }
+                            }
+                            VerticalLayout {
+                                alignment: center;
+                                spacing: 2px;
+                                Text { text: kind.label; color: Style.text; font-weight: 600; overflow: elide; }
+                                Text { text: kind.description; color: Style.muted; font-size: Style.font-small; overflow: elide; }
+                            }
+                        }
+                        touch := TouchArea {
+                            clicked => {
+                                root.selected = Widgets.add(kind.id, Shell.screen.name,
+                                    (root.width - Widgets.default-width(kind.id)) / 2, (root.height - Widgets.default-height(kind.id)) / 2);
+                                root.sheet = "";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Sheet {
+            area-width: root.width;
+            area-height: root.height;
+            open: root.sheet == "picture";
+            title: @tr("Choose a picture");
+            close => { root.sheet = ""; }
+            HorizontalLayout {
+                spacing: Style.spacing-sm;
+                IconButton { icon: "arrow-up"; size: 32px; clicked => { root.folder = Files.parent(root.folder) != "" ? Files.parent(root.folder) : root.folder; } }
+                Text { text: root.folder; color: Style.muted; font-size: Style.font-small; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+            }
+            Flickable {
+                vertical-stretch: 1;
+                property <length> cell: self.width / 3;
+                content-height: Math.ceil(root.pictures.length / 3) * self.cell;
+                for entry[i] in root.pictures: Rectangle {
+                    x: Math.mod(i, 3) * parent.cell + 3px;
+                    y: Math.floor(i / 3) * parent.cell + 3px;
+                    width: parent.cell - 6px;
+                    height: parent.cell - 6px;
+                    border-radius: Style.radius-small + 2px;
+                    background: Style.elevated;
+                    border-width: picked.has-hover ? 2px : 0px;
+                    border-color: Style.accent;
+                    clip: true;
+                    property <image> thumb: entry.is-dir ? Files.thumbnail("", 0, 0) : Files.thumbnail(entry.path, 200, Files.revision);
+                    if self.thumb.width > 0: Image { width: 100%; height: 100%; source: parent.thumb; image-fit: cover; }
+                    if entry.is-dir || self.thumb.width == 0: VerticalLayout {
+                        alignment: center;
+                        spacing: 4px;
+                        Icon { x: (parent.width - self.width) / 2; name: entry.is-dir ? "folder" : "image"; width: 24px; height: 24px; color: Style.accent; }
+                        Text { text: entry.name; color: Style.text; font-size: Style.font-small; horizontal-alignment: center; overflow: elide; }
+                    }
+                    picked := TouchArea {
+                        clicked => {
+                            if entry.is-dir {
+                                root.folder = entry.path;
+                            } else {
+                                Widgets.set(root.selected, "widget-image", entry.path);
+                                root.sheet = "";
+                            }
+                        }
+                    }
+                }
+                if root.pictures.length == 0: Text {
+                    width: parent.width;
+                    y: 40px;
+                    text: @tr("No pictures in this folder");
+                    color: Style.muted;
+                    horizontal-alignment: center;
+                }
+            }
+        }
+
+        Sheet {
+            area-width: root.width;
+            area-height: root.height;
+            open: root.sheet == "note";
+            title: @tr("Write a note");
+            close => { root.sheet = ""; }
+            Rectangle {
+                vertical-stretch: 1;
+                border-radius: Style.radius-medium;
+                background: Style.surface;
+                if root.sheet == "note": note := TextInput {
+                    x: 14px;
+                    y: 12px;
+                    width: parent.width - 28px;
+                    height: parent.height - 24px;
+                    single-line: false;
+                    wrap: word-wrap;
+                    color: Style.text;
+                    font-size: Style.font-size + 2px;
+                    init => {
+                        self.text = Widgets.text(true, "widget-text", root.selected, "");
+                        self.set-selection-offsets(2147483647, 2147483647);
+                        self.focus();
+                    }
+                    edited => { Widgets.set(root.selected, "widget-text", self.text); }
+                }
+            }
+        }
+    }
+}

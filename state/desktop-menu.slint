@@ -9,13 +9,14 @@
 import { Store, Shared, Shell, Compositor, Session } from "@slintlu";
 import { UI } from "ui.slint";
 import { DefaultApps } from "apps.slint";
+import { Widgets } from "widgets.slint";
 
 export global DesktopMenu {
     // Every built-in entry, in their default order.
     out property <[string]> builtins: ["launcher", "terminal", "files", "wallpapers", "random-wallpaper",
-        "dashboard", "display", "settings", "lock", "power"];
+        "widgets", "dashboard", "display", "settings", "lock", "power"];
     out property <[string]> defaults: ["launcher", "terminal", "files", "separator", "wallpapers", "random-wallpaper",
-        "dashboard", "separator", "display", "settings", "separator", "lock", "power"];
+        "widgets", "dashboard", "separator", "display", "settings", "separator", "lock", "power"];
     out property <bool> edited: Store.get-bool("desktop-menu-edited", false, Store.revision);
     out property <[string]> entries: root.edited ? Store.get-list("desktop-menu", Store.revision) : root.defaults;
 
@@ -48,6 +49,7 @@ export global DesktopMenu {
             : id == "files" ? @tr("Files")
             : id == "wallpapers" ? @tr("Change wallpaper…")
             : id == "random-wallpaper" ? @tr("Random wallpaper")
+            : id == "widgets" ? @tr("Arrange widgets…")
             : id == "dashboard" ? @tr("Dashboard")
             : id == "display" ? @tr("Display settings")
             : id == "settings" ? @tr("Settings")
@@ -62,6 +64,7 @@ export global DesktopMenu {
             : id == "files" ? "folder"
             : id == "wallpapers" ? "image"
             : id == "random-wallpaper" ? "reboot"
+            : id == "widgets" ? "widgets"
             : id == "dashboard" ? "dashboard"
             : id == "display" ? "monitor"
             : id == "settings" ? "settings"
@@ -102,6 +105,8 @@ export global DesktopMenu {
             UI.open-overlay(Compositor.has-commands ? "wallpapers" : "gallery");
         } else if id == "random-wallpaper" {
             Compositor.command("wallpaper-random", "");
+        } else if id == "widgets" {
+            Widgets.edit();
         } else if id == "dashboard" {
             UI.open-dashboard(0);
         } else if id == "display" {

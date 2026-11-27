@@ -12,7 +12,7 @@ import { Store, Shell, Apps } from "@slintlu";
 export global PanelLayout {
     // Every built-in item, in their default order: the bar until it is first edited.
     out property <[string]> builtins: ["launcher", "workspaces", "taskbar", "switcher", "title", "media",
-        "usage", "tray", "clock", "status", "settings", "power"];
+        "usage", "tray", "clock", "status", "widgets", "settings", "power"];
     out property <bool> edited: Store.get-bool("panel-items-edited", false, Store.revision);
     out property <[string]> entries: root.edited ? Store.get-list("panel-items", Store.revision) : root.builtins;
 
@@ -56,6 +56,7 @@ export global PanelLayout {
             : id == "tray" ? @tr("System tray")
             : id == "clock" ? @tr("Clock")
             : id == "status" ? @tr("Status")
+            : id == "widgets" ? @tr("Desktop widgets")
             : id == "settings" ? @tr("Settings")
             : id == "power" ? @tr("Power")
             : id == "spacer" ? @tr("Spacer")
@@ -74,6 +75,7 @@ export global PanelLayout {
             : id == "tray" ? @tr("Icons of applications running in the background.")
             : id == "clock" ? @tr("Opens the calendar.")
             : id == "status" ? @tr("Clipboard, network, Bluetooth, sound, battery and notifications.")
+            : id == "widgets" ? @tr("Arranges the widgets on the desktop.")
             : id == "spacer" ? @tr("Empty space that grows, pushing the items after it to the end.")
             : id == "separator" ? @tr("A line between groups of items.")
             : root.is-app(id) ? @tr("Starts the application.")
@@ -90,6 +92,7 @@ export global PanelLayout {
             : id == "tray" ? "grid"
             : id == "clock" ? "calendar"
             : id == "status" ? "wifi"
+            : id == "widgets" ? "widgets"
             : id == "settings" ? "settings"
             : id == "power" ? "power"
             : id == "spacer" ? "panel"

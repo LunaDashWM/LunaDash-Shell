@@ -38,14 +38,6 @@ export global Prefs {
     out property <string> dock-size: Store.get-string("dock-size", "medium", Store.revision);
     out property <bool> dock-launcher: Store.get-bool("dock-launcher", true, Store.revision);
 
-    // Desktop clock on the wallpaper
-    out property <bool> desktop-clock: Store.get-bool("desktop-clock", true, Store.revision);
-    // "bottom-left", "bottom-right", "top-left" or "center".
-    out property <string> desktop-clock-position: Store.get-string("desktop-clock-position", "bottom-left", Store.revision);
-    // "small", "medium" or "large".
-    out property <string> desktop-clock-size: Store.get-string("desktop-clock-size", "large", Store.revision);
-    out property <bool> desktop-clock-date: Store.get-bool("desktop-clock-date", true, Store.revision);
-
     // Appearance
     out property <bool> animations: Store.get-bool("animations", true, Store.revision);
     // "fast", "normal" or "relaxed".

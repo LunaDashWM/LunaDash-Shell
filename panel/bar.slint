@@ -11,6 +11,7 @@ import { PanelLayout } from "../state/panel-layout.slint";
 import { UI } from "../state/ui.slint";
 import { Time } from "../state/time.slint";
 import { Apply } from "../state/apply.slint";
+import { Widgets } from "../state/widgets.slint";
 import { Icon } from "../components/icon.slint";
 import { IconButton } from "../components/controls.slint";
 
@@ -634,6 +635,13 @@ component SettingsButton inherits IconButton {
     clicked => { UI.toggle-overlay("settings"); }
 }
 
+component WidgetsButton inherits IconButton {
+    icon: "widgets";
+    size: 30px;
+    icon-size: 17px;
+    clicked => { Widgets.edit(); }
+}
+
 component PowerButton inherits IconButton {
     icon: "power";
     size: 30px;
@@ -746,6 +754,7 @@ component BarItem inherits Rectangle {
             vertical: root.vertical;
             changed anchor => { root.status-moved(self.anchor); }
         }
+        if root.id == "widgets": WidgetsButton { }
         if root.id == "settings": SettingsButton { }
         if root.id == "power": PowerButton { }
         if root.id == "separator": Rectangle {
