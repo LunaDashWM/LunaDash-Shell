@@ -84,13 +84,16 @@ export global Style {
     out property <bool> framed: Prefs.screen-frame;
     out property <length> frame-width: root.framed ? 10px : 0px;
     out property <length> frame-radius: 25px * root.corner-scale;
-    // The bar along the top edge, or the left one.
-    out property <bool> bar-top: Prefs.bar-position != "left";
+    // The screen edge the bar runs along: "top", "bottom", "left" or "right".
+    out property <string> bar-edge: Prefs.bar-position == "bottom" || Prefs.bar-position == "left" || Prefs.bar-position == "right" ? Prefs.bar-position : "top";
+    out property <bool> bar-horizontal: root.bar-edge == "top" || root.bar-edge == "bottom";
     out property <length> bar-width: 48px;
     out property <length> panel-height: root.bar-width;
-    // Where the desktop area inside the bar and the frame begins.
-    out property <length> inner-left: root.bar-top ? root.frame-width : root.bar-width;
-    out property <length> inner-top: root.bar-top ? root.bar-width : root.frame-width;
+    // How far the desktop area inside the bar and the frame lies from each screen edge.
+    out property <length> inner-left: root.bar-edge == "left" ? root.bar-width : root.frame-width;
+    out property <length> inner-top: root.bar-edge == "top" ? root.bar-width : root.frame-width;
+    out property <length> inner-right: root.bar-edge == "right" ? root.bar-width : root.frame-width;
+    out property <length> inner-bottom: root.bar-edge == "bottom" ? root.bar-width : root.frame-width;
     out property <length> pill-height: 32px;
     // The dock's icons and its full height.
     out property <length> dock-item: Prefs.dock-size == "small" ? 40px : Prefs.dock-size == "large" ? 60px : 50px;

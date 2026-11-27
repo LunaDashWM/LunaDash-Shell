@@ -66,8 +66,8 @@ export component DesktopMenuWindow inherits PanelWindow {
     property <length> gap: Style.spacing-sm;
     property <length> area-left: Style.inner-left + root.gap;
     property <length> area-top: Style.inner-top + root.gap;
-    property <length> area-right: root.width - Style.frame-width - root.gap;
-    property <length> area-bottom: root.height - Style.frame-width - root.gap;
+    property <length> area-right: root.width - Style.inner-right - root.gap;
+    property <length> area-bottom: root.height - Style.inner-bottom - root.gap;
     property <length> card-width: min(260px, root.area-right - root.area-left);
     property <length> card-height: min(list.preferred-height, root.area-bottom - root.area-top);
     property <length> card-x: clamp(DesktopMenu.x + root.card-width <= root.area-right ? DesktopMenu.x : DesktopMenu.x - root.card-width,

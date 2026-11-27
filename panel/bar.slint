@@ -174,19 +174,19 @@ component StatusIcon inherits Rectangle {
     in property <bool> highlighted;
     in property <bool> badge;
     in property <color> tint: Style.text;
-    out property <length> anchor: Style.bar-top ? self.absolute-position.x + self.width / 2 : self.absolute-position.y + self.height / 2;
+    out property <length> anchor: Style.bar-horizontal ? self.absolute-position.x + self.width / 2 : self.absolute-position.y + self.height / 2;
     callback clicked();
     callback right-clicked();
     callback scrolled(delta: length);
 
-    width: Style.bar-top ? max(30px, row.preferred-width + 16px) : 30px;
-    height: Style.bar-top ? 28px : (root.label != "" ? 44px : 30px);
+    width: Style.bar-horizontal ? max(30px, row.preferred-width + 16px) : 30px;
+    height: Style.bar-horizontal ? 28px : (root.label != "" ? 44px : 30px);
     border-radius: 15px;
     background: root.highlighted ? Style.accent : touch.pressed ? Style.pressed : touch.has-hover ? Style.hover : transparent;
     animate background { duration: Style.motion-fast; }
     property <color> ink: root.highlighted ? Style.accent-ink : root.tint;
     // Side bar: icon over a small label.
-    if !Style.bar-top: VerticalLayout {
+    if !Style.bar-horizontal: VerticalLayout {
         alignment: center;
         spacing: 1px;
         Rectangle {
@@ -201,15 +201,15 @@ component StatusIcon inherits Rectangle {
             horizontal-alignment: center;
         }
     }
-    // Top bar: icon beside the label.
+    // Top or bottom bar: icon beside the label.
     row := HorizontalLayout {
         alignment: center;
         spacing: 4px;
-        if Style.bar-top: Rectangle {
+        if Style.bar-horizontal: Rectangle {
             width: 18px;
             Icon { name: root.icon; width: 18px; height: 18px; color: root.ink; }
         }
-        if Style.bar-top && root.label != "": Text {
+        if Style.bar-horizontal && root.label != "": Text {
             text: root.label;
             max-width: 110px;
             overflow: elide;
@@ -249,8 +249,8 @@ component ClipboardStatus inherits StatusIcon {
 
 component NetworkStatus inherits StatusIcon {
     icon: !Network.connected ? "wifi-off" : Network.kind == "wifi" ? "wifi" : "ethernet";
-    // The network's name beside the icon in a top bar.
-    label: Style.bar-top && Network.connected && Network.kind == "wifi" ? Network.name : "";
+    // The network's name beside the icon in a top or bottom bar.
+    label: Style.bar-horizontal && Network.connected && Network.kind == "wifi" ? Network.name : "";
     tint: Network.online ? Style.text : Style.warning;
     highlighted: UI.popup == "network";
     clicked => { UI.toggle-popup-at("network", self.anchor); }
@@ -264,7 +264,7 @@ component BluetoothStatus inherits StatusIcon {
 
 component AudioStatus inherits StatusIcon {
     icon: Audio.output.muted ? "volume-mute" : Audio.output.volume < 0.4 ? "volume-low" : "volume";
-    label: Style.bar-top && !Audio.output.muted ? Math.round(Audio.output.volume * 100) + "%" : "";
+    label: Style.bar-horizontal && !Audio.output.muted ? Math.round(Audio.output.volume * 100) + "%" : "";
     highlighted: UI.popup == "audio";
     clicked => { UI.toggle-popup-at("audio", self.anchor); }
     right-clicked => { Audio.toggle-muted(); }
@@ -275,15 +275,15 @@ component AudioStatus inherits StatusIcon {
 
 component BatteryStatus inherits StatusIcon {
     icon: Battery.charging ? "battery-charging" : "battery";
-    label: Math.round(Battery.level * 100) + (Style.bar-top ? "%" : "");
+    label: Math.round(Battery.level * 100) + (Style.bar-horizontal ? "%" : "");
     tint: Battery.level < 0.15 && !Battery.charging ? Style.danger : Style.text;
     clicked => { UI.open-dashboard(2); }
 }
 
 component NotificationStatus inherits StatusIcon {
     icon: Notifications.do-not-disturb ? "bell-off" : "bell";
-    badge: !Style.bar-top && Notifications.count > 0;
-    label: Style.bar-top && Notifications.count > 0 ? Notifications.count : "";
+    badge: !Style.bar-horizontal && Notifications.count > 0;
+    label: Style.bar-horizontal && Notifications.count > 0 ? Notifications.count : "";
     highlighted: UI.overlay == "dashboard" && UI.dashboard-tab == 3;
     clicked => { UI.open-dashboard(3); }
     right-clicked => { Notifications.set-do-not-disturb(!Notifications.do-not-disturb); }
@@ -523,7 +523,7 @@ component TrayIcon inherits Rectangle {
     height: 30px;
     border-radius: 15px;
     background: touch.has-hover ? Style.hover : transparent;
-    property <length> anchor: Style.bar-top ? self.absolute-position.x + self.width / 2 : self.absolute-position.y + self.height / 2;
+    property <length> anchor: Style.bar-horizontal ? self.absolute-position.x + self.width / 2 : self.absolute-position.y + self.height / 2;
     Image { source: root.icon; width: 18px; height: 18px; image-fit: contain; }
     touch := TouchArea {
         clicked => {
@@ -547,7 +547,7 @@ component TrayIcon inherits Rectangle {
     }
 }
 
-// The clock: hours over minutes in a side bar, one line (and the date) at the top.
+// The clock: hours over minutes in a side bar, one line (and the date) in a top or bottom bar.
 component ClockItem inherits Rectangle {
     in property <bool> vertical;
     property <bool> open: UI.popup == "calendar";
@@ -706,10 +706,11 @@ component BarWindow inherits PanelWindow {
     @children
 }
 
-// Along the top edge (the default).
+// Along the top edge (the default) or the bottom one.
 export component Bar inherits BarWindow {
-    active: Style.bar-top;
-    anchor-top: true;
+    active: Style.bar-horizontal;
+    anchor-top: Style.bar-edge == "top";
+    anchor-bottom: Style.bar-edge == "bottom";
     anchor-left: true;
     anchor-right: true;
     preferred-height: Style.bar-width;
@@ -747,13 +748,14 @@ export component Bar inherits BarWindow {
     }
 }
 
-// Down the left edge.
+// Down the left edge or the right one.
 export component SideBar inherits BarWindow {
     namespace: "lunadash-sidebar";
-    active: !Style.bar-top;
+    active: !Style.bar-horizontal;
     anchor-top: true;
     anchor-bottom: true;
-    anchor-left: true;
+    anchor-left: Style.bar-edge == "left";
+    anchor-right: Style.bar-edge == "right";
     preferred-width: Style.bar-width;
     status-anchor: status.anchor;
 

@@ -13,18 +13,20 @@ export component PanelPopup inherits PanelWindow {
     layer: Layer.overlay;
     keyboard-mode: KeyboardMode.on-demand;
     exclusive-mode: ExclusiveMode.ignore;
-    // A band along the bar (a row under a top bar, a column beside a side bar); only the
-    // drawer in it is painted.
+    // A band along the bar (the screen beside a top or bottom bar, a column beside a side
+    // bar); only the drawer in it is painted.
     anchor-top: true;
-    anchor-left: true;
-    anchor-right: Style.bar-top;
     anchor-bottom: true;
-    margin-top: Style.bar-top ? Style.bar-width : 0px;
-    margin-left: Style.bar-top ? 0px : Style.bar-width;
+    anchor-left: Style.bar-edge != "right";
+    anchor-right: Style.bar-horizontal || Style.bar-edge == "right";
+    margin-top: Style.bar-edge == "top" ? Style.bar-width : 0px;
+    margin-bottom: Style.bar-edge == "bottom" ? Style.bar-width : 0px;
+    margin-left: Style.bar-edge == "left" ? Style.bar-width : 0px;
+    margin-right: Style.bar-edge == "right" ? Style.bar-width : 0px;
     shown: UI.popup == root.name && UI.on-active-screen;
     default-font-family: Style.font;
 
-    // Set by each popout; the band is as wide as the screen under a top bar.
+    // Set by each popout; the band is as wide as the screen beside a top or bottom bar.
     property <length> body-width: root.preferred-width;
     property <float> entrance: 0;
     animate entrance { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
@@ -32,7 +34,7 @@ export component PanelPopup inherits PanelWindow {
     init => { root.entrance = self.shown ? 1 : 0; }
 
     property <length> body-height: min(content.preferred-height,
-        root.height - Style.frame-width - (Style.bar-top ? 0px : Style.frame-width + 4 * Style.frame-radius));
+        root.height - Style.frame-width - (Style.bar-horizontal ? 0px : Style.frame-width + 4 * Style.frame-radius));
     // Centred on the item, kept inside the frame with its ears clear of the frame's rounded
     // corners (overlapping a translucent corner would darken it).
     property <length> body-x: clamp(UI.popup-pos * 1px - root.body-width / 2, Style.frame-width + 2 * Style.frame-radius,
@@ -51,16 +53,21 @@ export component PanelPopup inherits PanelWindow {
             reject
         }
         Drawer {
-            edge: Style.bar-top ? "top" : "left";
-            x: Style.bar-top ? root.body-x - Style.frame-radius : -(1 - root.entrance) * (self.width + 2px);
-            y: Style.bar-top ? -(1 - root.entrance) * (self.height + 2px) : root.body-y - Style.frame-radius;
+            edge: Style.bar-edge;
+            x: Style.bar-horizontal ? root.body-x - Style.frame-radius
+                : Style.bar-edge == "left" ? -(1 - root.entrance) * (self.width + 2px)
+                : root.width - self.width + (1 - root.entrance) * (self.width + 2px);
+            y: !Style.bar-horizontal ? root.body-y - Style.frame-radius
+                : Style.bar-edge == "top" ? -(1 - root.entrance) * (self.height + 2px)
+                : root.height - self.height + (1 - root.entrance) * (self.height + 2px);
             body-width: root.body-width;
             body-height: root.body-height;
             TouchArea { }
             content := VerticalLayout {
-                padding: Style.spacing-xl;
-                padding-top: Style.bar-top ? Style.spacing-lg : Style.spacing-xl;
-                padding-left: Style.bar-top ? Style.spacing-xl : Style.spacing-lg;
+                padding-top: Style.bar-edge == "top" ? Style.spacing-lg : Style.spacing-xl;
+                padding-bottom: Style.bar-edge == "bottom" ? Style.spacing-lg : Style.spacing-xl;
+                padding-left: Style.bar-edge == "left" ? Style.spacing-lg : Style.spacing-xl;
+                padding-right: Style.bar-edge == "right" ? Style.spacing-lg : Style.spacing-xl;
                 spacing: Style.spacing-md;
                 @children
             }
@@ -77,8 +84,10 @@ export component PopupDismisser inherits PanelWindow {
     anchor-bottom: true;
     anchor-left: true;
     anchor-right: true;
-    margin-top: Style.bar-top ? Style.bar-width : 0px;
-    margin-left: Style.bar-top ? 0px : Style.bar-width;
+    margin-top: Style.bar-edge == "top" ? Style.bar-width : 0px;
+    margin-bottom: Style.bar-edge == "bottom" ? Style.bar-width : 0px;
+    margin-left: Style.bar-edge == "left" ? Style.bar-width : 0px;
+    margin-right: Style.bar-edge == "right" ? Style.bar-width : 0px;
     shown: UI.popup != "" && UI.on-active-screen;
     TouchArea { clicked => { UI.close-all(); } }
 }

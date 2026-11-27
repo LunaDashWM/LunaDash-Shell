@@ -180,12 +180,12 @@ export component Wallpaper inherits PanelWindow {
         property <color> ink: Style.accent.mix(#ffffff, 0.55);
         width: self.preferred-width;
         height: self.preferred-height;
-        x: self.at-center ? Style.inner-left + (parent.width - Style.inner-left - Style.frame-width - self.width) / 2
-            : self.at-right ? parent.width - Style.frame-width - self.inset - self.width
+        x: self.at-center ? Style.inner-left + (parent.width - Style.inner-left - Style.inner-right - self.width) / 2
+            : self.at-right ? parent.width - Style.inner-right - self.inset - self.width
             : Style.inner-left + self.inset;
-        y: self.at-center ? Style.inner-top + (parent.height - Style.inner-top - Style.frame-width - Style.dock-reserve - self.height) / 2
+        y: self.at-center ? Style.inner-top + (parent.height - Style.inner-top - Style.inner-bottom - Style.dock-reserve - self.height) / 2
             : self.at-top ? Style.inner-top + self.inset
-            : parent.height - Style.frame-width - Style.dock-reserve - self.inset - self.height;
+            : parent.height - Style.inner-bottom - Style.dock-reserve - self.inset - self.height;
         spacing: 22px * clock.size;
         HorizontalLayout {
             spacing: 6px * clock.size;

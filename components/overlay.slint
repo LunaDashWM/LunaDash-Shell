@@ -37,8 +37,8 @@ export component Overlay inherits PanelWindow {
     // The desktop area inside the bar and the frame.
     property <length> inner-x: Style.inner-left;
     property <length> inner-y: Style.inner-top;
-    property <length> inner-width: root.width - Style.inner-left - Style.frame-width;
-    property <length> inner-height: root.height - Style.inner-top - Style.frame-width;
+    property <length> inner-width: root.width - Style.inner-left - Style.inner-right;
+    property <length> inner-height: root.height - Style.inner-top - Style.inner-bottom;
     property <bool> horizontal: root.edge == "top" || root.edge == "bottom";
     property <length> body-width: min(root.content-width, root.inner-width - (root.edge == "center" ? 40px : root.horizontal ? 2 * Style.frame-radius : 0px));
     property <length> body-height: min(root.content-height, root.inner-height - (root.edge == "center" ? 40px : root.horizontal ? 0px : 2 * Style.frame-radius));

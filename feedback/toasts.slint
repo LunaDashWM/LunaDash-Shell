@@ -19,8 +19,8 @@ export component Toasts inherits PanelWindow {
     anchor-bottom: root.at-bottom;
     anchor-right: !root.centered;
     margin-top: Style.inner-top;
-    margin-bottom: Style.frame-width + Style.dock-reserve;
-    margin-right: Style.frame-width;
+    margin-bottom: Style.inner-bottom + Style.dock-reserve;
+    margin-right: Style.inner-right;
     shown: Prefs.toasts && Notifications.popups.length > 0 && UI.on-active-screen && UI.overlay == "";
     property <length> body-width: 400px;
     property <length> body-height: column.preferred-height;

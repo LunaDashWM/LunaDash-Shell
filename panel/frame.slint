@@ -43,7 +43,7 @@ export component ReserveRight inherits Reserve {
     anchor-right: true;
     anchor-top: true;
     anchor-bottom: true;
-    zone: Style.frame-width;
+    zone: Style.inner-right;
 }
 
 export component ReserveBottom inherits Reserve {
@@ -51,7 +51,7 @@ export component ReserveBottom inherits Reserve {
     anchor-left: true;
     anchor-right: true;
     // The dock sits on the bottom edge of the frame: keep windows clear of it too.
-    zone: Style.frame-width + Style.dock-reserve;
+    zone: Style.inner-bottom + Style.dock-reserve;
 }
 
 component FrameStrip inherits PanelWindow {
@@ -62,18 +62,18 @@ component FrameStrip inherits PanelWindow {
     Rectangle { background: Style.frame; }
 }
 
-// The strips never overlap each other or the bar (a translucent frame would darken where
-// they did): the top and bottom strips run from the bar to the right edge, the side strips
-// between them.
+// One strip along each edge the bar is not on. They never overlap each other or the bar (a
+// translucent frame would darken where they did): the top and bottom strips run between the
+// side bar and the screen edges, the side strips between them.
 
-// Along the top when the bar is on the left.
 export component FrameTop inherits FrameStrip {
     anchor-top: true;
     anchor-left: true;
     anchor-right: true;
-    margin-left: Style.inner-left;
+    margin-left: Style.bar-edge == "left" ? Style.bar-width : 0px;
+    margin-right: Style.bar-edge == "right" ? Style.bar-width : 0px;
     preferred-height: Style.frame-width;
-    shown: Style.framed && !Style.bar-top;
+    shown: Style.framed && Style.bar-edge != "top";
 
     // Resting the pointer on the middle of the top edge opens the dashboard, which drops out
     // of it.
@@ -91,15 +91,14 @@ export component FrameTop inherits FrameStrip {
     }
 }
 
-// Along the left when the bar is at the top.
 export component FrameLeft inherits FrameStrip {
     anchor-left: true;
     anchor-top: true;
     anchor-bottom: true;
     margin-top: Style.inner-top;
-    margin-bottom: Style.frame-width;
+    margin-bottom: Style.inner-bottom;
     preferred-width: Style.frame-width;
-    shown: Style.framed && Style.bar-top;
+    shown: Style.framed && Style.bar-edge != "left";
 }
 
 export component FrameRight inherits FrameStrip {
@@ -107,16 +106,19 @@ export component FrameRight inherits FrameStrip {
     anchor-top: true;
     anchor-bottom: true;
     margin-top: Style.inner-top;
-    margin-bottom: Style.frame-width;
+    margin-bottom: Style.inner-bottom;
     preferred-width: Style.frame-width;
+    shown: Style.framed && Style.bar-edge != "right";
 }
 
 export component FrameBottom inherits FrameStrip {
     anchor-bottom: true;
     anchor-left: true;
     anchor-right: true;
-    margin-left: Style.bar-top ? 0px : Style.inner-left;
+    margin-left: Style.bar-edge == "left" ? Style.bar-width : 0px;
+    margin-right: Style.bar-edge == "right" ? Style.bar-width : 0px;
     preferred-height: Style.frame-width;
+    shown: Style.framed && Style.bar-edge != "bottom";
 }
 
 // The rounded inner corners of the desktop area.
@@ -146,14 +148,14 @@ export component FrameCornerTopRight inherits FrameCorner {
     anchor-top: true;
     anchor-right: true;
     margin-top: Style.inner-top;
-    margin-right: Style.frame-width;
+    margin-right: Style.inner-right;
 }
 
 export component FrameCornerBottomLeft inherits FrameCorner {
     solid: "bl";
     anchor-bottom: true;
     anchor-left: true;
-    margin-bottom: Style.frame-width;
+    margin-bottom: Style.inner-bottom;
     margin-left: Style.inner-left;
 }
 
@@ -162,6 +164,6 @@ export component FrameCornerBottomRight inherits FrameCorner {
     shown: Style.framed && !(UI.toasts-showing && Prefs.toast-position == "bottom-right");
     anchor-bottom: true;
     anchor-right: true;
-    margin-bottom: Style.frame-width;
-    margin-right: Style.frame-width;
+    margin-bottom: Style.inner-bottom;
+    margin-right: Style.inner-right;
 }
