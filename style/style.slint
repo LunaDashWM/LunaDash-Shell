@@ -7,7 +7,7 @@
 // surface-container, surface-alt → surface-container-high, border → outline-variant,
 // accent → primary.
 
-import { Theme } from "@slintlu";
+import { Theme, Compositor } from "@slintlu";
 import { Prefs } from "../state/prefs.slint";
 import { PanelLayout } from "../state/panel-layout.slint";
 
@@ -16,10 +16,15 @@ export global Style {
     out property <[color]> accents: [#9ccbfb, #c4b5fd, #f5a9c8, #7dcccf, #a6e3a1, #efcd8c, #f4a77c, #e2e5ed];
     out property <[string]> accent-hex: ["#9ccbfb", "#c4b5fd", "#f5a9c8", "#7dcccf", "#a6e3a1", "#efcd8c", "#f4a77c", "#e2e5ed"];
 
-    // Primary and its tonal companions
-    out property <color> accent: Prefs.accent >= 0 && Prefs.accent < root.accents.length
-        ? (Theme.dark ? root.accents[Prefs.accent] : root.accents[Prefs.accent].darker(0.45))
+    // Primary and its tonal companions: the accent picked in Settings, else on LunaDash the
+    // one it takes from the wallpaper (Colours from the wallpaper), else the palette's own.
+    property <bool> wallpaper-colours: Compositor.has-commands
+        && Compositor.preference-bool("wallpaperColors", true, Compositor.preferences-revision);
+    property <color> picked: Prefs.accent >= 0 && Prefs.accent < root.accents.length ? root.accents[Prefs.accent]
+        : root.wallpaper-colours ? Compositor.preference-color("accent", Theme.accent, Compositor.preferences-revision)
         : Theme.accent;
+    out property <color> accent: Prefs.accent < 0 && !root.wallpaper-colours ? Theme.accent
+        : Theme.dark ? root.picked : root.picked.darker(0.45);
     // On top of the primary colour.
     out property <color> accent-ink: Theme.dark ? root.accent.mix(#000000, 0.28) : #ffffff;
     // M3 primary / secondary containers: the accent steeped into the surface.

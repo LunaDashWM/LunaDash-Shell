@@ -198,7 +198,7 @@ component AppearancePage inherits Page {
             description: @tr("LunaDash derives its palette from the current wallpaper.");
             Switch {
                 on: Compositor.preference-bool("wallpaperColors", true, Compositor.preferences-revision);
-                toggled => { Compositor.set-preference-bool("wallpaperColors", !self.on); }
+                toggled => { Apply.set-wallpaper-colours(!self.on); }
             }
         }
     }
@@ -921,9 +921,21 @@ component BindingRow inherits Rectangle {
     in property <KeyBindingInfo> binding;
     in property <string> label;
     in property <bool> recording;
+    // What the last keys pressed while recording did wrong, if anything.
+    in property <string> note;
     callback change();
     callback remove();
+    // Keys pressed while recording; the row takes them, so the page stays where it is.
+    callback key(event: KeyEvent) -> EventResult;
     min-height: 48px;
+    keys := FocusScope {
+        width: 0px;
+        height: 0px;
+        key-pressed(event) => { root.key(event) }
+    }
+    changed recording => {
+        if self.recording { keys.focus(); }
+    }
     HorizontalLayout {
         padding-top: 5px;
         padding-bottom: 5px;
@@ -937,10 +949,11 @@ component BindingRow inherits Rectangle {
             overflow: elide;
         }
         if root.recording: Text {
-            text: @tr("Press the new keys…");
+            text: root.note != "" ? root.note : @tr("Press the new keys…");
             color: Style.accent;
             font-weight: 600;
             vertical-alignment: center;
+            overflow: elide;
         }
         if !root.recording: HorizontalLayout {
             alignment: end;
@@ -973,6 +986,9 @@ component ShortcutsPage inherits Page {
     property <string> message;
     // A change was just sent: the compositor's answer (an error) is shown until the next one.
     property <bool> sent;
+    // The last change came from the form that adds a binding, and what it added.
+    property <bool> added-from-form;
+    property <string> added;
 
     // The key's name as LunaDash writes it (an xkb keysym name), or "" when unsupported.
     pure function key-name(text: string) -> string {
@@ -1013,6 +1029,7 @@ component ShortcutsPage inherits Page {
             : name == "tile-window" && argument == "right" ? @tr("Tile the window to the right")
             : name == "tile-window" && argument == "up" ? @tr("Tile the window to the top")
             : name == "tile-window" && argument == "down" ? @tr("Tile the window to the bottom")
+            : name == "toggle-window-style" ? @tr("Switch between tiling and stacking")
             : name == "maximize-column" ? @tr("Maximize")
             : name == "fullscreen-window" ? @tr("Fullscreen")
             : name == "close-window" ? @tr("Close window")
@@ -1050,7 +1067,7 @@ component ShortcutsPage inherits Page {
             || name == "focus-window-down" || name == "move-column-left" || name == "move-column-right"
             || name == "consume-or-expel-window-left" || name == "consume-or-expel-window-right"
             || name == "expel-window-from-column" || name == "center-column" || name == "set-column-width"
-            || name == "tile-window"
+            || name == "tile-window" || name == "toggle-window-style"
             || name == "maximize-column" || name == "fullscreen-window" || name == "close-window"
             || name == "minimize-window" || name == "toggle-scratchpad" ? "windows"
             : "apps"
@@ -1067,8 +1084,11 @@ component ShortcutsPage inherits Page {
         root.recording-action = action;
         root.message = "";
         root.sent = false;
+        root.added = "";
         Compositor.command("shortcut-capture", "true");
-        capture.focus();
+        if keys == "" {
+            add-keys.focus();
+        }
     }
     function stop() {
         root.recording = false;
@@ -1076,61 +1096,62 @@ component ShortcutsPage inherits Page {
         Compositor.command("shortcut-capture", "false");
     }
 
-    capture := FocusScope {
-        height: 0px;
-        key-pressed(event) => {
-            if !root.recording {
-                return reject;
-            }
-            if event.text == Key.Escape && !event.modifiers.meta && !event.modifiers.alt {
-                root.stop();
-                return accept;
-            }
-            // A modifier alone is the start of a combination.
-            if event.text == Key.Shift || event.text == Key.ShiftR || event.text == Key.Control
-                || event.text == Key.ControlR || event.text == Key.Alt || event.text == Key.AltGr
-                || event.text == Key.Meta || event.text == Key.MetaR {
-                return accept;
-            }
-            let key = root.key-name(event.text);
-            if key == "" {
-                root.message = @tr("That key cannot be bound.");
-                return accept;
-            }
-            // Outside the overview a key without Super or Alt would stop typing it.
-            if root.recording-mode == "normal" && !event.modifiers.meta && !event.modifiers.alt {
-                root.message = @tr("Keys outside the overview need Super or Alt.");
-                return accept;
-            }
-            let combination = (event.modifiers.meta ? "Meta+" : "") + (event.modifiers.control ? "Ctrl+" : "")
-                + (event.modifiers.alt ? "Alt+" : "") + (event.modifiers.shift ? "Shift+" : "") + key;
-            let bound = Compositor.binding-for(root.recording-mode, combination);
-            if bound != "" && combination.to-lowercase() != root.recording-keys.to-lowercase() {
-                root.message = @tr("{} already runs {}.", combination, bound);
-                return accept;
-            }
-            Compositor.bind(root.recording-mode, combination, root.recording-action, root.recording-keys);
-            root.sent = true;
-            if root.recording-keys == "" {
-                root.new-action = "";
-            }
-            root.message = "";
-            root.stop();
-            accept
+    // A key pressed while recording, wherever it is recorded (a binding's row, or the form
+    // that adds one).
+    function record(event: KeyEvent) -> EventResult {
+        if !root.recording {
+            return reject;
         }
+        if event.text == Key.Escape && !event.modifiers.meta && !event.modifiers.alt {
+            root.stop();
+            return accept;
+        }
+        // A modifier alone is the start of a combination.
+        if event.text == Key.Shift || event.text == Key.ShiftR || event.text == Key.Control
+            || event.text == Key.ControlR || event.text == Key.Alt || event.text == Key.AltGr
+            || event.text == Key.Meta || event.text == Key.MetaR {
+            return accept;
+        }
+        let key = root.key-name(event.text);
+        if key == "" {
+            root.message = @tr("That key cannot be bound.");
+            return accept;
+        }
+        // Outside the overview a key without Super or Alt would stop typing it.
+        if root.recording-mode == "normal" && !event.modifiers.meta && !event.modifiers.alt {
+            root.message = @tr("Keys outside the overview need Super or Alt.");
+            return accept;
+        }
+        let combination = (event.modifiers.meta ? "Meta+" : "") + (event.modifiers.control ? "Ctrl+" : "")
+            + (event.modifiers.alt ? "Alt+" : "") + (event.modifiers.shift ? "Shift+" : "") + key;
+        let bound = Compositor.binding-for(root.recording-mode, combination);
+        if bound != "" && combination.to-lowercase() != root.recording-keys.to-lowercase() {
+            root.message = @tr("{} already runs {}.", combination, bound);
+            return accept;
+        }
+        Compositor.bind(root.recording-mode, combination, root.recording-action, root.recording-keys);
+        root.sent = true;
+        root.added-from-form = root.recording-keys == "";
+        if root.added-from-form {
+            root.added = @tr("{} now runs {}.", combination, root.recording-action);
+            root.new-action = "";
+        }
+        root.message = "";
+        root.stop();
+        accept
     }
     changed visible => {
         if !self.visible && root.recording { root.stop(); }
     }
 
-    if root.message != "" || (root.sent && Compositor.command-error != ""): Rectangle {
+    if root.sent && !root.added-from-form && Compositor.command-error != "": Rectangle {
         height: note.preferred-height + 20px;
         border-radius: Style.radius-small;
         background: Style.accent-soft;
         note := Text {
             x: 14px;
             width: parent.width - 28px;
-            text: root.message != "" ? root.message : Compositor.command-error;
+            text: Compositor.command-error;
             color: Style.text;
             wrap: word-wrap;
             vertical-alignment: center;
@@ -1143,6 +1164,8 @@ component ShortcutsPage inherits Page {
                 binding: binding;
                 label: root.label(binding.name, binding.argument);
                 recording: root.recording && root.recording-mode == "normal" && root.recording-keys == binding.combo;
+                note: root.message;
+                key(event) => { root.record(event) }
                 change => { root.start("normal", binding.combo, binding.action); }
                 remove => { Compositor.unbind("normal", binding.combo); root.sent = true; }
             }
@@ -1155,6 +1178,8 @@ component ShortcutsPage inherits Page {
                 binding: binding;
                 label: root.label(binding.name, binding.argument);
                 recording: root.recording && root.recording-mode == "normal" && root.recording-keys == binding.combo;
+                note: root.message;
+                key(event) => { root.record(event) }
                 change => { root.start("normal", binding.combo, binding.action); }
                 remove => { Compositor.unbind("normal", binding.combo); root.sent = true; }
             }
@@ -1167,6 +1192,8 @@ component ShortcutsPage inherits Page {
                 binding: binding;
                 label: root.label(binding.name, binding.argument);
                 recording: root.recording && root.recording-mode == "normal" && root.recording-keys == binding.combo;
+                note: root.message;
+                key(event) => { root.record(event) }
                 change => { root.start("normal", binding.combo, binding.action); }
                 remove => { Compositor.unbind("normal", binding.combo); root.sent = true; }
             }
@@ -1179,6 +1206,8 @@ component ShortcutsPage inherits Page {
                 binding: binding;
                 label: root.label(binding.name, binding.argument);
                 recording: root.recording && root.recording-mode == "overview" && root.recording-keys == binding.combo;
+                note: root.message;
+                key(event) => { root.record(event) }
                 change => { root.start("overview", binding.combo, binding.action); }
                 remove => { Compositor.unbind("overview", binding.combo); root.sent = true; }
             }
@@ -1201,10 +1230,26 @@ component ShortcutsPage inherits Page {
             }
         }
         Divider { }
+        add-keys := FocusScope {
+            height: 0px;
+            key-pressed(event) => { root.record(event) }
+        }
         HorizontalLayout {
             alignment: end;
             padding-top: 10px;
             padding-bottom: 10px;
+            spacing: Style.spacing-md;
+            // While recording: what is wrong with the keys pressed; after: what was added, or
+            // why LunaDash refused it.
+            Text {
+                horizontal-stretch: 1;
+                vertical-alignment: center;
+                wrap: word-wrap;
+                color: (root.recording && root.recording-keys == "") || (root.sent && root.added-from-form && Compositor.command-error != "") ? Style.accent : Style.muted;
+                text: root.recording && root.recording-keys == "" ? (root.message != "" ? root.message : @tr("Press the keys, with Super or Alt; Esc cancels."))
+                    : root.sent && root.added-from-form && Compositor.command-error != "" ? Compositor.command-error
+                    : root.added;
+            }
             TextButton {
                 text: root.recording && root.recording-keys == "" ? @tr("Press the keys…") : @tr("Record keys");
                 primary: true;

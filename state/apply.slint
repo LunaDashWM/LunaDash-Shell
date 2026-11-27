@@ -38,12 +38,21 @@ export global Apply {
             Compositor.set-preference-string("themeMode", mode);
         }
     }
-    // An accent from Style.accents (-1: the palette's own); LunaDash uses it too.
+    // An accent from Style.accents (-1: the palette's own); LunaDash uses it too, and stops
+    // taking one from the wallpaper.
     public function set-accent(index: int) {
         Store.set-number("accent", index);
         if Compositor.has-commands && index >= 0 && index < Style.accent-hex.length {
+            Compositor.set-preference-bool("wallpaperColors", false);
             Compositor.set-preference-string("accent", Style.accent-hex[index]);
         }
+    }
+    // LunaDash colours the desktop after the wallpaper; a picked accent would hide it.
+    public function set-wallpaper-colours(on: bool) {
+        if on {
+            Store.set-number("accent", -1);
+        }
+        Compositor.set-preference-bool("wallpaperColors", on);
     }
     public function set-animations(on: bool) {
         Store.set-bool("animations", on);

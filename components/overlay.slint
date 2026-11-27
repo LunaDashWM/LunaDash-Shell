@@ -2,7 +2,7 @@
 // drawer that slides out of the screen frame on that side and stays joined to it; without one
 // ("center") it is a floating card over a dimmed backdrop. A click beside it closes it.
 
-import { PanelWindow, Layer, KeyboardMode, ExclusiveMode } from "@slintlu";
+import { PanelWindow, Layer, KeyboardMode, ExclusiveMode, Compositor } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
 import { Drawer } from "shape.slint";
@@ -87,8 +87,12 @@ export component Overlay inherits PanelWindow {
     property <bool> peeking;
     property <bool> stepped-aside;
     property <int> peek-request: UI.peek-serial;
-    changed peek-request => {
-        if root.shown {
+    changed peek-request => { root.peek(); }
+    // Switched from the keyboard (or elsewhere) while open: step aside as well.
+    property <string> window-style: Compositor.preference-string("windowStyle", "tiling", Compositor.preferences-revision);
+    changed window-style => { root.peek(); }
+    function peek() {
+        if root.shown && !root.peeking {
             root.peeking = true;
             root.entrance = 0;
         }
