@@ -862,6 +862,16 @@ component WindowsPage inherits Page {
     title: @tr("Windows");
     subtitle: @tr("How LunaDash arranges and draws application windows.");
     property <int> revision: Compositor.preferences-revision;
+    // A window style chosen, applied once Settings has stepped aside.
+    property <string> pending-style;
+    Timer {
+        interval: Style.motion-fast + 60ms;
+        running: root.pending-style != "";
+        triggered => {
+            Compositor.set-preference-string("windowStyle", root.pending-style);
+            root.pending-style = "";
+        }
+    }
     Group {
         title: @tr("LAYOUT");
         Setting {
@@ -872,7 +882,11 @@ component WindowsPage inherits Page {
             Segmented {
                 labels: [@tr("Tiling"), @tr("Stacking")];
                 selected: Compositor.preference-string("windowStyle", "tiling", root.revision) == "stacking" ? 1 : 0;
-                chosen(i) => { Compositor.set-preference-string("windowStyle", i == 1 ? "stacking" : "tiling"); }
+                // Settings steps aside first, so the windows can be seen moving to their places.
+                chosen(i) => {
+                    UI.peek-overlay();
+                    root.pending-style = i == 1 ? "stacking" : "tiling";
+                }
             }
         }
         Divider { }

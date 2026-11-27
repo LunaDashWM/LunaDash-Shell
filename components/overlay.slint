@@ -27,7 +27,7 @@ export component Overlay inherits PanelWindow {
     anchor-bottom: true;
     anchor-left: true;
     anchor-right: true;
-    shown: UI.overlay == root.name && UI.on-active-screen;
+    shown: UI.overlay == root.name && UI.on-active-screen && !root.stepped-aside;
     // 0 → 1 when the overlay opens.
     property <float> entrance: 0;
     animate entrance { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
@@ -79,6 +79,31 @@ export component Overlay inherits PanelWindow {
                 TouchArea { }
                 @children
             }
+        }
+    }
+    // Peeking (UI.peek-overlay): the overlay fades out, then steps aside altogether (its blur
+    // with it) for a moment while staying open, so a change behind it (windows rearranging)
+    // can be watched, and comes back.
+    property <bool> peeking;
+    property <bool> stepped-aside;
+    property <int> peek-request: UI.peek-serial;
+    changed peek-request => {
+        if root.shown {
+            root.peeking = true;
+            root.entrance = 0;
+        }
+    }
+    Timer {
+        interval: Style.motion-fast;
+        running: root.peeking && !root.stepped-aside;
+        triggered => { root.stepped-aside = true; }
+    }
+    Timer {
+        interval: 1500ms;
+        running: root.stepped-aside;
+        triggered => {
+            root.stepped-aside = false;
+            root.peeking = false;
         }
     }
     changed shown => {

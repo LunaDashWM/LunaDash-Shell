@@ -14,6 +14,12 @@ export global UI {
     // Where along the bar (logical px from the screen's left or top edge) the item that opened
     // the popup is, so the popout slides out beside it.
     out property <float> popup-pos: Shared.get-number("popup-pos", 0, Shared.revision);
+    // Raised to let the open overlay step aside for a moment (see Overlay), so a change
+    // behind it shows. Only within this window, like the overlay itself.
+    out property <int> peek-serial;
+    public function peek-overlay() {
+        root.peek-serial += 1;
+    }
 
     // Popups and overlays appear on the focused screen (or the first one).
     out property <string> active-screen: Workspaces.focused-output != "" ? Workspaces.focused-output
