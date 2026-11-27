@@ -7,7 +7,7 @@ import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
-import { Switch, SectionTitle, IconButton, TextButton, TextField, ListRow, Card, Reveal, RangeSlider, Swatches, Keycap } from "../components/controls.slint";
+import { Switch, SectionTitle, IconButton, TextButton, TextField, ListRow, Card, RangeSlider, Swatches, Keycap } from "../components/controls.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
 import { Apply } from "../state/apply.slint";
 import { DesktopMenu } from "../state/desktop-menu.slint";
@@ -1475,11 +1475,59 @@ component AboutPage inherits Page {
     }
 }
 
+// A section in the sidebar; the selection highlight behind it belongs to the sidebar, which
+// slides it from section to section.
+component NavItem inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <bool> selected;
+    callback clicked();
+    height: 44px;
+    border-radius: self.height / 2;
+    background: touch.has-hover && !root.selected ? Style.hover.with-alpha(0.6) : transparent;
+    animate background { duration: Style.motion-fast; }
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 12px;
+        Icon {
+            name: root.icon;
+            width: 20px;
+            height: 20px;
+            y: (parent.height - self.height) / 2;
+            color: root.selected ? Style.on-tonal : Style.text;
+        }
+        Text {
+            text: root.label;
+            color: root.selected ? Style.on-tonal : Style.text;
+            font-weight: root.selected ? 600 : 400;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A section's page: it slides in from the side of the sidebar it came from (below when the new
+// section is further down) while fading in.
+component Section inherits Rectangle {
+    in property <float> direction;
+    property <float> amount: 0;
+    init => { self.amount = 1; }
+    animate amount { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
+    opacity: self.amount;
+    VerticalLayout {
+        y: (1 - root.amount) * 36px * root.direction;
+        @children
+    }
+}
+
 export component Settings inherits Overlay {
     name: "settings";
     namespace: "lunadash-settings";
     content-width: 1000px;
     content-height: 700px;
+    drop-in: true;
 
     property <[{id: string, icon: string, label: string, lunadash: bool}]> pages: [
         { id: "account", icon: "user", label: @tr("Account"), lunadash: false },
@@ -1497,6 +1545,12 @@ export component Settings inherits Overlay {
         { id: "language", icon: "language", label: @tr("Language"), lunadash: false },
         { id: "about", icon: "info", label: @tr("About"), lunadash: false },
     ];
+    // The selected section's place in the sidebar, where the highlight slides to.
+    property <length> highlight-y;
+    property <length> highlight-height;
+    // The sidebar position of the section shown, and which way the next one comes in.
+    property <int> current: -1;
+    property <float> direction: 1;
 
     HorizontalLayout {
         Rectangle {
@@ -1512,13 +1566,39 @@ export component Settings inherits Overlay {
                     Image { source: @image-url("../assets/lunadash-mark.svg"); width: 30px; height: 30px; image-fit: contain; }
                     Text { text: @tr("Settings"); color: Style.text; font-size: Style.font-title; font-weight: 600; vertical-alignment: center; }
                 }
-                for page in root.pages: ListRow {
-                    visible: !page.lunadash || Compositor.has-commands;
-                    height: self.visible ? 44px : 0px;
-                    icon: page.icon;
-                    title: page.label;
-                    selected: UI.settings-page == page.id;
-                    clicked => { UI.open-settings(page.id); }
+                Rectangle {
+                    height: items.preferred-height;
+                    Rectangle {
+                        y: root.highlight-y;
+                        height: root.highlight-height;
+                        border-radius: self.height / 2;
+                        background: Style.tonal;
+                        animate y, height { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+                    }
+                    items := VerticalLayout {
+                        spacing: 2px;
+                        for page[i] in root.pages: NavItem {
+                            visible: !page.lunadash || Compositor.has-commands;
+                            height: self.visible ? 36px : 0px;
+                            icon: page.icon;
+                            label: page.label;
+                            selected: UI.settings-page == page.id;
+                            init => { self.place(); }
+                            changed selected => { self.place(); }
+                            changed y => { self.place(); }
+                            clicked => {
+                                root.direction = root.current >= 0 && i < root.current ? -1 : 1;
+                                UI.open-settings(page.id);
+                            }
+                            function place() {
+                                if self.selected {
+                                    root.highlight-y = self.y;
+                                    root.highlight-height = self.height;
+                                    root.current = i;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1527,20 +1607,20 @@ export component Settings inherits Overlay {
             content-height: content.preferred-height;
             content := VerticalLayout {
                 padding: Style.spacing-xl;
-                if UI.settings-page == "account": Reveal { AccountPage { } }
-                if UI.settings-page == "appearance": Reveal { AppearancePage { } }
-                if UI.settings-page == "wallpaper": Reveal { WallpaperPage { } }
-                if UI.settings-page == "panel": Reveal { PanelPage { } }
-                if UI.settings-page == "panel-items": Reveal { PanelItemsPage { } }
-                if UI.settings-page == "dock": Reveal { DockPage { } }
-                if UI.settings-page == "menu": Reveal { DesktopMenuPage { } }
-                if UI.settings-page == "windows": Reveal { WindowsPage { } }
-                if UI.settings-page == "shortcuts": Reveal { ShortcutsPage { } }
-                if UI.settings-page == "display": Reveal { DisplayPage { } }
-                if UI.settings-page == "notifications": Reveal { NotificationsPage { } }
-                if UI.settings-page == "power": Reveal { PowerPage { } }
-                if UI.settings-page == "language": Reveal { LanguagePage { } }
-                if UI.settings-page == "about": Reveal { AboutPage { } }
+                if UI.settings-page == "account": Section { direction: root.direction; AccountPage { } }
+                if UI.settings-page == "appearance": Section { direction: root.direction; AppearancePage { } }
+                if UI.settings-page == "wallpaper": Section { direction: root.direction; WallpaperPage { } }
+                if UI.settings-page == "panel": Section { direction: root.direction; PanelPage { } }
+                if UI.settings-page == "panel-items": Section { direction: root.direction; PanelItemsPage { } }
+                if UI.settings-page == "dock": Section { direction: root.direction; DockPage { } }
+                if UI.settings-page == "menu": Section { direction: root.direction; DesktopMenuPage { } }
+                if UI.settings-page == "windows": Section { direction: root.direction; WindowsPage { } }
+                if UI.settings-page == "shortcuts": Section { direction: root.direction; ShortcutsPage { } }
+                if UI.settings-page == "display": Section { direction: root.direction; DisplayPage { } }
+                if UI.settings-page == "notifications": Section { direction: root.direction; NotificationsPage { } }
+                if UI.settings-page == "power": Section { direction: root.direction; PowerPage { } }
+                if UI.settings-page == "language": Section { direction: root.direction; LanguagePage { } }
+                if UI.settings-page == "about": Section { direction: root.direction; AboutPage { } }
             }
         }
         IconButton { icon: "close"; size: 34px; y: 14px; clicked => { UI.close-all(); } }

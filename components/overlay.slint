@@ -1,6 +1,8 @@
 // Full-screen overlays (dashboard, launcher, settings …). With an `edge`, the content is a
 // drawer that slides out of the screen frame on that side and stays joined to it; without one
-// ("center") it is a floating card over a dimmed backdrop. A click beside it closes it.
+// ("center") it is a floating card over a dimmed backdrop that rises into place, or with
+// `drop-in` slides down from above the screen and back up when it closes. A click beside it
+// closes it.
 
 import { PanelWindow, Layer, KeyboardMode, ExclusiveMode, Compositor } from "@slintlu";
 import { Style } from "../style/style.slint";
@@ -15,22 +17,29 @@ export component Overlay inherits PanelWindow {
     // "center", or the frame edge the drawer grows out of: "top", "bottom", "left" or "right".
     in property <string> edge: "center";
     in property <bool> dim: root.edge == "center";
+    // A centred card comes down from above the screen and goes back up when closed.
+    in property <bool> drop-in;
     callback escape();
     // After it opened and took the keyboard: move focus to a field here.
     callback opened();
     layer: Layer.overlay;
-    keyboard-mode: KeyboardMode.exclusive;
+    // While a drop-in slides away, the keyboard is already back with the windows.
+    keyboard-mode: root.wanted ? KeyboardMode.exclusive : KeyboardMode.none;
     exclusive-mode: ExclusiveMode.ignore;
     // The compositor blurs the screen behind a dimmed overlay (ext-background-effect-v1).
-    background-blur: root.dim;
+    background-blur: root.dim && root.wanted;
     anchor-top: true;
     anchor-bottom: true;
     anchor-left: true;
     anchor-right: true;
-    shown: UI.overlay == root.name && UI.on-active-screen && !root.stepped-aside;
-    // 0 → 1 when the overlay opens.
-    property <float> entrance: 0;
+    property <bool> wanted: UI.overlay == root.name && UI.on-active-screen;
+    // A drop-in stays on screen until it has gone back up.
+    shown: (root.wanted || (root.drop-in && root.drop > 0.001)) && !root.stepped-aside;
+    // 0 → 1 when the overlay opens; `drop` follows it on the shared spring.
+    property <float> entrance: root.wanted && !root.peeking ? 1 : 0;
     animate entrance { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
+    property <float> drop: root.wanted && !root.peeking ? 1 : 0;
+    animate drop { duration: Style.motion-slow; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     default-font-family: Style.font;
     escape => { UI.close-all(); }
 
@@ -45,7 +54,7 @@ export component Overlay inherits PanelWindow {
 
     Rectangle {
         background: root.dim ? Style.scrim.with-alpha(0.32 * root.entrance) : transparent;
-        TouchArea { clicked => { UI.close-all(); } }
+        TouchArea { enabled: root.wanted; clicked => { UI.close-all(); } }
     }
     scope := FocusScope {
         key-pressed(event) => {
@@ -68,12 +77,13 @@ export component Overlay inherits PanelWindow {
                 color: root.edge == "center" ? Style.glass-strong : Style.frame;
                 body-width: root.body-width;
                 body-height: root.body-height;
-                opacity: root.edge == "center" ? root.entrance : 1;
+                opacity: root.edge == "center" && !root.drop-in ? root.entrance : 1;
                 x: root.edge == "left" ? -(1 - root.entrance) * (self.width + 2px)
                     : root.edge == "right" ? parent.width - self.width + (1 - root.entrance) * (self.width + 2px)
                     : (parent.width - self.width) / 2;
                 y: root.edge == "top" ? -(1 - root.entrance) * (self.height + 2px)
                     : root.edge == "bottom" ? parent.height - self.height + (1 - root.entrance) * (self.height + 2px)
+                    : root.drop-in ? (parent.height - self.height) / 2 - (1 - root.drop) * ((parent.height + self.height) / 2 + root.inner-y + 40px)
                     : (parent.height - self.height) / 2 + (root.edge == "center" ? (1 - root.entrance) * 24px : 0px);
                 // Swallow clicks so they do not reach the backdrop.
                 TouchArea { }
@@ -94,7 +104,6 @@ export component Overlay inherits PanelWindow {
     function peek() {
         if root.shown && !root.peeking {
             root.peeking = true;
-            root.entrance = 0;
         }
     }
     Timer {
@@ -110,12 +119,10 @@ export component Overlay inherits PanelWindow {
             root.peeking = false;
         }
     }
-    changed shown => {
-        root.entrance = self.shown ? 1 : 0;
-        if self.shown {
+    changed wanted => {
+        if root.wanted {
             scope.focus();
             root.opened();
         }
     }
-    init => { root.entrance = self.shown ? 1 : 0; }
 }
