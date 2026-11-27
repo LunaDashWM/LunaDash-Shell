@@ -1,7 +1,8 @@
-// The wallpaper library (Super+W): LunaDash's wallpaper folder and bundled wallpapers with
-// search, collections, categories, a static / live filter, favourites and the theme mode.
+// The wallpaper library (Super+W): LunaDash's wallpaper folder and bundled wallpapers. A quiet
+// header to switch between the library, the bundled wallpapers and favourites, chips for the
+// categories, a grid of rounded previews and a search field floating at the bottom.
 
-import { Files, Compositor, WallpaperInfo, Store } from "@slintlu";
+import { Files, Compositor, WallpaperInfo, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -11,64 +12,115 @@ import { Icon } from "../components/icon.slint";
 import { TextButton, IconButton } from "../components/controls.slint";
 import { Wallpapers } from "wallpaper.slint";
 
-// A row of mutually exclusive choices.
-component Chips inherits HorizontalLayout {
-    in property <[string]> labels;
-    in property <int> selected;
-    callback chosen(index: int);
-    spacing: 4px;
-    for label[i] in root.labels: Rectangle {
-        height: 32px;
-        min-width: text.preferred-width + 26px;
-        horizontal-stretch: 1;
-        border-radius: 16px;
-        background: i == root.selected ? Style.accent : touch.has-hover ? Style.hover : Style.elevated;
-        border-width: i == root.selected ? 0 : 1px;
-        border-color: Style.hairline;
-        animate background { duration: Style.motion-fast; }
-        text := Text {
-            text: label;
-            color: i == root.selected ? Style.accent-ink : Style.text;
+// A pill with an icon and a label; the selected one is filled.
+component Choice inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <bool> selected;
+    callback clicked();
+    height: 34px;
+    width: row.preferred-width;
+    border-radius: self.height / 2;
+    background: root.selected ? Style.accent : touch.has-hover ? Style.hover : transparent;
+    animate background { duration: Style.motion-fast; }
+    row := HorizontalLayout {
+        padding-left: root.label == "" ? 10px : root.icon != "" ? 12px : 14px;
+        padding-right: root.label == "" ? 10px : 14px;
+        spacing: 6px;
+        if root.icon != "": Icon {
+            y: (parent.height - self.height) / 2;
+            name: root.icon;
+            width: 16px;
+            height: 16px;
+            color: root.selected ? Style.accent-ink : Style.text;
+        }
+        if root.label != "": Text {
+            text: root.label;
+            color: root.selected ? Style.accent-ink : Style.text;
             font-size: Style.font-small;
-            font-weight: i == root.selected ? 600 : 400;
-            horizontal-alignment: center;
+            font-weight: root.selected ? 600 : 500;
             vertical-alignment: center;
         }
-        touch := TouchArea { clicked => { root.chosen(i); } }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// Choices side by side on one tonal track.
+component ChoiceGroup inherits Rectangle {
+    height: 42px;
+    width: row.preferred-width;
+    border-radius: self.height / 2;
+    background: Style.surface;
+    row := HorizontalLayout {
+        padding: 4px;
+        spacing: 2px;
+        @children
     }
 }
 
+// A category filter: text only, filled tonally when chosen.
+component Chip inherits Rectangle {
+    in property <string> label;
+    in property <bool> selected;
+    callback clicked();
+    height: 30px;
+    width: text.preferred-width + 26px;
+    border-radius: 15px;
+    background: root.selected ? Style.tonal : touch.has-hover ? Style.hover : transparent;
+    border-width: root.selected ? 0px : 1px;
+    border-color: Style.hairline;
+    animate background { duration: Style.motion-fast; }
+    text := Text {
+        text: root.label;
+        color: root.selected ? Style.on-tonal : Style.muted;
+        font-size: Style.font-small;
+        font-weight: root.selected ? 600 : 400;
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A wallpaper: its picture with rounded corners (cut by SlintLu, which `clip` cannot do); the
+// name and the favourite star appear on hover, the current one wears a ring and a check.
 component Tile inherits Rectangle {
     in property <WallpaperInfo> entry;
     in property <bool> selected;
     callback clicked();
     callback favorite();
-    border-radius: Style.radius-small + 2px;
-    background: touch.has-hover ? Style.elevated : Style.surface;
-    border-width: root.selected ? 2px : 1px;
-    border-color: root.selected ? Style.accent : touch.has-hover ? Style.border : Style.hairline;
-    clip: true;
-    animate background { duration: Style.motion-fast; }
-    property <image> preview: root.entry.preview != "" ? Files.thumbnail(root.entry.preview, 400, Files.revision) : Files.thumbnail("", 0, 0);
-    Image {
-        x: 3px;
-        y: 3px;
-        width: parent.width - 6px;
-        height: parent.height - 30px;
-        source: root.preview;
-        image-fit: cover;
-    }
-    if root.preview.width == 0: Icon {
-        y: (parent.height - 30px - self.height) / 2;
-        name: root.entry.video ? "video" : "image";
-        width: 28px;
-        height: 28px;
-        color: Style.accent;
+    property <length> round: Style.radius-medium + 4px;
+    property <float> scale: max(1, Shell.screen.scale);
+    property <float> corner: root.round / 1px * root.scale;
+    property <image> preview: root.entry.preview == "" ? Files.thumbnail("", 0, 0)
+        : Files.shaped(root.entry.preview, root.width / 1px * root.scale, root.height / 1px * root.scale,
+            [root.corner, root.corner, root.corner, root.corner], Files.revision);
+    property <bool> hovered: touch.has-hover || star.has-hover;
+    border-radius: root.round;
+    background: Style.surface;
+    Image { width: 100%; height: 100%; source: root.preview; image-fit: fill; }
+    if root.preview.width == 0: Icon { name: root.entry.video ? "video" : "image"; width: 26px; height: 26px; color: Style.muted; }
+    // The name on a shade along the bottom.
+    Rectangle {
+        y: parent.height - self.height;
+        height: 44px;
+        border-bottom-left-radius: root.round;
+        border-bottom-right-radius: root.round;
+        background: @linear-gradient(180deg, #00000000 0%, #000000b0 100%);
+        opacity: root.hovered ? 1 : 0;
+        animate opacity { duration: Style.motion-fast; }
+        Text {
+            x: 12px;
+            y: parent.height - self.height - 8px;
+            width: parent.width - 52px;
+            text: root.entry.name;
+            color: #ffffff;
+            font-size: Style.font-small;
+            font-weight: 500;
+            overflow: elide;
+        }
     }
     if root.entry.video: Rectangle {
-        x: 10px;
-        y: 10px;
-        width: live.preferred-width + 16px;
+        x: 8px;
+        y: 8px;
+        width: live.preferred-width + 14px;
         height: 22px;
         border-radius: 11px;
         background: #000000a0;
@@ -79,34 +131,36 @@ component Tile inherits Rectangle {
             Text { text: @tr("Live"); color: #ffffff; font-size: 10px; vertical-alignment: center; }
         }
     }
-    Text {
-        x: 8px;
-        y: parent.height - 24px;
-        width: parent.width - 16px;
-        height: 20px;
-        text: root.entry.name;
-        color: Style.text;
-        font-size: 11px;
-        vertical-alignment: center;
-        overflow: elide;
+    // The current wallpaper.
+    Rectangle {
+        x: -3px;
+        y: -3px;
+        width: parent.width + 6px;
+        height: parent.height + 6px;
+        border-radius: root.round + 3px;
+        border-width: root.selected ? 3px : touch.has-hover ? 1px : 0px;
+        border-color: root.selected ? Style.accent : Style.border;
+    }
+    if root.selected: Rectangle {
+        x: parent.width - self.width - 8px;
+        y: 8px;
+        width: 24px;
+        height: 24px;
+        border-radius: 12px;
+        background: Style.accent;
+        Icon { name: "check"; width: 15px; height: 15px; color: Style.accent-ink; }
     }
     touch := TouchArea { clicked => { root.clicked(); } }
-    // Favourite toggle, above the tile's own click area.
+    // Favourite, above the tile's own click area.
     Rectangle {
         x: parent.width - self.width - 6px;
-        y: 6px;
-        width: 28px;
-        height: 28px;
-        border-radius: 14px;
-        background: star.has-hover ? #000000c0 : #00000080;
-        visible: touch.has-hover || star.has-hover || root.entry.favorite;
-        Text {
-            text: root.entry.favorite ? "★" : "☆";
-            color: root.entry.favorite ? #ffd36b : #ffffff;
-            font-size: 15px;
-            horizontal-alignment: center;
-            vertical-alignment: center;
-        }
+        y: parent.height - self.height - 6px;
+        width: 30px;
+        height: 30px;
+        border-radius: 15px;
+        background: star.has-hover ? #00000099 : transparent;
+        visible: root.hovered || root.entry.favorite;
+        Icon { name: "star"; width: 16px; height: 16px; color: root.entry.favorite ? #ffd36b : #ffffff; }
         star := TouchArea { clicked => { root.favorite(); } }
     }
 }
@@ -114,8 +168,8 @@ component Tile inherits Rectangle {
 export component WallpaperLibrary inherits Overlay {
     name: "wallpapers";
     namespace: "lunadash-wallpaper-library";
-    content-width: 980px;
-    content-height: 680px;
+    content-width: 1040px;
+    content-height: 700px;
 
     property <string> collection: "library";
     property <int> category-index: 0;
@@ -124,7 +178,7 @@ export component WallpaperLibrary inherits Overlay {
     property <[string]> categories: Compositor.wallpaper-categories;
     property <string> category: root.category-index > 0 && root.category-index <= root.categories.length ? root.categories[root.category-index - 1] : "";
     property <[WallpaperInfo]> entries: Compositor.filter-wallpapers(search.text, root.collection, root.category, root.kind, Compositor.wallpapers.length);
-    property <int> columns: 5;
+    property <int> columns: 4;
 
     changed shown => {
         if self.shown {
@@ -135,25 +189,179 @@ export component WallpaperLibrary inherits Overlay {
 
     VerticalLayout {
         padding: Style.spacing-xl;
+        padding-bottom: Style.spacing-lg;
         spacing: Style.spacing-md;
-        // Title, search and actions
+        // Title, collections and actions
         HorizontalLayout {
-            spacing: Style.spacing-sm;
-            Image { source: @image-url("../assets/lunadash.png"); width: 30px; height: 30px; y: (parent.height - self.height) / 2; image-fit: contain; }
-            Text { text: @tr("Wallpapers"); color: Style.text; font-size: Style.font-title + 2px; font-weight: 600; vertical-alignment: center; }
-            Rectangle { width: Style.spacing-sm; }
+            spacing: Style.spacing-md;
             Rectangle {
+                width: 40px;
+                height: 40px;
+                y: (parent.height - self.height) / 2;
+                border-radius: 14px * Style.corner-scale;
+                background: Style.tonal;
+                Icon { name: "image"; width: 20px; height: 20px; color: Style.on-tonal; }
+            }
+            VerticalLayout {
+                alignment: center;
+                Text { text: @tr("Wallpapers"); color: Style.text; font-size: Style.font-title; font-weight: 600; }
+                Text {
+                    text: root.entries.length == 1 ? @tr("1 wallpaper") : @tr("{} wallpapers", root.entries.length);
+                    color: Style.muted;
+                    font-size: Style.font-small;
+                }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            ChoiceGroup {
+                y: (parent.height - self.height) / 2;
+                Choice {
+                    icon: "folder";
+                    label: @tr("Library");
+                    selected: root.collection == "library";
+                    clicked => {
+                        root.collection = "library";
+                        root.category-index = 0;
+                    }
+                }
+                Choice {
+                    icon: "diamond";
+                    label: @tr("Bundled");
+                    selected: root.collection == "bundled";
+                    clicked => {
+                        root.collection = "bundled";
+                        root.category-index = 0;
+                    }
+                }
+                Choice {
+                    icon: "star";
+                    label: @tr("Favorites");
+                    selected: root.collection == "favorites";
+                    clicked => {
+                        root.collection = "favorites";
+                        root.category-index = 0;
+                    }
+                }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            HorizontalLayout {
+                spacing: Style.spacing-xs;
+                IconButton { icon: "shuffle"; size: 38px; y: (parent.height - self.height) / 2; clicked => { Compositor.command("wallpaper-random", ""); } }
+                IconButton { icon: "folder"; size: 38px; active: root.edit-directory; y: (parent.height - self.height) / 2; clicked => { root.edit-directory = !root.edit-directory; } }
+                IconButton { icon: "close"; size: 38px; y: (parent.height - self.height) / 2; clicked => { UI.close-all(); } }
+            }
+        }
+        // The library's folder, rescanning it, and browsing other folders.
+        if root.edit-directory: Rectangle {
+            height: 48px;
+            border-radius: 24px;
+            background: Style.surface;
+            HorizontalLayout {
+                padding-left: 16px;
+                padding-right: 6px;
+                spacing: 8px;
+                Icon { name: "folder"; width: 16px; height: 16px; y: (parent.height - self.height) / 2; color: Style.muted; }
+                directory := TextInput {
+                    // Re-created whenever the row opens, starting from the current folder.
+                    text: Compositor.wallpaper-directory;
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                    color: Style.text;
+                    single-line: true;
+                    accepted => { Wallpapers.set-library(self.text); }
+                }
+                TextButton { horizontal-stretch: 0; y: (parent.height - self.height) / 2; text: @tr("Save folder"); clicked => { Wallpapers.set-library(directory.text); } }
+                TextButton { horizontal-stretch: 0; y: (parent.height - self.height) / 2; icon: "folder"; text: @tr("Choose…"); clicked => { Wallpapers.pick-library(); } }
+                IconButton { y: (parent.height - self.height) / 2; icon: "reboot"; size: 36px; clicked => { Compositor.command("wallpaper-refresh", ""); } }
+                IconButton { y: (parent.height - self.height) / 2; icon: "grid"; size: 36px; clicked => { UI.open-overlay("gallery"); } }
+            }
+        }
+        // Categories, and what kind of wallpaper and theme
+        HorizontalLayout {
+            spacing: Style.spacing-md;
+            Flickable {
                 horizontal-stretch: 1;
-                height: 38px;
-                border-radius: 19px;
-                background: Style.elevated;
+                height: 36px;
+                content-width: chips.preferred-width;
+                chips := HorizontalLayout {
+                    spacing: 6px;
+                    alignment: start;
+                    padding-top: 3px;
+                    padding-bottom: 3px;
+                    Chip { label: @tr("All categories"); selected: root.category-index == 0; clicked => { root.category-index = 0; } }
+                    for name[i] in root.categories: Chip {
+                        label: name == "Bundled" ? @tr("Bundled") : name;
+                        selected: root.category-index == i + 1;
+                        clicked => { root.category-index = i + 1; }
+                    }
+                }
+            }
+            ChoiceGroup {
+                height: 36px;
+                Choice { height: 28px; label: @tr("All"); selected: root.kind == "all"; clicked => { root.kind = "all"; } }
+                Choice { height: 28px; icon: "image"; label: @tr("Static"); selected: root.kind == "image"; clicked => { root.kind = "image"; } }
+                Choice { height: 28px; icon: "video"; label: @tr("Live"); selected: root.kind == "video"; clicked => { root.kind = "video"; } }
+            }
+            ChoiceGroup {
+                height: 36px;
+                for mode in [{ id: "dark", icon: "moon" }, { id: "light", icon: "sun" }, { id: "auto", icon: "monitor" }]: Choice {
+                    height: 28px;
+                    icon: mode.icon;
+                    selected: Prefs.theme-mode == mode.id;
+                    clicked => { Apply.set-theme-mode(mode.id); }
+                }
+            }
+        }
+        // The grid, with the search field floating over its bottom edge.
+        Rectangle {
+            vertical-stretch: 1;
+            Flickable {
+                property <length> gap: 14px;
+                property <length> cell-width: (self.width - (root.columns - 1) * self.gap) / root.columns;
+                property <length> cell-height: self.cell-width * 0.625;
+                // Room below the last row for the search field.
+                content-height: Math.ceil(root.entries.length / root.columns) * (self.cell-height + self.gap) + 84px;
+                for entry[i] in root.entries: Tile {
+                    x: Math.mod(i, root.columns) * (parent.cell-width + parent.gap);
+                    y: Math.floor(i / root.columns) * (parent.cell-height + parent.gap) + 4px;
+                    width: parent.cell-width;
+                    height: parent.cell-height;
+                    entry: entry;
+                    selected: entry.path == Wallpapers.path;
+                    clicked => { Wallpapers.choose(entry.path); }
+                    favorite => { Wallpapers.set-favorite(entry.path, !entry.favorite); }
+                }
+                if root.entries.length == 0: VerticalLayout {
+                    width: parent.width;
+                    height: 260px;
+                    alignment: center;
+                    spacing: Style.spacing-sm;
+                    Icon { x: (parent.width - self.width) / 2; name: "image"; width: 36px; height: 36px; color: Style.muted; }
+                    Text { text: @tr("No matching wallpapers"); color: Style.text; font-size: 18px; horizontal-alignment: center; }
+                    Text {
+                        text: @tr("Drop images or videos into your library folder, then press Super+W.");
+                        color: Style.muted;
+                        horizontal-alignment: center;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+            Rectangle {
+                x: (parent.width - self.width) / 2;
+                y: parent.height - self.height - Style.spacing-lg;
+                width: min(460px, parent.width - 40px);
+                height: 48px;
+                border-radius: 24px;
+                background: Style.glass-strong;
                 border-width: 1px;
-                border-color: search.has-focus ? Style.accent.with-alpha(0.6) : Style.border;
+                border-color: search.has-focus ? Style.accent.with-alpha(0.6) : Style.hairline;
+                drop-shadow-blur: 18px;
+                drop-shadow-color: Style.shadow;
+                drop-shadow-offset-y: 4px;
                 HorizontalLayout {
-                    padding-left: 14px;
-                    padding-right: 14px;
-                    spacing: 8px;
-                    Icon { name: "search"; width: 16px; height: 16px; y: (parent.height - self.height) / 2; color: Style.muted; }
+                    padding-left: 18px;
+                    padding-right: 18px;
+                    spacing: 10px;
+                    Icon { name: "search"; width: 17px; height: 17px; y: (parent.height - self.height) / 2; color: Style.muted; }
                     Rectangle {
                         horizontal-stretch: 1;
                         search := TextInput {
@@ -189,136 +397,6 @@ export component WallpaperLibrary inherits Overlay {
                     }
                 }
             }
-            IconButton { icon: "folder"; size: 38px; active: root.edit-directory; y: (parent.height - self.height) / 2; clicked => { root.edit-directory = !root.edit-directory; } }
-            IconButton { icon: "reboot"; size: 38px; y: (parent.height - self.height) / 2; clicked => { Compositor.command("wallpaper-refresh", ""); } }
-            IconButton { icon: "grid"; size: 38px; y: (parent.height - self.height) / 2; clicked => { UI.open-overlay("gallery"); } }
-            IconButton { icon: "close"; size: 38px; y: (parent.height - self.height) / 2; clicked => { UI.close-all(); } }
-        }
-        // Library folder
-        if root.edit-directory: Rectangle {
-            height: 44px;
-            border-radius: Style.radius-small;
-            background: Style.surface;
-            border-width: 1px;
-            border-color: Style.hairline;
-            HorizontalLayout {
-                padding-left: 12px;
-                padding-right: 6px;
-                spacing: 8px;
-                Icon { name: "folder"; width: 16px; height: 16px; y: (parent.height - self.height) / 2; color: Style.muted; }
-                directory := TextInput {
-                    // Re-created whenever the row opens, starting from the current folder.
-                    text: Compositor.wallpaper-directory;
-                    horizontal-stretch: 1;
-                    vertical-alignment: center;
-                    color: Style.text;
-                    single-line: true;
-                    accepted => { Wallpapers.set-library(self.text); }
-                }
-                TextButton { y: (parent.height - self.height) / 2; text: @tr("Save folder"); clicked => { Wallpapers.set-library(directory.text); } }
-                TextButton { y: (parent.height - self.height) / 2; icon: "folder"; text: @tr("Choose…"); clicked => { Wallpapers.pick-library(); } }
-            }
-        }
-        // Collection and theme mode
-        HorizontalLayout {
-            spacing: Style.spacing-lg;
-            Chips {
-                horizontal-stretch: 1;
-                labels: [@tr("Library"), @tr("Bundled"), @tr("Favorites")];
-                selected: root.collection == "bundled" ? 1 : root.collection == "favorites" ? 2 : 0;
-                chosen(i) => {
-                    root.collection = i == 1 ? "bundled" : i == 2 ? "favorites" : "library";
-                    root.category-index = 0;
-                }
-            }
-            Chips {
-                horizontal-stretch: 1;
-                labels: [@tr("Dark"), @tr("Light"), @tr("Auto")];
-                selected: Prefs.theme-mode == "dark" ? 0 : Prefs.theme-mode == "light" ? 1 : 2;
-                chosen(i) => { Apply.set-theme-mode(i == 0 ? "dark" : i == 1 ? "light" : "auto"); }
-            }
-        }
-        // Category, kind and random
-        HorizontalLayout {
-            spacing: Style.spacing-lg;
-            Flickable {
-                horizontal-stretch: 1;
-                height: 32px;
-                content-width: categories.preferred-width;
-                categories := HorizontalLayout {
-                    spacing: 4px;
-                    for label[i] in [@tr("All categories")]: Rectangle {
-                        height: 32px;
-                        width: all.preferred-width + 26px;
-                        border-radius: 16px;
-                        background: root.category-index == 0 ? Style.accent-soft : all-touch.has-hover ? Style.hover : transparent;
-                        border-width: 1px;
-                        border-color: root.category-index == 0 ? Style.accent.with-alpha(0.6) : Style.hairline;
-                        all := Text { text: label; color: Style.text; font-size: Style.font-small; horizontal-alignment: center; vertical-alignment: center; }
-                        all-touch := TouchArea { clicked => { root.category-index = 0; } }
-                    }
-                    for name[i] in root.categories: Rectangle {
-                        height: 32px;
-                        width: label.preferred-width + 26px;
-                        border-radius: 16px;
-                        background: root.category-index == i + 1 ? Style.accent-soft : touch.has-hover ? Style.hover : transparent;
-                        border-width: 1px;
-                        border-color: root.category-index == i + 1 ? Style.accent.with-alpha(0.6) : Style.hairline;
-                        label := Text { text: name == "Bundled" ? @tr("Bundled") : name; color: Style.text; font-size: Style.font-small; horizontal-alignment: center; vertical-alignment: center; }
-                        touch := TouchArea { clicked => { root.category-index = i + 1; } }
-                    }
-                }
-            }
-            Chips {
-                width: 270px;
-                labels: [@tr("All wallpapers"), @tr("Static"), @tr("Live")];
-                selected: root.kind == "image" ? 1 : root.kind == "video" ? 2 : 0;
-                chosen(i) => { root.kind = i == 1 ? "image" : i == 2 ? "video" : "all"; }
-            }
-            TextButton {
-                horizontal-stretch: 0;
-                icon: "reboot";
-                text: @tr("Random");
-                enabled: Compositor.wallpapers.length > 1;
-                clicked => { Compositor.command("wallpaper-random", ""); }
-            }
-        }
-        // Grid
-        grid := Flickable {
-            vertical-stretch: 1;
-            property <length> cell-width: self.width / root.columns;
-            property <length> cell-height: self.cell-width * 0.5625 + 30px;
-            content-height: Math.ceil(root.entries.length / root.columns) * self.cell-height;
-            for entry[i] in root.entries: Tile {
-                x: Math.mod(i, root.columns) * parent.cell-width + 4px;
-                y: Math.floor(i / root.columns) * parent.cell-height + 4px;
-                width: parent.cell-width - 8px;
-                height: parent.cell-height - 8px;
-                entry: entry;
-                selected: entry.path == Wallpapers.path;
-                clicked => { Wallpapers.choose(entry.path); }
-                favorite => { Wallpapers.set-favorite(entry.path, !entry.favorite); }
-            }
-            if root.entries.length == 0: VerticalLayout {
-                width: parent.width;
-                height: 220px;
-                alignment: center;
-                spacing: Style.spacing-sm;
-                Text { text: @tr("No matching wallpapers"); color: Style.text; font-size: 18px; horizontal-alignment: center; }
-                Text {
-                    text: @tr("Drop images or videos into your library folder, then press Super+W.");
-                    color: Style.muted;
-                    horizontal-alignment: center;
-                    wrap: word-wrap;
-                }
-            }
-        }
-        // Footer
-        Text {
-            text: root.entries.length + " · " + Compositor.wallpaper-directory;
-            color: Style.muted;
-            font-size: 11px;
-            overflow: elide;
         }
     }
 }
