@@ -26,9 +26,11 @@ Sway, where it keeps its own settings.
   like waybar's, focused window, media, CPU / memory, tray, clock with
   calendar, clipboard history, network, Bluetooth, volume, battery, notifications, settings
   and power.
-- **Dashboard** — overview, media player, per-core performance and notification history, with
-  quick toggles (Wi-Fi, Bluetooth, do not disturb, keep awake, dark mode) and volume /
-  brightness sliders.
+- **Dashboard** — an overview (your picture, the machine, the time, the month, processor /
+  memory / disk rings, now playing, quick toggles and style profiles to switch between), media
+  player, per-core performance and notification history, with quick toggles (Wi-Fi, Bluetooth,
+  do not disturb, keep awake, dark mode) and volume / brightness sliders beside them.
+- **Window switcher** — Alt+Tab shows large pictures of the windows; Super+Tab the workspaces.
 - **Launcher** — a list of installed applications with their icon, name and description,
   frequently used first; fuzzy search, Up / Down / Page Up / Page Down to move, right-click to
   pin to the dock.
