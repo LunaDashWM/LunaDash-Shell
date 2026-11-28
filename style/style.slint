@@ -14,6 +14,13 @@ import { PanelLayout } from "../state/panel-layout.slint";
 export global Style {
     // Accent choices offered in Settings; `accent-hex` is what LunaDash's compositor stores.
     out property <[color]> accents: [#9ccbfb, #c4b5fd, #f5a9c8, #7dcccf, #a6e3a1, #efcd8c, #f4a77c, #e2e5ed];
+    // A colour picked from `accents` for a bar item (-1: the accent), and text on it.
+    public pure function tint(index: int) -> color {
+        index >= 0 && index < root.accents.length ? root.accents[index] : root.accent
+    }
+    public pure function on-tint(index: int) -> color {
+        index >= 0 && index < root.accents.length ? #1c2028 : root.accent-ink
+    }
     out property <[string]> accent-hex: ["#9ccbfb", "#c4b5fd", "#f5a9c8", "#7dcccf", "#a6e3a1", "#efcd8c", "#f4a77c", "#e2e5ed"];
 
     // Primary and its tonal companions: the accent picked in Settings, else on LunaDash one

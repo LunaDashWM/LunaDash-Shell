@@ -27,6 +27,12 @@ export global Prefs {
     out property <bool> clock-24h: Store.get-bool("clock-24h", true, Store.revision);
     out property <bool> clock-seconds: Store.get-bool("clock-seconds", false, Store.revision);
     out property <bool> week-starts-monday: Store.get-bool("week-starts-monday", false, Store.revision);
+    // The bar's processor-and-memory and clock items: "together" in one island or "apart",
+    // a pill each, and their colour from Style.accents (-1: the accent).
+    out property <string> usage-layout: Store.get-string("bar-usage-layout", "together", Store.revision);
+    out property <int> usage-color: Store.get-number("bar-usage-color", -1, Store.revision);
+    out property <string> clock-layout: Store.get-string("clock-layout", "together", Store.revision);
+    out property <int> clock-color: Store.get-number("clock-color", -1, Store.revision);
 
     // Dock
     out property <bool> dock: Store.get-bool("dock", false, Store.revision);

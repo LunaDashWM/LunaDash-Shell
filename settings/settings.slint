@@ -692,7 +692,49 @@ component PanelPage inherits Page {
         }
     }
     Group {
+        title: @tr("PROCESSOR AND MEMORY");
+        Setting {
+            title: @tr("Layout");
+            description: @tr("Processor, memory and temperature on one island, or a pill each.");
+            Segmented {
+                labels: [@tr("Together"), @tr("Apart")];
+                selected: Prefs.usage-layout == "apart" ? 1 : 0;
+                chosen(i) => { Store.set-string("bar-usage-layout", i == 1 ? "apart" : "together"); }
+            }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Colour");
+            description: Prefs.usage-color < 0 ? @tr("The accent colour.") : @tr("A colour of its own.");
+            HorizontalLayout {
+                spacing: Style.spacing-sm;
+                Swatches { colors: Style.accents; selected: Prefs.usage-color; chosen(i) => { Store.set-number("bar-usage-color", i); } }
+                IconButton { icon: "reboot"; size: 28px; y: (parent.height - self.height) / 2; clicked => { Store.set-number("bar-usage-color", -1); } }
+            }
+        }
+    }
+    Group {
         title: @tr("CLOCK");
+        Setting {
+            title: @tr("Layout");
+            description: @tr("The date and the time on one island, or a pill each.");
+            Segmented {
+                labels: [@tr("Together"), @tr("Apart")];
+                selected: Prefs.clock-layout == "apart" ? 1 : 0;
+                chosen(i) => { Store.set-string("clock-layout", i == 1 ? "apart" : "together"); }
+            }
+        }
+        Divider { }
+        Setting {
+            title: @tr("Colour");
+            description: Prefs.clock-color < 0 ? @tr("The accent colour.") : @tr("A colour of its own.");
+            HorizontalLayout {
+                spacing: Style.spacing-sm;
+                Swatches { colors: Style.accents; selected: Prefs.clock-color; chosen(i) => { Store.set-number("clock-color", i); } }
+                IconButton { icon: "reboot"; size: 28px; y: (parent.height - self.height) / 2; clicked => { Store.set-number("clock-color", -1); } }
+            }
+        }
+        Divider { }
         Setting { title: @tr("24-hour clock"); Switch { on: Prefs.clock-24h; toggled => { Store.set-bool("clock-24h", !Prefs.clock-24h); } } }
         Divider { }
         Setting { title: @tr("Show seconds"); Switch { on: Prefs.clock-seconds; toggled => { Store.set-bool("clock-seconds", !Prefs.clock-seconds); } } }

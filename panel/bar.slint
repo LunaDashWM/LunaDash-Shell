@@ -425,50 +425,65 @@ component MediaChip inherits Rectangle {
 }
 
 // Processor and memory use as two small meters. Opens the performance tab.
+// One reading as the bar shows it: a coloured disc with its icon, and the value.
+component Reading inherits HorizontalLayout {
+    in property <string> icon;
+    in property <string> value;
+    in property <color> tint;
+    in property <color> ink;
+    spacing: 6px;
+    Rectangle {
+        y: (parent.height - self.height) / 2;
+        width: 24px;
+        height: 24px;
+        border-radius: 12px;
+        background: root.tint;
+        animate background { duration: Style.motion-fast; }
+        Icon { name: root.icon; width: 14px; height: 14px; color: root.ink; }
+    }
+    Text {
+        text: root.value;
+        color: Style.text;
+        font-size: Style.font-small;
+        font-weight: 600;
+        vertical-alignment: center;
+    }
+}
+
+// Processor, memory and temperature as readings in the colour chosen in Settings, together on
+// the item's island or each on a pill of its own (Prefs.usage-layout). A busy one turns red.
 component UsageChip inherits Rectangle {
+    property <bool> apart: Prefs.usage-layout == "apart";
+    property <color> tint: Style.tint(Prefs.usage-color);
+    property <color> ink: Style.on-tint(Prefs.usage-color);
+    property <[{icon: string, value: string, busy: bool}]> readings: [
+        { icon: "cpu", value: Math.round(System.cpu * 100) + "%", busy: System.cpu > 0.85 },
+        { icon: "memory", value: Math.round(System.memory * 100) + "%", busy: System.memory > 0.85 },
+        { icon: "thermometer", value: System.temperature > 0 ? Math.round(System.temperature) + "°C" : "", busy: System.temperature > 85 },
+    ];
     width: row.preferred-width;
-    height: 36px;
-    border-radius: 18px;
-    background: touch.has-hover ? Style.hover : transparent;
+    height: root.apart ? Style.island : 36px;
+    border-radius: self.height / 2;
+    background: !root.apart && touch.has-hover ? Style.hover : transparent;
     animate background { duration: Style.motion-fast; }
     touch := TouchArea { clicked => { UI.open-dashboard(2); } }
     row := HorizontalLayout {
-        padding-left: 12px;
-        padding-right: 12px;
-        spacing: 12px;
-        for meter in [
-            { icon: "cpu", value: System.cpu },
-            { icon: "memory", value: System.memory },
-        ]: HorizontalLayout {
-            spacing: 6px;
-            Icon {
-                y: (parent.height - self.height) / 2;
-                name: meter.icon;
-                width: 15px;
-                height: 15px;
-                color: meter.value > 0.85 ? Style.danger : Style.accent;
-            }
-            VerticalLayout {
-                alignment: center;
-                spacing: 3px;
-                Text {
-                    text: Math.round(meter.value * 100) + "%";
-                    color: Style.text;
-                    font-size: 11px;
-                    font-weight: 500;
-                }
-                Rectangle {
-                    width: 28px;
-                    height: 3px;
-                    border-radius: 1.5px;
-                    background: Style.elevated;
-                    Rectangle {
-                        x: 0;
-                        width: parent.width * clamp(meter.value, 0, 1);
-                        border-radius: 1.5px;
-                        background: meter.value > 0.85 ? Style.danger : Style.accent;
-                        animate width { duration: Style.motion; }
-                    }
+        padding-left: root.apart ? 0px : 8px;
+        padding-right: root.apart ? 0px : 12px;
+        spacing: root.apart ? PanelLayout.spacing : 12px;
+        for reading in root.readings: Rectangle {
+            visible: reading.value != "";
+            width: self.visible ? pill.preferred-width : 0px;
+            border-radius: self.height / 2;
+            background: root.apart ? (touch.has-hover ? Style.panel.mix(Style.hover, 0.5) : Style.panel) : transparent;
+            pill := HorizontalLayout {
+                padding-left: root.apart ? 6px : 0px;
+                padding-right: root.apart ? 12px : 0px;
+                Reading {
+                    icon: reading.icon;
+                    value: reading.value;
+                    tint: reading.busy ? Style.danger : root.tint;
+                    ink: reading.busy ? Style.base : root.ink;
                 }
             }
         }
@@ -596,70 +611,72 @@ component TrayIcon inherits Rectangle {
 component ClockItem inherits Rectangle {
     in property <bool> vertical;
     property <bool> open: UI.popup == "calendar";
-    property <length> time-size: Style.font-size + 1px;
+    property <length> time-size: Style.font-size;
+    property <bool> apart: Prefs.clock-layout == "apart" && !root.vertical;
+    property <color> tint: Style.tint(Prefs.clock-color);
+    property <color> ink: Style.on-tint(Prefs.clock-color);
     property <length> anchor: root.vertical ? Style.bar-offset + self.absolute-position.y + self.height / 2 : Style.bar-offset + self.absolute-position.x + self.width / 2;
     width: root.vertical ? 36px : line.preferred-width;
-    height: root.vertical ? stack.preferred-height + 12px : 36px;
+    height: root.vertical ? stack.preferred-height + 12px : root.apart ? Style.island : 36px;
     border-radius: 18px;
-    background: root.open ? Style.accent : touch.has-hover ? Style.hover : transparent;
+    background: root.vertical && root.open ? root.tint : !root.apart && !root.open && touch.has-hover ? Style.hover : transparent;
     animate background { duration: Style.motion-fast; }
     stack := VerticalLayout {
         alignment: center;
         if root.vertical: Text {
             text: Prefs.clock-24h ? Time.two(Clock.hour) : Time.two(Math.mod(Clock.hour + 11, 12) + 1);
-            color: root.open ? Style.accent-ink : Style.accent;
+            color: root.open ? root.ink : root.tint;
             font-size: 15px;
             font-weight: 600;
             horizontal-alignment: center;
         }
         if root.vertical: Text {
             text: Time.two(Clock.minute);
-            color: root.open ? Style.accent-ink : Style.text;
+            color: root.open ? root.ink : Style.text;
             font-size: 15px;
             font-weight: 500;
             horizontal-alignment: center;
         }
         if root.vertical && !Prefs.clock-24h: Text {
             text: Clock.hour < 12 ? "am" : "pm";
-            color: root.open ? Style.accent-ink : Style.muted;
+            color: root.open ? root.ink : Style.muted;
             font-size: 10px;
             horizontal-alignment: center;
         }
     }
+    // The date, then the time on a pill in the clock's colour; on the item's island together,
+    // or the date on a pill of its own (Prefs.clock-layout).
     line := HorizontalLayout {
-        padding-left: 12px;
-        padding-right: 12px;
-        spacing: 8px;
-        if !root.vertical: Icon {
-            y: (parent.height - self.height) / 2;
-            name: "calendar";
-            width: 15px;
-            height: 15px;
-            color: root.open ? Style.accent-ink : Style.accent;
-        }
-        // The time and the date share one baseline, where the time's capitals
-        // are centred: each text finds it from its own metrics (cap height over
-        // font size is the same at every size) and puts its ascent above it.
-        // Centring each line box instead leaves them a pixel or two apart.
-        if !root.vertical: Rectangle {
-            width: time.preferred-width;
-            time := Text {
-                y: (parent.height + self.font-metrics.cap-height / self.font-size * root.time-size) / 2 - self.font-metrics.ascent;
-                text: Time.clock;
-                color: root.open ? Style.accent-ink : Style.accent;
-                font-size: root.time-size;
+        padding-left: root.apart ? 0px : 6px;
+        padding-right: root.apart ? 0px : 5px;
+        spacing: root.apart ? PanelLayout.spacing : 8px;
+        if !root.vertical && Prefs.clock-date: Rectangle {
+            width: date.preferred-width + (root.apart ? 28px : 8px);
+            border-radius: self.height / 2;
+            background: root.apart ? (touch.has-hover ? Style.panel.mix(Style.hover, 0.5) : Style.panel) : transparent;
+            date := Text {
+                text: Time.short-date;
+                color: Style.text;
+                font-size: Style.font-small;
                 font-weight: 600;
-                vertical-alignment: top;
+                horizontal-alignment: center;
+                vertical-alignment: center;
             }
         }
-        if !root.vertical && Prefs.clock-date: Rectangle {
-            width: date.preferred-width;
-            date := Text {
-                y: (parent.height + self.font-metrics.cap-height / self.font-size * root.time-size) / 2 - self.font-metrics.ascent;
-                text: Time.short-date;
-                color: root.open ? Style.accent-ink : Style.text;
-                font-size: Style.font-size;
-                vertical-alignment: top;
+        if !root.vertical: Rectangle {
+            y: (parent.height - self.height) / 2;
+            width: time.preferred-width + 24px;
+            height: root.apart ? parent.height : parent.height - 10px;
+            border-radius: self.height / 2;
+            background: root.open ? Style.text : root.tint;
+            animate background { duration: Style.motion-fast; }
+            time := Text {
+                text: Time.clock;
+                color: root.open ? Style.base : root.ink;
+                font-size: root.time-size;
+                font-weight: 700;
+                horizontal-alignment: center;
+                vertical-alignment: center;
             }
         }
     }

@@ -9,6 +9,7 @@
 
 import { Store, Shared, Shell, Apps, Workspaces, Media, Tray } from "@slintlu";
 import { UI } from "ui.slint";
+import { Prefs } from "prefs.slint";
 
 export global PanelLayout {
     // Every built-in item, in their default order: the bar until it is first edited.
@@ -65,9 +66,11 @@ export global PanelLayout {
     public pure function joinable(id: string) -> bool {
         id != "" && id != "spacer" && id != "separator" && id != "title" && id != "media" && id != "usage" && id != "clock"
     }
-    // The window title has a pill of its own; gaps and the free space have none.
+    // The window title has a pill of its own, and so have the usage meters and the clock
+    // when set apart; gaps and the free space have none.
     public pure function has-island(id: string) -> bool {
         id != "spacer" && id != "separator" && id != "title"
+            && !(id == "usage" && Prefs.usage-layout == "apart") && !(id == "clock" && Prefs.clock-layout == "apart")
     }
     // Whether the item at `index` shares its island with the next item that shows something
     // in the direction `step` (1 or -1), looking past up to two empty ones.
@@ -104,7 +107,7 @@ export global PanelLayout {
             : id == "taskbar" ? @tr("Every window's icon.")
             : id == "title" ? @tr("The focused window's icon and title. Takes the free space.")
             : id == "media" ? @tr("What is playing, with play and pause.")
-            : id == "usage" ? @tr("Two small meters.")
+            : id == "usage" ? @tr("Processor, memory and temperature.")
             : id == "tray" ? @tr("Icons of applications running in the background.")
             : id == "clock" ? @tr("Opens the calendar.")
             : id == "status" ? @tr("Clipboard, network, Bluetooth, sound, battery and notifications.")
