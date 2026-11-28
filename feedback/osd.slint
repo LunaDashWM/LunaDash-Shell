@@ -1,5 +1,5 @@
-// On-screen display for volume and brightness changes: a vertical slider that slides out of
-// the right edge of the screen frame.
+// On-screen display for volume and brightness changes: a vertical slider on a floating card
+// that slides in from the right edge of the desktop.
 
 import { PanelWindow, Layer, ExclusiveMode, Audio, Brightness } from "@slintlu";
 import { Style } from "../style/style.slint";
@@ -13,8 +13,9 @@ export component Osd inherits PanelWindow {
     exclusive-mode: ExclusiveMode.ignore;
     anchor-right: true;
     margin-right: Style.inner-right;
-    preferred-width: 58px;
-    preferred-height: 220px + 2 * Style.frame-radius;
+    // The card, with room for the gap to the edge and its shadow.
+    preferred-width: 58px + 2 * Style.edge-gap;
+    preferred-height: 220px + 2 * Style.edge-gap;
     shown: root.visible-now && UI.on-active-screen;
     default-font-family: Style.font;
 
@@ -46,10 +47,11 @@ export component Osd inherits PanelWindow {
 
     property <float> value: root.kind == "volume" ? (root.muted ? 0 : root.volume) : root.brightness;
     Drawer {
-        edge: "right";
-        x: (1 - root.entrance) * (self.width + 2px);
-        body-width: root.width;
-        body-height: root.height - 2 * Style.frame-radius;
+        x: Style.edge-gap + (1 - root.entrance) * (self.width + 2 * Style.edge-gap);
+        y: Style.edge-gap;
+        opacity: root.entrance;
+        body-width: root.width - 2 * Style.edge-gap;
+        body-height: root.height - 2 * Style.edge-gap;
         VerticalLayout {
             padding: 12px;
             padding-top: 14px;

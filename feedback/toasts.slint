@@ -1,5 +1,4 @@
-// Notification pop-ups in a drawer tucked into a corner of the screen frame (or dropping out
-// of its top edge).
+// Notification pop-ups on a floating card in a corner of the desktop (or at the top centre).
 
 import { PanelWindow, Layer, ExclusiveMode, Notifications } from "@slintlu";
 import { Style } from "../style/style.slint";
@@ -7,7 +6,7 @@ import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Icon } from "../components/icon.slint";
 import { IconButton, TextButton } from "../components/controls.slint";
-import { Drawer, CornerDrawer } from "../components/shape.slint";
+import { Drawer } from "../components/shape.slint";
 
 export component Toasts inherits PanelWindow {
     namespace: "lunadash-notifications";
@@ -24,24 +23,21 @@ export component Toasts inherits PanelWindow {
     shown: Prefs.toasts && Notifications.popups.length > 0 && UI.on-active-screen && UI.overlay == "";
     property <length> body-width: 400px;
     property <length> body-height: column.preferred-height;
-    preferred-width: root.body-width + (root.centered ? 2 : 1) * Style.frame-radius;
-    preferred-height: root.body-height + (root.centered ? 0 : 1) * Style.frame-radius;
+    // Room around the card for the gap to the edges and its shadow.
+    preferred-width: root.body-width + 2 * Style.edge-gap;
+    preferred-height: root.body-height + 2 * Style.edge-gap;
     default-font-family: Style.font;
 
-    if root.centered: Drawer {
-        edge: "top";
-        body-width: root.body-width;
-        body-height: root.body-height;
-    }
-    if !root.centered: CornerDrawer {
-        corner: root.at-bottom ? "br" : "tr";
+    Drawer {
+        x: Style.edge-gap;
+        y: Style.edge-gap;
         body-width: root.body-width;
         body-height: root.body-height;
     }
 
     column := VerticalLayout {
-        x: Style.frame-radius;
-        y: root.at-bottom ? Style.frame-radius : 0px;
+        x: Style.edge-gap;
+        y: Style.edge-gap;
         width: root.body-width;
         height: root.body-height;
         padding: Style.spacing-md;

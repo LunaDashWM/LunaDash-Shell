@@ -60,7 +60,7 @@ export component DesktopMenuWindow inherits PanelWindow {
         if self.shown { scope.focus(); }
     }
 
-    // The card stays inside the desktop area (within the bar and the frame): it opens to the
+    // The card stays inside the desktop area (beside the bar): it opens to the
     // lower right of the pointer, or flips left / up where there is no room, and scrolls when
     // the screen is too short for every entry.
     property <length> gap: Style.spacing-sm;

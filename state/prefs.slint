@@ -16,12 +16,10 @@ export global Prefs {
     // How a new wallpaper replaces the old one: "random", "fade", "wipe", "disc", "zoom" or "none".
     out property <string> wallpaper-transition: Store.get-string("wallpaper-transition", "random", Store.revision);
 
-    // Bar and screen frame
+    // Bar
     // "top", "bottom", "left" or "right".
     out property <string> bar-position: Store.get-string("bar-position", "top", Store.revision);
-    // A frame in the bar's colour around the whole screen, out of which the panels open.
-    out property <bool> screen-frame: Store.get-bool("screen-frame", true, Store.revision);
-    // Opacity of the bar, the frame and the drawers that open out of them, 30–100 %.
+    // Opacity of the bar's islands and the drawers and popouts, 30–100 %.
     out property <int> bar-opacity: Store.get-number("bar-opacity", 80, Store.revision);
     // "dots" or "numbers".
     out property <string> workspace-style: Store.get-string("workspace-style", "numbers", Store.revision);

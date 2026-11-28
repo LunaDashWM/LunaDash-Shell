@@ -54,11 +54,12 @@ component DockItem inherits Rectangle {
     }
 }
 
-// A drawer on the bottom edge of the screen frame (which keeps windows clear of it).
+// A floating card along the bottom edge of the desktop (whose bottom reserve keeps windows
+// clear of it).
 export component Dock inherits PanelWindow {
     namespace: "lunadash-dock";
     anchor-bottom: true;
-    // On the frame; the frame's bottom reserve keeps windows clear of it.
+    // ReserveBottom keeps windows clear of it.
     exclusive-mode: ExclusiveMode.ignore;
     margin-bottom: Style.inner-bottom;
     // The launcher rises from the same edge and takes its place.
@@ -150,8 +151,9 @@ export component Dock inherits PanelWindow {
         }
     }
 
-    preferred-height: root.revealed ? root.full-height : 6px;
-    preferred-width: row.preferred-width + 2 * Style.frame-radius;
+    // The card, with room for the gap below it and its shadow beside it.
+    preferred-height: root.revealed ? root.full-height + Style.edge-gap : 6px;
+    preferred-width: row.preferred-width + 2 * Style.edge-gap;
 
     hover := TouchArea {
         changed has-hover => {
@@ -160,8 +162,8 @@ export component Dock inherits PanelWindow {
             }
         }
         Drawer {
-            edge: "bottom";
-            y: root.revealed ? 0px : root.full-height;
+            x: Style.edge-gap;
+            y: root.revealed ? 0px : root.full-height + Style.edge-gap;
             body-width: row.preferred-width;
             body-height: root.full-height;
             animate y { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }

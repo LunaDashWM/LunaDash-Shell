@@ -7,7 +7,7 @@
 // bar shows `builtins`. Commands run through Shell.run, which starts the program with its
 // arguments and never hands the line to a shell.
 
-import { Store, Shell, Apps } from "@slintlu";
+import { Store, Shell, Apps, Workspaces, Switcher, Media, Tray } from "@slintlu";
 
 export global PanelLayout {
     // Every built-in item, in their default order: the bar until it is first edited.
@@ -45,6 +45,38 @@ export global PanelLayout {
     public pure function only-horizontal(id: string) -> bool {
         id == "media" || id == "usage"
     }
+    // Whether an item has something to show (the taskbar needs windows, media a player …).
+    public pure function shows(id: string, vertical: bool) -> bool {
+        id == "spacer" ? false
+            : id == "workspaces" ? Workspaces.available
+            : id == "taskbar" ? Workspaces.available && Workspaces.windows.length > 0
+            : id == "switcher" ? Switcher.available
+            : id == "media" ? !vertical && Media.available && (Media.player.title != "" || Media.player.identity != "")
+            : id == "usage" ? !vertical
+            : id == "tray" ? Tray.items.length > 0
+            : true
+    }
+
+    // The bar is a row of islands: neighbouring items share one. Gaps (separators), the free
+    // space, the window title and the self-contained chips (media, usage, clock) stand apart.
+    public pure function joinable(id: string) -> bool {
+        id != "" && id != "spacer" && id != "separator" && id != "title" && id != "media" && id != "usage" && id != "clock"
+    }
+    // The window title has a pill of its own; gaps and the free space have none.
+    public pure function has-island(id: string) -> bool {
+        id != "spacer" && id != "separator" && id != "title"
+    }
+    // Whether the item at `index` shares its island with the next item that shows something
+    // in the direction `step` (1 or -1), looking past up to two empty ones.
+    public pure function joins(index: int, step: int, vertical: bool) -> bool {
+        root.joinable(root.entry(index)) && root.joinable(root.entry(index + step))
+            && (root.shows(root.entry(index + step), vertical)
+                || (root.joinable(root.entry(index + 2 * step)) && (root.shows(root.entry(index + 2 * step), vertical)
+                    || (root.joinable(root.entry(index + 3 * step)) && root.shows(root.entry(index + 3 * step), vertical)))))
+    }
+    pure function entry(index: int) -> string {
+        index >= 0 && index < root.entries.length ? root.entries[index] : ""
+    }
     public pure function label(id: string) -> string {
         id == "launcher" ? @tr("Applications")
             : id == "workspaces" ? @tr("Workspaces")
@@ -77,7 +109,7 @@ export global PanelLayout {
             : id == "status" ? @tr("Clipboard, network, Bluetooth, sound, battery and notifications.")
             : id == "widgets" ? @tr("Arranges the widgets on the desktop.")
             : id == "spacer" ? @tr("Empty space that grows, pushing the items after it to the end.")
-            : id == "separator" ? @tr("A line between groups of items.")
+            : id == "separator" ? @tr("A gap that splits the bar into separate islands.")
             : root.is-app(id) ? @tr("Starts the application.")
             : root.command(id)
     }

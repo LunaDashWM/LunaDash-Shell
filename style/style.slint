@@ -1,11 +1,11 @@
 // LunaDash design tokens on top of SlintLu's Theme (which follows theme.json and the desktop's
 // light / dark preference) and the appearance preferences.
 //
-// The look follows Material 3 the way caelestia does: one surface colour frames the screen and
-// the panels grow out of that frame, flat tonal containers sit on it, and shapes are generously
-// rounded. Theme's slots map onto the M3 roles: background → surface, surface →
-// surface-container, surface-alt → surface-container-high, border → outline-variant,
-// accent → primary.
+// The look follows Material 3 Expressive the way end4's shell does: the bar is a row of floating
+// islands, drawers and popouts are floating cards in the same panel colour, flat tonal
+// containers sit on them, and shapes are generously rounded. Theme's slots map onto the M3
+// roles: background → surface, surface → surface-container, surface-alt →
+// surface-container-high, border → outline-variant, accent → primary.
 
 import { Theme, Compositor } from "@slintlu";
 import { Prefs } from "../state/prefs.slint";
@@ -36,11 +36,10 @@ export global Style {
 
     // Surfaces
     out property <float> glass-alpha: Prefs.transparency ? clamp(Prefs.glass-opacity, 50, 100) / 100 : 1.0;
-    // The screen frame, the bar and every drawer that grows out of them share this colour, so
-    // they read as one shape. Its opacity is the bar's (Settings → Panel); the pieces meet
-    // edge to edge without overlapping, so a translucent frame shows no seams.
-    out property <float> frame-alpha: clamp(Prefs.bar-opacity, 30, 100) / 100;
-    out property <color> frame: Theme.background.with-alpha(root.frame-alpha);
+    // The bar's islands and every drawer and popout share this colour. Its opacity is the
+    // bar's (Settings → Panel).
+    out property <float> panel-alpha: clamp(Prefs.bar-opacity, 30, 100) / 100;
+    out property <color> panel: Theme.background.with-alpha(root.panel-alpha);
     out property <color> base: Theme.background;
     // Free-floating surfaces (dialogs, notifications) follow the transparency preference.
     out property <color> glass: Theme.background.with-alpha(root.glass-alpha);
@@ -86,26 +85,29 @@ export global Style {
     out property <length> radius-medium: 12px * root.corner-scale;
     out property <length> radius: 25px * root.corner-scale;
     out property <length> radius-large: 28px * root.corner-scale;
-    // The screen frame: its width, and the rounding where it meets the desktop or a drawer.
-    out property <bool> framed: Prefs.screen-frame;
-    out property <length> frame-width: root.framed ? 10px : 0px;
-    out property <length> frame-radius: 25px * root.corner-scale;
+    // The rounding of the bar's islands, drawers and popouts, and how far these floating
+    // shapes keep from the screen's edges and from each other.
+    out property <length> panel-radius: 25px * root.corner-scale;
+    out property <length> edge-gap: 8px;
     // The screen edge the bar runs along: "top", "bottom", "left" or "right".
     out property <string> bar-edge: Prefs.bar-position == "bottom" || Prefs.bar-position == "left" || Prefs.bar-position == "right" ? Prefs.bar-position : "top";
     out property <bool> bar-horizontal: root.bar-edge == "top" || root.bar-edge == "bottom";
     out property <length> bar-width: PanelLayout.thickness;
-    out property <length> panel-height: root.bar-width;
-    // How far the desktop area inside the bar and the frame lies from each screen edge.
-    out property <length> inner-left: root.bar-edge == "left" ? root.bar-width : root.frame-width;
-    out property <length> inner-top: root.bar-edge == "top" ? root.bar-width : root.frame-width;
-    out property <length> inner-right: root.bar-edge == "right" ? root.bar-width : root.frame-width;
-    out property <length> inner-bottom: root.bar-edge == "bottom" ? root.bar-width : root.frame-width;
+    // The bar's islands: as thick as the bar less a margin on either side, and the room their
+    // rounded ends leave around the first and last item.
+    out property <length> island: max(28px, root.bar-width - 12px);
+    out property <length> island-end: 6px;
+    // How far the desktop area beside the bar lies from each screen edge.
+    out property <length> inner-left: root.bar-edge == "left" ? root.bar-width : 0px;
+    out property <length> inner-top: root.bar-edge == "top" ? root.bar-width : 0px;
+    out property <length> inner-right: root.bar-edge == "right" ? root.bar-width : 0px;
+    out property <length> inner-bottom: root.bar-edge == "bottom" ? root.bar-width : 0px;
     out property <length> pill-height: 32px;
     // The dock's icons and its full height.
     out property <length> dock-item: Prefs.dock-size == "small" ? 40px : Prefs.dock-size == "large" ? 60px : 50px;
     out property <length> dock-height: root.dock-item + 16px;
     // What the dock keeps clear at the bottom of the desktop.
-    out property <length> dock-reserve: Prefs.dock && !Prefs.dock-autohide ? root.dock-height : 0px;
+    out property <length> dock-reserve: Prefs.dock && !Prefs.dock-autohide ? root.dock-height + root.edge-gap : 0px;
 
     // Motion: M3 durations; the spatial curve overshoots a little, like caelestia's.
     out property <float> motion-scale: Prefs.animation-speed == "fast" ? 0.6 : Prefs.animation-speed == "relaxed" ? 1.6 : 1.0;

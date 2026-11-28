@@ -5,9 +5,9 @@ import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
 import { Drawer } from "../components/shape.slint";
 
-// A popout that slides out of the bar beside the item that opened it (see UI.toggle-popup-at)
-// and stays joined to it. Set `name` to the UI.popup value that opens it and `preferred-width`
-// to its width.
+// A popout: a floating card that slides out from the bar beside the item that opened it (see
+// UI.toggle-popup-at). Set `name` to the UI.popup value that opens it and `preferred-width` to
+// its width.
 export component PanelPopup inherits PanelWindow {
     in property <string> name;
     layer: Layer.overlay;
@@ -33,14 +33,14 @@ export component PanelPopup inherits PanelWindow {
     changed shown => { root.entrance = self.shown ? 1 : 0; }
     init => { root.entrance = self.shown ? 1 : 0; }
 
-    property <length> body-height: min(content.preferred-height,
-        root.height - Style.frame-width - (Style.bar-horizontal ? 0px : Style.frame-width + 4 * Style.frame-radius));
-    // Centred on the item, kept inside the frame with its ears clear of the frame's rounded
-    // corners (overlapping a translucent corner would darken it).
-    property <length> body-x: clamp(UI.popup-pos * 1px - root.body-width / 2, Style.frame-width + 2 * Style.frame-radius,
-        root.width - Style.frame-width - 2 * Style.frame-radius - root.body-width);
-    property <length> body-y: clamp(UI.popup-pos * 1px - root.body-height / 2, Style.frame-width + 2 * Style.frame-radius,
-        root.height - Style.frame-width - 2 * Style.frame-radius - root.body-height);
+    property <length> body-height: min(content.preferred-height, root.height - 2 * Style.edge-gap);
+    // Centred on the item, kept on the screen.
+    property <length> body-x: clamp(UI.popup-pos * 1px - root.body-width / 2, Style.edge-gap,
+        root.width - Style.edge-gap - root.body-width);
+    property <length> body-y: clamp(UI.popup-pos * 1px - root.body-height / 2, Style.edge-gap,
+        root.height - Style.edge-gap - root.body-height);
+    // How far it travels from the bar as it comes in.
+    property <length> travel: 24px;
 
     // The empty rest of the band closes the popout like the dismisser beside it.
     TouchArea { clicked => { UI.close-all(); } }
@@ -53,21 +53,18 @@ export component PanelPopup inherits PanelWindow {
             reject
         }
         Drawer {
-            edge: Style.bar-edge;
-            x: Style.bar-horizontal ? root.body-x - Style.frame-radius
-                : Style.bar-edge == "left" ? -(1 - root.entrance) * (self.width + 2px)
-                : root.width - self.width + (1 - root.entrance) * (self.width + 2px);
-            y: !Style.bar-horizontal ? root.body-y - Style.frame-radius
-                : Style.bar-edge == "top" ? -(1 - root.entrance) * (self.height + 2px)
-                : root.height - self.height + (1 - root.entrance) * (self.height + 2px);
+            x: Style.bar-horizontal ? root.body-x
+                : Style.bar-edge == "left" ? Style.edge-gap - (1 - root.entrance) * root.travel
+                : root.width - self.width - Style.edge-gap + (1 - root.entrance) * root.travel;
+            y: !Style.bar-horizontal ? root.body-y
+                : Style.bar-edge == "top" ? Style.edge-gap - (1 - root.entrance) * root.travel
+                : root.height - self.height - Style.edge-gap + (1 - root.entrance) * root.travel;
+            opacity: root.entrance;
             body-width: root.body-width;
             body-height: root.body-height;
             TouchArea { }
             content := VerticalLayout {
-                padding-top: Style.bar-edge == "top" ? Style.spacing-lg : Style.spacing-xl;
-                padding-bottom: Style.bar-edge == "bottom" ? Style.spacing-lg : Style.spacing-xl;
-                padding-left: Style.bar-edge == "left" ? Style.spacing-lg : Style.spacing-xl;
-                padding-right: Style.bar-edge == "right" ? Style.spacing-lg : Style.spacing-xl;
+                padding: Style.spacing-xl;
                 spacing: Style.spacing-md;
                 @children
             }
