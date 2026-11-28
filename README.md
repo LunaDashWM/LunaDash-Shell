@@ -14,12 +14,14 @@ Sway, where it keeps its own settings.
 
 ## Features
 
-- **Look** — Material 3 in the style of [caelestia](https://github.com/caelestia-kde/caelestia):
-  the bar and a thin frame around the screen share one surface colour, and the dashboard,
-  launcher, power menu, dock, popouts, OSD and notifications slide out of that frame as
-  drawers joined to it by rounded corners. The font is the desktop's interface font (or
+- **Look** — Material 3 Expressive in the style of [end4](https://github.com/end-4/dots-hyprland):
+  the bar is a row of floating islands over the wallpaper, and the dashboard, launcher, power
+  menu, dock, popouts, OSD and notifications are floating cards in the same colour that slide
+  in from their edge. The font is the desktop's interface font (or
   `theme.json`'s `font-family`); the system's fallback fonts supply glyphs it lacks.
-- **Bar** — at the top (or down the left edge): the LunaDash logo (launcher), numbered
+- **Bar** — on any screen edge, as islands: neighbouring items share one, separators split
+  them, and the window title, media, CPU / memory and the clock float on their own. Items:
+  the LunaDash logo (launcher), numbered
   workspaces and a taskbar with every window's icon (click to switch, middle-click to close),
   like waybar's, focused window, media, CPU / memory, tray, clock with
   calendar, clipboard history, network, Bluetooth, volume, battery, notifications, settings
@@ -40,7 +42,7 @@ Sway, where it keeps its own settings.
 - **Wallpaper** — a picker with thumbnails for any folder. A new wallpaper is revealed over the
   old one by a fade, wipe, growing disc or zoom (random by default; Settings → Wallpaper →
   Transition).
-- **Desktop widgets** — a clock, an analogue clock, a calendar, a greeting, resource gauges,
+- **Desktop widgets** — a clock, a calendar, a greeting, resource gauges,
   network traffic, graphics card meters, now playing, a picture frame and a note on the
   wallpaper. The widgets button on the bar (or the desktop menu) opens an editor to move,
   resize, reshape, add and remove them; nothing changes until you save.
@@ -50,7 +52,7 @@ Sway, where it keeps its own settings.
 - **Lock screen** — PAM authentication, automatic locking after inactivity and before sleep.
 - **Polkit dialog**, **power menu**, **volume / brightness OSD**, **welcome card**.
 - **Settings** — appearance (mode, palettes, transparency, animations), style profiles,
-  wallpaper, desktop widgets, bar (position, screen frame), dock, desktop menu, notifications,
+  wallpaper, desktop widgets, bar (position, items), dock, desktop menu, notifications,
   power and lock, language and about (the machine's processor, graphics, memory, storage,
   displays and software).
 - **Translations** — English and Traditional Chinese (`i18n/zh_TW.po`).
@@ -121,7 +123,7 @@ slintlu --config .
 - Icons come from SlintLu's shared set (`Icon` in `@slintlu`, see SlintLu's `res/`); only the
   LunaDash mark lives here (`assets/luna.svg`).
 
-Layout: `panel/` (bar, screen frame and popouts), `dashboard/`, `launcher/`, `dock/`, `wallpaper/`,
+Layout: `panel/` (bar, screen edges and popouts), `dashboard/`, `launcher/`, `dock/`, `wallpaper/`,
 `session/` (lock screen, power menu, polkit), `feedback/` (notifications, OSD), `settings/`,
 `welcome/`, shared `components/`, `state/` (preferences and cross-window state) and `style/`.
 When the shell needs something SlintLu cannot do yet, the feature is added to SlintLu.
