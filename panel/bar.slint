@@ -27,36 +27,40 @@ component WorkspaceDot inherits Rectangle {
     in property <bool> occupied;
     in property <int> id;
     callback clicked();
-    width: root.vertical ? 24px : max(root.active ? 36px : 24px, marks.preferred-width);
-    height: root.vertical ? (root.active ? 44px : 24px) : 24px;
-    border-radius: 12px;
-    background: root.active ? Style.accent : root.urgent ? Style.danger
-        : touch.has-hover ? Style.hover : root.occupied ? Style.elevated : transparent;
+    // Dots: a bare mark per workspace (dim when empty, brighter with windows) that stretches
+    // into an accent capsule for the current one. Numbers: a capsule holding the number.
+    property <length> long: root.numbers ? (root.active ? 36px : 24px) : root.active ? 26px : 10px;
+    property <length> short: root.numbers ? 24px : 10px;
+    width: root.vertical ? 24px : max(root.long, root.numbers ? marks.preferred-width : 0px) + (root.numbers ? 0px : 8px);
+    height: root.vertical ? root.long + (root.numbers ? 0px : 8px) : 24px;
     animate width, height { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
-    animate background { duration: Style.motion-fast; }
+    Rectangle {
+        width: root.vertical ? root.short : parent.width - (root.numbers ? 0px : 8px);
+        height: root.vertical ? parent.height - (root.numbers ? 0px : 8px) : root.short;
+        border-radius: min(self.width, self.height) / 2;
+        background: root.active ? Style.accent : root.urgent ? Style.danger
+            : root.numbers ? (touch.has-hover ? Style.hover : root.occupied ? Style.elevated : transparent)
+            : root.occupied ? Style.text.with-alpha(touch.has-hover ? 0.85 : 0.6) : Style.muted.with-alpha(touch.has-hover ? 0.6 : 0.3);
+        animate background { duration: Style.motion-fast; }
+    }
     marks := HorizontalLayout {
         alignment: center;
         padding-left: 6px;
         padding-right: 6px;
-        Rectangle {
-            width: root.numbers ? 12px : 8px;
-            if root.numbers: Text {
-                text: root.index;
-                color: root.active ? Style.accent-ink : root.occupied ? Style.text : Style.muted;
-                font-size: Style.font-small;
-                font-weight: root.active ? 700 : 500;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
-            if !root.numbers: Rectangle {
-                width: root.active ? 8px : 6px;
-                height: self.width;
-                border-radius: self.width / 2;
-                background: root.active ? Style.accent-ink : root.occupied ? Style.text : Style.muted.with-alpha(0.6);
-            }
+        if root.numbers: Text {
+            width: 12px;
+            text: root.index;
+            color: root.active ? Style.accent-ink : root.occupied ? Style.text : Style.muted;
+            font-size: Style.font-small;
+            font-weight: root.active ? 700 : 500;
+            horizontal-alignment: center;
+            vertical-alignment: center;
         }
     }
-    touch := TouchArea { clicked => { root.clicked(); } }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
 }
 
 component Workspaces-Strip inherits Rectangle {
