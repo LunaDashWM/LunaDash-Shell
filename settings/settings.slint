@@ -1783,8 +1783,13 @@ component Section inherits Rectangle {
     init => { self.amount = 1; }
     animate amount { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
     opacity: self.amount;
-    VerticalLayout {
+    // As tall as the page, so the list scrolls and clicks reach all of it.
+    min-height: page.min-height;
+    preferred-height: page.preferred-height;
+    page := VerticalLayout {
         y: (1 - root.amount) * 36px * root.direction;
+        width: parent.width;
+        height: parent.height;
         @children
     }
 }
