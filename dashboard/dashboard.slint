@@ -1,15 +1,17 @@
-// The dashboard: overview cards, media, performance and notifications.
+// The dashboard: an overview (you, the machine, the time, the month, gauges, now playing, quick
+// settings and style profiles); media, performance and notifications with the quick settings
+// beside them.
 
-import { Clock, System, Battery, Network, Audio, Brightness, Bluetooth, Notifications, Media, Idle, Theme, Compositor, Shell, Files, Store } from "@slintlu";
+import { Clock, System, Battery, Network, Audio, Brightness, Bluetooth, Notifications, Media, Idle, Theme, Session, Store, Compositor } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
 import { Time } from "../state/time.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
-import { Card, QuickToggle, Slider, IconButton, TextButton, SectionTitle, Reveal } from "../components/controls.slint";
+import { Card, QuickToggle, Slider, IconButton, TextButton, SectionTitle, Reveal, StateLayer } from "../components/controls.slint";
 import { Picture } from "../components/picture.slint";
-import { DefaultApps } from "../state/apps.slint";
+import { Profiles } from "../state/profiles.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
 
 component Tab inherits Rectangle {
@@ -40,39 +42,6 @@ component Tab inherits Rectangle {
     touch := TouchArea { clicked => { root.clicked(); } }
 }
 
-component StatCard inherits Card {
-    in property <string> icon;
-    in property <string> label;
-    in property <string> value;
-    in property <float> ratio: -1;
-    // Equal shares of the row, whatever the text inside.
-    preferred-width: 0px;
-    horizontal-stretch: 1;
-    VerticalLayout {
-        padding: Style.spacing-lg;
-        spacing: 6px;
-        HorizontalLayout {
-            spacing: 8px;
-            Icon { name: root.icon; width: 18px; height: 18px; color: Style.accent; }
-            Text { text: root.label; color: Style.muted; font-size: Style.font-small; vertical-alignment: center; }
-        }
-        Rectangle { vertical-stretch: 1; }
-        Text { text: root.value; color: Style.text; font-size: root.value.character-count > 6 ? 18px : 26px; overflow: elide; }
-        if root.ratio >= 0: Rectangle {
-            height: 6px;
-            border-radius: 3px;
-            background: Style.elevated;
-            Rectangle {
-                x: 0;
-                width: parent.width * clamp(root.ratio, 0, 1);
-                border-radius: 3px;
-                background: root.ratio > 0.85 ? Style.danger : Style.accent;
-                animate width { duration: Style.motion; }
-            }
-        }
-    }
-}
-
 component Bar inherits Rectangle {
     in property <float> ratio;
     height: 8px;
@@ -87,162 +56,418 @@ component Bar inherits Rectangle {
     }
 }
 
-component OverviewTab inherits HorizontalLayout {
-    spacing: Style.spacing-md;
-    // Hero card with the wallpaper.
-    Rectangle {
-        horizontal-stretch: 5;
-        border-radius: Style.radius-medium;
-        background: Style.surface;
-        if Wallpapers.still == "": Image {
-            width: parent.width;
-            height: parent.height;
+// The scalloped shape that marks today and frames the gauges' icons (M3 Expressive's cookie).
+component Cookie inherits Path {
+    viewbox-width: 100;
+    viewbox-height: 100;
+    commands: "M 50.0 7.0 A 16.5 16.5 0 0 1 77.6 17.1 A 16.5 16.5 0 0 1 92.3 42.5 A 16.5 16.5 0 0 1 87.2 71.5 A 16.5 16.5 0 0 1 64.7 90.4 A 16.5 16.5 0 0 1 35.3 90.4 A 16.5 16.5 0 0 1 12.8 71.5 A 16.5 16.5 0 0 1 7.7 42.5 A 16.5 16.5 0 0 1 22.4 17.1 A 16.5 16.5 0 0 1 50.0 7.0 Z";
+}
+
+// A ring that fills clockwise from the top, like M3's circular progress.
+component Ring inherits Rectangle {
+    in property <float> value;
+    in property <length> thickness: 6px;
+    in property <color> tint: Style.accent;
+    property <float> v: clamp(root.value, 0, 0.999);
+    Path {
+        viewbox-width: 100;
+        viewbox-height: 100;
+        stroke: Style.elevated;
+        stroke-width: root.thickness;
+        commands: "M 50 6 A 44 44 0 1 1 49.99 6";
+    }
+    if root.v > 0.005: Path {
+        viewbox-width: 100;
+        viewbox-height: 100;
+        stroke: root.tint;
+        stroke-width: root.thickness;
+        stroke-line-cap: round;
+        commands: "M 50 6 A 44 44 0 " + (root.v > 0.5 ? "1" : "0") + " 1 " + (50 + 44 * sin(root.v * 360deg)) + " " + (50 - 44 * cos(root.v * 360deg));
+    }
+}
+
+// You: your picture and a greeting for the time of day.
+component AvatarCard inherits Card {
+    HorizontalLayout {
+        padding: Style.spacing-lg;
+        spacing: Style.spacing-lg;
+        Rectangle {
+            width: 84px;
+            height: 84px;
+            y: (parent.height - self.height) / 2;
+            border-radius: self.width / 2;
+            background: Style.accent;
+            Rectangle {
+                width: parent.width - 8px;
+                height: self.width;
+                border-radius: self.width / 2;
+                background: Style.primary-container;
+                if Session.avatar-round.width > 0: Image { width: 100%; height: 100%; source: Session.avatar-round; image-fit: cover; }
+                if Session.avatar-round.width == 0: Icon { name: "user"; width: 46%; height: 46%; color: Style.on-primary-container; }
+            }
+            StateLayer { border-radius: parent.border-radius; hovered: account.has-hover; pressed: account.pressed; ink: Style.accent-ink; }
+            account := TouchArea {
+                mouse-cursor: MouseCursor.pointer;
+                clicked => { UI.open-settings("account"); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            Text {
+                text: Clock.hour < 5 || Clock.hour >= 22 ? @tr("Good night") : Clock.hour < 12 ? @tr("Good morning")
+                    : Clock.hour < 18 ? @tr("Good afternoon") : @tr("Good evening");
+                color: Style.muted;
+            }
+            Text {
+                text: Session.real-name != "" ? Session.real-name : Session.user;
+                color: Style.text;
+                font-size: 26px;
+                font-weight: 700;
+                overflow: elide;
+            }
+        }
+    }
+}
+
+// The machine: the LunaDash mark, and chips for the system, the desktop and the uptime.
+component SystemCard inherits Card {
+    HorizontalLayout {
+        padding: Style.spacing-lg;
+        spacing: Style.spacing-lg;
+        Rectangle {
+            width: 64px;
+            height: 64px;
+            y: (parent.height - self.height) / 2;
+            Cookie { fill: Style.tonal; }
+            Image { source: @image-url("../assets/luna-mark.svg"); width: 34px; height: 34px; image-fit: contain; colorize: Style.on-tonal; }
+        }
+        VerticalLayout {
+            alignment: center;
+            spacing: Style.spacing-xs + 2px;
+            for row in [
+                [{ icon: "diamond", text: System.os }, { icon: "window", text: Compositor.name }],
+                [{ icon: "clock", text: @tr("Up {}", System.uptime) }],
+            ]: HorizontalLayout {
+                spacing: Style.spacing-xs + 2px;
+                alignment: start;
+                for chip in row: Rectangle {
+                    height: 32px;
+                    width: min(chip-row.preferred-width, 240px);
+                    border-radius: 16px;
+                    background: Style.tonal;
+                    chip-row := HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 12px;
+                        spacing: 6px;
+                        Icon { y: (parent.height - self.height) / 2; name: chip.icon; width: 16px; height: 16px; color: Style.on-tonal; }
+                        Text { text: chip.text; color: Style.on-tonal; font-size: Style.font-small; font-weight: 600; vertical-alignment: center; overflow: elide; }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The time standing up: hours, a pause of dots, minutes.
+component ClockCard inherits Card {
+    VerticalLayout {
+        alignment: center;
+        spacing: 2px;
+        Text {
+            text: Prefs.clock-24h ? Time.two(Clock.hour) : Time.two(Math.mod(Clock.hour + 11, 12) + 1);
+            color: Style.text;
+            font-size: 38px;
+            font-weight: 700;
+            horizontal-alignment: center;
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 5px;
+            for dot in [0, 1, 2]: Rectangle { width: 6px; height: 6px; border-radius: 3px; background: Style.accent; }
+        }
+        Text { text: Time.two(Clock.minute); color: Style.text; font-size: 38px; font-weight: 700; horizontal-alignment: center; }
+        if !Prefs.clock-24h: Text { text: Clock.hour < 12 ? "AM" : "PM"; color: Style.accent; font-weight: 700; horizontal-alignment: center; }
+    }
+}
+
+// The month, browsable; today wears a cookie.
+component CalendarCard inherits Card {
+    // Months away from today (0 = this month).
+    property <int> offset;
+    property <int> month-index: Clock.year * 12 + Clock.month - 1 + root.offset;
+    property <int> shown-year: Math.floor(root.month-index / 12);
+    property <int> shown-month: Math.mod(root.month-index, 12) + 1;
+    VerticalLayout {
+        padding: Style.spacing-md;
+        spacing: 2px;
+        HorizontalLayout {
+            IconButton { icon: "chevron-left"; size: 32px; clicked => { root.offset -= 1; } }
+            Text {
+                horizontal-stretch: 1;
+                text: Clock.format-date(root.shown-year, root.shown-month, 1, @tr("%B %Y"));
+                color: Style.text;
+                font-size: Style.font-size + 2px;
+                font-weight: 600;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                TouchArea { enabled: root.offset != 0; clicked => { root.offset = 0; } }
+            }
+            IconButton { icon: "chevron-right"; size: 32px; clicked => { root.offset += 1; } }
+        }
+        HorizontalLayout {
+            padding-top: 4px;
+            for day in (Prefs.week-starts-monday ? [@tr("Mon"), @tr("Tue"), @tr("Wed"), @tr("Thu"), @tr("Fri"), @tr("Sat"), @tr("Sun")]
+                    : [@tr("Sun"), @tr("Mon"), @tr("Tue"), @tr("Wed"), @tr("Thu"), @tr("Fri"), @tr("Sat")]): Text {
+                text: day;
+                color: Style.text;
+                font-size: Style.font-small;
+                font-weight: 600;
+                horizontal-alignment: center;
+                horizontal-stretch: 1;
+            }
+        }
+        GridLayout {
+            vertical-stretch: 1;
+            for day[i] in Clock.month-grid(root.shown-year, root.shown-month, Prefs.week-starts-monday): Rectangle {
+                row: i / 7;
+                col: Math.mod(i, 7);
+                min-height: 28px;
+                if day.today: Cookie {
+                    width: min(parent.width, parent.height) + 6px;
+                    height: self.width;
+                    fill: Style.accent;
+                }
+                Text {
+                    text: day.day;
+                    color: day.today ? Style.accent-ink : !day.in-month ? Style.muted.with-alpha(0.4) : day.weekend ? Style.text : Style.muted;
+                    font-weight: day.today ? 700 : day.weekend ? 600 : 400;
+                }
+            }
+        }
+    }
+}
+
+// Processor, memory and disk as rings, with their icons inside.
+component GaugesCard inherits Card {
+    VerticalLayout {
+        padding: Style.spacing-md;
+        spacing: Style.spacing-md;
+        alignment: space-around;
+        for gauge in [
+            { icon: "cpu", value: System.cpu },
+            { icon: "memory", value: System.memory },
+            { icon: "disk", value: System.disk },
+        ]: Rectangle {
+            height: min(self.width, 76px);
+            Ring {
+                width: min(parent.width, parent.height);
+                height: self.width;
+                value: gauge.value;
+                tint: gauge.value > 0.9 ? Style.danger : Style.accent;
+            }
+            Icon { name: gauge.icon; width: 22px; height: 22px; color: Style.text; }
+        }
+    }
+}
+
+// What is playing, its progress as a ring round the cover, and the sticker at the bottom.
+component MediaCard inherits Card {
+    property <bool> playing-something: Media.available && (Media.player.title != "" || Media.player.identity != "");
+    VerticalLayout {
+        padding: Style.spacing-lg;
+        spacing: Style.spacing-sm;
+        Rectangle {
+            height: 168px;
+            Ring {
+                width: 168px;
+                height: 168px;
+                thickness: 5px;
+                value: Media.player.length > 0 ? Media.player.position / Media.player.length : 0;
+            }
+            Rectangle {
+                width: 132px;
+                height: 132px;
+                border-radius: self.width / 2;
+                background: Style.elevated;
+                cover := Picture { path: Media.player.art-url; radii: [66px, 66px, 66px, 66px]; }
+                if !cover.loaded: Icon { name: "music"; width: 44px; height: 44px; color: Style.muted; }
+            }
+        }
+        Text {
+            text: root.playing-something ? (Media.player.title != "" ? Media.player.title : Media.player.identity) : @tr("Nothing playing");
+            color: Style.text;
+            font-size: Style.font-size + 2px;
+            font-weight: 700;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+        Text {
+            text: root.playing-something ? Media.player.artist : @tr("Music and videos show up here.");
+            color: Style.muted;
+            font-size: Style.font-small;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: Style.spacing-xs;
+            IconButton { y: (parent.height - self.height) / 2; icon: "previous"; size: 40px; tonal: true; clicked => { Media.previous(); } }
+            IconButton { icon: Media.player.playing ? "pause" : "play"; size: 48px; icon-size: 20px; active: true; clicked => { Media.play-pause(); } }
+            IconButton { y: (parent.height - self.height) / 2; icon: "next"; size: 40px; tonal: true; clicked => { Media.next(); } }
+        }
+        Rectangle {
+            vertical-stretch: 1;
+            min-height: 72px;
+            Image {
+                x: parent.width - self.width;
+                y: parent.height - self.height;
+                width: min(parent.height, 120px);
+                height: self.width;
+                source: @image-url("../assets/dashboard-sticker.png");
+                image-fit: contain;
+            }
+        }
+    }
+}
+
+// A saved look: its wallpaper above its name; the one in use wears a ring. A click switches to it.
+component ProfileTile inherits VerticalLayout {
+    in property <string> name;
+    property <bool> active: Profiles.active == root.name;
+    width: 176px;
+    spacing: 6px;
+    preview := Rectangle {
+        vertical-stretch: 1;
+        border-radius: Style.radius-medium + 4px;
+        background: Style.elevated;
+        border-width: root.active ? 3px : 0px;
+        border-color: Style.accent;
+        property <string> wallpaper: Store.profile-string(root.name, "wallpaper", Wallpapers.still, Store.revision);
+        if self.wallpaper == "": Image {
+            x: 4px;
+            y: 4px;
+            width: parent.width - 8px;
+            height: parent.height - 8px;
             source: Wallpapers.current();
             image-fit: cover;
         }
-        if Wallpapers.still != "": Picture {
-            path: Wallpapers.still;
-            radii: [parent.border-radius, parent.border-radius, parent.border-radius, parent.border-radius];
+        Picture {
+            x: 4px;
+            y: 4px;
+            width: parent.width - 8px;
+            height: parent.height - 8px;
+            path: parent.wallpaper;
+            radii: [Style.radius-medium, Style.radius-medium, Style.radius-medium, Style.radius-medium];
         }
-        Rectangle {
-            y: parent.height * 0.55;
-            height: parent.height * 0.45;
-            border-bottom-left-radius: parent.border-radius;
-            border-bottom-right-radius: parent.border-radius;
-            background: @linear-gradient(180deg, transparent 0%, #000000aa 100%);
+        StateLayer { border-radius: parent.border-radius; hovered: touch.has-hover; pressed: touch.pressed; ink: #ffffff; }
+        if root.active: Rectangle {
+            x: parent.width - self.width - 10px;
+            y: 10px;
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            background: Style.accent;
+            Icon { name: "check"; width: 15px; height: 15px; color: Style.accent-ink; }
         }
-        VerticalLayout {
-            alignment: end;
-            padding: Style.spacing-xl;
-            spacing: 2px;
-            HorizontalLayout {
-                spacing: 12px;
-                alignment: start;
-                Rectangle {
-                    width: 46px;
-                    Rectangle {
-                        width: 72px;
-                        height: 72px;
-                        x: (parent.width - self.width) / 2;
-                        y: (parent.height - self.height) / 2;
-                        border-radius: self.width / 2;
-                        background: @radial-gradient(circle, #9db8ff40 0%, #9db8ff00 70%);
-                    }
-                    Image {
-                        source: @image-url("../assets/luna-mark.svg");
-                        width: 46px;
-                        height: 46px;
-                        y: (parent.height - self.height) / 2;
-                        image-fit: contain;
-                    }
-                }
-                Text { text: "LunaDash"; color: #ffffff; font-size: 34px; font-weight: 700; vertical-alignment: center; }
-            }
-            Text { text: @tr("A modern Wayland desktop"); color: #ffffffdd; }
-            Text { text: System.os + " · " + Shell.compositor + " · SlintLu " + Shell.version; color: #ffffffaa; font-size: Style.font-small; }
+        touch := TouchArea {
+            mouse-cursor: MouseCursor.pointer;
+            clicked => { Profiles.load(root.name); }
         }
     }
-    VerticalLayout {
-        horizontal-stretch: 4;
-        spacing: Style.spacing-md;
-        Card {
-            vertical-stretch: 2;
-            HorizontalLayout {
-                padding: Style.spacing-xl;
-                VerticalLayout {
-                    alignment: center;
-                    Text { text: Time.clock; color: Style.text; font-size: 46px; font-weight: 300; }
-                    Text { text: Time.long-date; color: Style.muted; }
-                }
-                Rectangle { horizontal-stretch: 1; }
-                VerticalLayout {
-                    alignment: center;
-                    Text { text: Battery.available ? Math.round(Battery.level * 100) + "%" : System.uptime; color: Style.text; font-size: 22px; horizontal-alignment: right; }
-                    Text { text: Battery.available ? (Battery.charging ? @tr("Charging") : Battery.time-remaining) : @tr("Uptime"); color: Style.muted; font-size: Style.font-small; horizontal-alignment: right; }
-                }
-            }
+    Text {
+        text: root.name;
+        color: root.active ? Style.accent : Style.text;
+        font-size: Style.font-small;
+        font-weight: root.active ? 700 : 500;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+}
+
+// Switching between the saved looks, under the overview.
+component ProfileStrip inherits VerticalLayout {
+    spacing: Style.spacing-sm;
+    HorizontalLayout {
+        SectionTitle { text: @tr("STYLE PROFILES"); vertical-alignment: center; horizontal-stretch: 1; }
+        TextButton { horizontal-stretch: 0; outlined: true; icon: "layers"; text: @tr("Manage"); clicked => { UI.open-settings("profiles"); } }
+    }
+    if Profiles.names.length == 0: Rectangle {
+        height: 116px;
+        border-radius: Style.radius-medium + 4px;
+        border-width: 1px;
+        border-color: Style.border;
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px;
+            Text { text: @tr("No profiles yet"); color: Style.text; font-weight: 600; horizontal-alignment: center; }
+            Text { text: @tr("Save the look of your desktop in Settings → Style profiles to switch here."); color: Style.muted; font-size: Style.font-small; horizontal-alignment: center; }
         }
-        HorizontalLayout {
-            vertical-stretch: 2;
+    }
+    if Profiles.names.length > 0: Flickable {
+        height: 120px;
+        content-width: tiles.preferred-width;
+        content-height: self.height;
+        tiles := HorizontalLayout {
             spacing: Style.spacing-md;
-            StatCard { icon: "cpu"; label: @tr("CPU"); value: Math.round(System.cpu * 100) + "%"; ratio: System.cpu; }
-            StatCard { icon: "memory"; label: @tr("Memory"); value: Math.round(System.memory * 100) + "%"; ratio: System.memory; }
+            alignment: start;
+            for name in Profiles.names: ProfileTile { name: name; }
         }
-        HorizontalLayout {
-            vertical-stretch: 2;
-            spacing: Style.spacing-md;
-            StatCard {
-                icon: Network.kind == "wifi" ? "wifi" : "network";
-                label: @tr("Network");
-                value: !Network.available ? "—" : Network.connected ? (Network.online ? @tr("Connected") : @tr("Limited")) : @tr("Offline");
-            }
-            StatCard { icon: "thermometer"; label: @tr("Temperature"); value: System.temperature > 0 ? Math.round(System.temperature) + "°C" : "—"; }
-        }
-        HorizontalLayout {
-            spacing: Style.spacing-sm;
-            TextButton { horizontal-stretch: 1; preferred-width: 0px; icon: "settings"; text: @tr("Settings"); clicked => { UI.open-settings("appearance"); } }
-            TextButton { horizontal-stretch: 1; preferred-width: 0px; icon: "folder"; text: @tr("Files"); clicked => { DefaultApps.files(); UI.close-all(); } }
-            TextButton { horizontal-stretch: 1; preferred-width: 0px; icon: "terminal"; text: @tr("Terminal"); clicked => { DefaultApps.terminal(); UI.close-all(); } }
+    }
+}
+
+// The quick settings, `columns` to a row.
+component QuickToggles inherits Rectangle {
+    in property <int> columns: 2;
+    property <length> gap: Style.spacing-sm;
+    property <length> tile-width: (self.width - (root.columns - 1) * root.gap) / root.columns;
+    property <[{id: string, icon: string, label: string, detail: string, on: bool, enabled: bool}]> tiles: [
+        { id: "wifi", icon: Network.wifi-enabled ? "wifi" : "wifi-off", label: @tr("Wi-Fi"),
+            detail: Network.kind == "wifi" ? Network.name : Network.wifi-enabled ? @tr("On") : @tr("Off"),
+            on: Network.wifi-enabled, enabled: Network.available },
+        { id: "bluetooth", icon: "bluetooth", label: @tr("Bluetooth"), detail: Bluetooth.powered ? @tr("On") : @tr("Off"),
+            on: Bluetooth.powered, enabled: Bluetooth.available },
+        { id: "dnd", icon: Notifications.do-not-disturb ? "bell-off" : "bell", label: @tr("Do not disturb"), detail: "",
+            on: Notifications.do-not-disturb, enabled: true },
+        { id: "awake", icon: "coffee", label: @tr("Keep awake"), detail: "", on: Idle.inhibited, enabled: Idle.available },
+        { id: "theme", icon: Theme.dark ? "moon" : "sun", label: Theme.dark ? @tr("Dark") : @tr("Light"), detail: @tr("Appearance"),
+            on: Theme.dark, enabled: true },
+        { id: "wallpaper", icon: "image", label: @tr("Wallpaper"), detail: "", on: false, enabled: true },
+    ];
+    height: Math.ceil(root.tiles.length / root.columns) * (58px + root.gap) - root.gap;
+    for tile[i] in root.tiles: QuickToggle {
+        x: Math.mod(i, root.columns) * (root.tile-width + root.gap);
+        y: Math.floor(i / root.columns) * (58px + root.gap);
+        width: root.tile-width;
+        icon: tile.icon;
+        label: tile.label;
+        detail: tile.detail;
+        on: tile.on;
+        enabled: tile.enabled;
+        clicked => { root.toggle(tile.id); }
+    }
+    function toggle(id: string) {
+        if id == "wifi" {
+            Network.set-wifi-enabled(!Network.wifi-enabled);
+        } else if id == "bluetooth" {
+            Bluetooth.set-powered(!Bluetooth.powered);
+        } else if id == "dnd" {
+            Notifications.set-do-not-disturb(!Notifications.do-not-disturb);
+        } else if id == "awake" {
+            Idle.set-inhibited(!Idle.inhibited);
+        } else if id == "theme" {
+            // Saved like the Appearance setting, so Settings agrees and it lasts.
+            Store.set-string("theme-mode", Theme.dark ? "light" : "dark");
+            Theme.set-mode(Prefs.theme-mode);
+        } else if id == "wallpaper" {
+            UI.open-overlay("gallery");
         }
     }
 }
 
 component ControlsColumn inherits VerticalLayout {
     spacing: Style.spacing-sm;
-    GridLayout {
-        spacing: Style.spacing-sm;
-        Row {
-            QuickToggle {
-                icon: Network.wifi-enabled ? "wifi" : "wifi-off";
-                label: @tr("Wi-Fi");
-                detail: Network.kind == "wifi" ? Network.name : Network.wifi-enabled ? @tr("On") : @tr("Off");
-                on: Network.wifi-enabled;
-                enabled: Network.available;
-                clicked => { Network.set-wifi-enabled(!Network.wifi-enabled); }
-            }
-            QuickToggle {
-                icon: "bluetooth";
-                label: @tr("Bluetooth");
-                detail: Bluetooth.powered ? @tr("On") : @tr("Off");
-                on: Bluetooth.powered;
-                enabled: Bluetooth.available;
-                clicked => { Bluetooth.set-powered(!Bluetooth.powered); }
-            }
-        }
-        Row {
-            QuickToggle {
-                icon: Notifications.do-not-disturb ? "bell-off" : "bell";
-                label: @tr("Do not disturb");
-                on: Notifications.do-not-disturb;
-                clicked => { Notifications.set-do-not-disturb(!Notifications.do-not-disturb); }
-            }
-            QuickToggle {
-                icon: "coffee";
-                label: @tr("Keep awake");
-                on: Idle.inhibited;
-                enabled: Idle.available;
-                clicked => { Idle.set-inhibited(!Idle.inhibited); }
-            }
-        }
-        Row {
-            QuickToggle {
-                icon: Theme.dark ? "moon" : "sun";
-                label: Theme.dark ? @tr("Dark") : @tr("Light");
-                detail: @tr("Appearance");
-                on: Theme.dark;
-                // Saved like the Appearance setting, so Settings agrees and it lasts.
-                clicked => {
-                    Store.set-string("theme-mode", Theme.dark ? "light" : "dark");
-                    Theme.set-mode(Prefs.theme-mode);
-                }
-            }
-            QuickToggle {
-                icon: "image";
-                label: @tr("Wallpaper");
-                clicked => { UI.open-overlay("gallery"); }
-            }
-        }
-    }
+    QuickToggles { columns: 2; }
     if Audio.available: Slider {
         icon: Audio.output.muted ? "volume-mute" : "volume";
         value: Audio.output.volume;
@@ -258,6 +483,34 @@ component ControlsColumn inherits VerticalLayout {
     // The tiles have fixed heights; without a stretchable filler this column would cap the
     // height of the whole row and leave the tab content short.
     Rectangle { vertical-stretch: 1; }
+}
+
+component OverviewTab inherits VerticalLayout {
+    spacing: Style.spacing-md;
+    HorizontalLayout {
+        vertical-stretch: 1;
+        spacing: Style.spacing-md;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: Style.spacing-md;
+            HorizontalLayout {
+                height: 120px;
+                spacing: Style.spacing-md;
+                AvatarCard { horizontal-stretch: 4; preferred-width: 0px; }
+                SystemCard { horizontal-stretch: 5; preferred-width: 0px; }
+            }
+            HorizontalLayout {
+                vertical-stretch: 1;
+                spacing: Style.spacing-md;
+                ClockCard { width: 104px; }
+                CalendarCard { horizontal-stretch: 1; }
+                GaugesCard { width: 104px; }
+            }
+        }
+        MediaCard { width: 280px; }
+    }
+    QuickToggles { columns: 6; }
+    ProfileStrip { }
 }
 
 component MediaTab inherits HorizontalLayout {
@@ -428,8 +681,8 @@ export component Dashboard inherits Overlay {
     namespace: "lunadash-dashboard";
     // Slides in from the top of the desktop.
     edge: "top";
-    content-width: 1060px;
-    content-height: 620px;
+    content-width: 1080px;
+    content-height: 800px;
 
     VerticalLayout {
         padding: Style.spacing-lg;
@@ -450,10 +703,11 @@ export component Dashboard inherits Overlay {
             }
             IconButton { icon: "close"; size: 36px; y: (parent.height - self.height) / 2; clicked => { UI.close-all(); } }
         }
-        HorizontalLayout {
+        if UI.dashboard-tab == 0: Reveal { vertical-stretch: 1; OverviewTab { } }
+        // The other tabs keep the quick settings beside them.
+        if UI.dashboard-tab != 0: HorizontalLayout {
             vertical-stretch: 1;
             spacing: Style.spacing-lg;
-            if UI.dashboard-tab == 0: Reveal { horizontal-stretch: 3; OverviewTab { } }
             if UI.dashboard-tab == 1: Reveal { horizontal-stretch: 3; MediaTab { } }
             if UI.dashboard-tab == 2: Reveal { horizontal-stretch: 3; PerformanceTab { } }
             if UI.dashboard-tab == 3: Reveal { horizontal-stretch: 3; NotificationsTab { } }
