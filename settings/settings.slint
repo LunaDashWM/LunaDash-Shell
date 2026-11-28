@@ -743,7 +743,8 @@ component PanelItemsPage inherits Page {
             EntryRow {
                 icon: PanelLayout.icon(id);
                 image: PanelLayout.is-app(id) && Apps.all.length >= 0 ? Apps.get(PanelLayout.app-id(id)).icon : @image-url("");
-                label: PanelLayout.label(id) != "" ? PanelLayout.label(id) : PanelLayout.app-id(id);
+                // An item an earlier shell had shows its id, to be taken out.
+                label: PanelLayout.label(id) != "" ? PanelLayout.label(id) : PanelLayout.is-app(id) ? PanelLayout.app-id(id) : id;
                 detail: PanelLayout.only-horizontal(id) && !Style.bar-horizontal ? @tr("Only in a top or bottom bar") : PanelLayout.description(id);
                 muted: id == "spacer" || id == "separator" || (PanelLayout.only-horizontal(id) && !Style.bar-horizontal);
                 index: i;
