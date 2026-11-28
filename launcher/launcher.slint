@@ -2,7 +2,7 @@
 // (icon, name and what each is) on the right. Type to search, Up / Down to move, Tab to change
 // category, Enter to start.
 
-import { Apps, AppInfo, Store, Compositor } from "@slintlu";
+import { Apps, AppInfo, Store, Compositor, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
 import { Prefs } from "../state/prefs.slint";
@@ -255,7 +255,7 @@ export component Launcher inherits Overlay {
                             reject
                         }
                     }
-                    if search.text == "": Text {
+                    if search.text == "" && !(search.has-focus && Shell.composing): Text {
                         width: 100%;
                         height: 100%;
                         vertical-alignment: center;

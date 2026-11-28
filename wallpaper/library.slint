@@ -2,7 +2,7 @@
 // header to switch between the library, the bundled wallpapers and favourites, chips for the
 // categories, a grid of rounded previews and a search field floating at the bottom.
 
-import { Compositor, WallpaperInfo } from "@slintlu";
+import { Compositor, WallpaperInfo, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -383,7 +383,7 @@ export component WallpaperLibrary inherits Overlay {
                                 reject
                             }
                         }
-                        if search.text == "": Text {
+                        if search.text == "" && !(search.has-focus && Shell.composing): Text {
                             width: 100%;
                             height: 100%;
                             vertical-alignment: center;
