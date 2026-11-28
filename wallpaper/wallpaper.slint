@@ -191,6 +191,7 @@ export component Wallpaper inherits PanelWindow {
         width: Widgets.width(false, id);
         height: Widgets.height(false, id);
         kind: Widgets.kind(false, id);
+        owner: "widget-" + id + "@" + Shell.screen.name;
         shape: Widgets.text(false, "widget-shape", id, Widgets.default-shape(Widgets.kind(false, id)));
         picture: Widgets.text(false, "widget-image", id, "");
         note: Widgets.text(false, "widget-text", id, "");

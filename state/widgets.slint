@@ -28,6 +28,7 @@ export global Widgets {
         { id: "network", label: @tr("Network traffic"), description: @tr("Download and upload speed over the last minute."), icon: "network" },
         { id: "gpu", label: @tr("Graphics card"), description: @tr("Load, video memory, temperature and power."), icon: "gpu" },
         { id: "media", label: @tr("Now playing"), description: @tr("Cover, title and playback buttons."), icon: "music" },
+        { id: "wave", label: @tr("Audio wave"), description: @tr("What is playing, as a wave of its frequencies."), icon: "music" },
         { id: "picture", label: @tr("Picture frame"), description: @tr("A picture of your choice in any shape."), icon: "image" },
         { id: "note", label: @tr("Note"), description: @tr("A few words of your own."), icon: "text" },
     ];
@@ -49,7 +50,7 @@ export global Widgets {
     // Kinds this shell draws; others (an earlier shell's) stay off the desktop.
     public pure function known(kind: string) -> bool {
         kind == "clock" || kind == "calendar" || kind == "greeting" || kind == "resources" || kind == "network"
-            || kind == "gpu" || kind == "media" || kind == "picture" || kind == "note"
+            || kind == "gpu" || kind == "media" || kind == "wave" || kind == "picture" || kind == "note"
     }
     public pure function kind(draft: bool, id: string) -> string {
         root.text(draft, "widget-kind", id, "clock")
@@ -88,12 +89,12 @@ export global Widgets {
     public pure function default-width(kind: string) -> length {
         kind == "clock" ? 520px : kind == "calendar" ? 330px : kind == "greeting" ? 340px
             : kind == "resources" ? 440px : kind == "network" ? 330px : kind == "gpu" ? 340px : kind == "media" ? 380px
-            : kind == "picture" ? 260px : 340px
+            : kind == "wave" ? 420px : kind == "picture" ? 260px : 340px
     }
     public pure function default-height(kind: string) -> length {
         kind == "clock" ? 150px : kind == "calendar" ? 150px : kind == "greeting" ? 120px
             : kind == "resources" ? 130px : kind == "network" ? 180px : kind == "gpu" ? 200px : kind == "media" ? 130px
-            : kind == "picture" ? 260px : 120px
+            : kind == "wave" ? 160px : kind == "picture" ? 260px : 120px
     }
     public pure function min-width(kind: string) -> length {
         kind == "clock" ? 160px : kind == "picture" ? 100px : kind == "resources" ? 200px : 180px

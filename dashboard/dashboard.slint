@@ -2,7 +2,7 @@
 // settings and style profiles); media, performance and notifications with the quick settings
 // beside them.
 
-import { Clock, System, Battery, Network, Audio, Brightness, Bluetooth, Notifications, Media, Idle, Theme, Session, Store, Compositor } from "@slintlu";
+import { Clock, System, Battery, Network, Audio, Brightness, Bluetooth, Notifications, Media, Idle, Theme, Session, Store, Compositor, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -11,6 +11,7 @@ import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
 import { Card, QuickToggle, Slider, IconButton, TextButton, SectionTitle, Reveal, StateLayer } from "../components/controls.slint";
 import { Picture } from "../components/picture.slint";
+import { Visualizer } from "../components/visualizer.slint";
 import { Profiles } from "../state/profiles.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
 
@@ -468,55 +469,68 @@ component OverviewTab inherits VerticalLayout {
     QuickToggles { columns: 6; }
 }
 
-component MediaTab inherits HorizontalLayout {
-    spacing: Style.spacing-lg;
-    if Media.player.bus-name == "": VerticalLayout {
-        alignment: center;
-        spacing: Style.spacing-sm;
-        HorizontalLayout { alignment: center; Icon { name: "music"; width: 48px; height: 48px; color: Style.muted; } }
-        Text { text: @tr("Nothing is playing"); color: Style.muted; horizontal-alignment: center; }
-    }
-    if Media.player.bus-name != "": Rectangle {
-        width: 300px;
-        border-radius: Style.radius-medium;
-        background: Style.elevated;
-        art := Picture {
-            path: Media.player.art-url;
-            radii: [parent.border-radius, parent.border-radius, parent.border-radius, parent.border-radius];
+// The player beside its cover, over a wave of what is playing (it listens only while shown and
+// something plays).
+component MediaTab inherits VerticalLayout {
+    in property <bool> shown;
+    spacing: Style.spacing-md;
+    HorizontalLayout {
+        vertical-stretch: 1;
+        spacing: Style.spacing-lg;
+        if Media.player.bus-name == "": VerticalLayout {
+            alignment: center;
+            spacing: Style.spacing-sm;
+            HorizontalLayout { alignment: center; Icon { name: "music"; width: 48px; height: 48px; color: Style.muted; } }
+            Text { text: @tr("Nothing is playing"); color: Style.muted; horizontal-alignment: center; }
         }
-        if !art.loaded: Icon { name: "music"; width: 72px; height: 72px; color: Style.muted; }
-    }
-    if Media.player.bus-name != "": VerticalLayout {
-        alignment: center;
-        spacing: Style.spacing-sm;
-        Text { text: Media.player.identity; color: Style.accent; font-size: Style.font-small; }
-        Text { text: Media.player.title; color: Style.text; font-size: 26px; font-weight: 600; wrap: word-wrap; }
-        Text { text: Media.player.artist + (Media.player.album != "" ? " — " + Media.player.album : ""); color: Style.muted; wrap: word-wrap; }
-        if Media.player.length > 0: VerticalLayout {
-            spacing: 4px;
-            Bar { ratio: Media.player.position / Media.player.length; }
+        if Media.player.bus-name != "": Rectangle {
+            width: 300px;
+            border-radius: Style.radius-medium;
+            background: Style.elevated;
+            art := Picture {
+                path: Media.player.art-url;
+                radii: [parent.border-radius, parent.border-radius, parent.border-radius, parent.border-radius];
+            }
+            if !art.loaded: Icon { name: "music"; width: 72px; height: 72px; color: Style.muted; }
+        }
+        if Media.player.bus-name != "": VerticalLayout {
+            alignment: center;
+            spacing: Style.spacing-sm;
+            Text { text: Media.player.identity; color: Style.accent; font-size: Style.font-small; }
+            Text { text: Media.player.title; color: Style.text; font-size: 26px; font-weight: 600; wrap: word-wrap; }
+            Text { text: Media.player.artist + (Media.player.album != "" ? " — " + Media.player.album : ""); color: Style.muted; wrap: word-wrap; }
+            if Media.player.length > 0: VerticalLayout {
+                spacing: 4px;
+                Bar { ratio: Media.player.position / Media.player.length; }
+                HorizontalLayout {
+                    Text { text: Math.floor(Media.player.position / 60) + ":" + (Math.mod(Math.floor(Media.player.position), 60) < 10 ? "0" : "") + Math.mod(Math.floor(Media.player.position), 60); color: Style.muted; font-size: Style.font-small; }
+                    Rectangle { horizontal-stretch: 1; }
+                    Text { text: Math.floor(Media.player.length / 60) + ":" + (Math.mod(Math.floor(Media.player.length), 60) < 10 ? "0" : "") + Math.mod(Math.floor(Media.player.length), 60); color: Style.muted; font-size: Style.font-small; }
+                }
+            }
             HorizontalLayout {
-                Text { text: Math.floor(Media.player.position / 60) + ":" + (Math.mod(Math.floor(Media.player.position), 60) < 10 ? "0" : "") + Math.mod(Math.floor(Media.player.position), 60); color: Style.muted; font-size: Style.font-small; }
-                Rectangle { horizontal-stretch: 1; }
-                Text { text: Math.floor(Media.player.length / 60) + ":" + (Math.mod(Math.floor(Media.player.length), 60) < 10 ? "0" : "") + Math.mod(Math.floor(Media.player.length), 60); color: Style.muted; font-size: Style.font-small; }
+                spacing: Style.spacing-md;
+                alignment: start;
+                IconButton { icon: "previous"; size: 44px; icon-size: 20px; clicked => { Media.previous(); } }
+                IconButton { icon: Media.player.playing ? "pause" : "play"; size: 52px; icon-size: 22px; active: true; clicked => { Media.play-pause(); } }
+                IconButton { icon: "next"; size: 44px; icon-size: 20px; clicked => { Media.next(); } }
+            }
+            if Media.players.length > 1: VerticalLayout {
+                spacing: 4px;
+                SectionTitle { text: @tr("PLAYERS"); }
+                for player in Media.players: Text {
+                    text: (player.playing ? "▶ " : "") + player.identity + (player.title != "" ? " — " + player.title : "");
+                    color: player.bus-name == Media.player.bus-name ? Style.text : Style.muted;
+                    overflow: elide;
+                }
             }
         }
-        HorizontalLayout {
-            spacing: Style.spacing-md;
-            alignment: start;
-            IconButton { icon: "previous"; size: 44px; icon-size: 20px; clicked => { Media.previous(); } }
-            IconButton { icon: Media.player.playing ? "pause" : "play"; size: 52px; icon-size: 22px; active: true; clicked => { Media.play-pause(); } }
-            IconButton { icon: "next"; size: 44px; icon-size: 20px; clicked => { Media.next(); } }
-        }
-        if Media.players.length > 1: VerticalLayout {
-            spacing: 4px;
-            SectionTitle { text: @tr("PLAYERS"); }
-            for player in Media.players: Text {
-                text: (player.playing ? "▶ " : "") + player.identity + (player.title != "" ? " — " + player.title : "");
-                color: player.bus-name == Media.player.bus-name ? Style.text : Style.muted;
-                overflow: elide;
-            }
-        }
+    }
+    Visualizer {
+        height: 150px;
+        border-radius: Style.radius-medium;
+        owner: "dashboard@" + Shell.screen.name;
+        active: root.shown && Media.player.playing;
     }
 }
 
@@ -884,7 +898,7 @@ export component Dashboard inherits Overlay {
         if UI.dashboard-tab != 0: HorizontalLayout {
             vertical-stretch: 1;
             spacing: Style.spacing-lg;
-            if UI.dashboard-tab == 1: Reveal { horizontal-stretch: 3; MediaTab { } }
+            if UI.dashboard-tab == 1: Reveal { horizontal-stretch: 3; MediaTab { shown: UI.overlay == "dashboard" && UI.on-active-screen; } }
             if UI.dashboard-tab == 2: Reveal { horizontal-stretch: 3; PerformanceTab { order <=> root.process-order; } }
             if UI.dashboard-tab == 3: Reveal { horizontal-stretch: 3; NotificationsTab { } }
             ControlsColumn { width: 300px; }

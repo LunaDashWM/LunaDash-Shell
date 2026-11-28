@@ -6,195 +6,195 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: dashboard/dashboard.slint:118 widgets/widgets.slint:146
+#: dashboard/dashboard.slint:119 widgets/widgets.slint:147
 msgid "Good night"
 msgstr ""
 
-#: dashboard/dashboard.slint:118 widgets/widgets.slint:146
+#: dashboard/dashboard.slint:119 widgets/widgets.slint:147
 msgid "Good morning"
 msgstr ""
 
-#: dashboard/dashboard.slint:119 widgets/widgets.slint:147
+#: dashboard/dashboard.slint:120 widgets/widgets.slint:148
 msgid "Good afternoon"
 msgstr ""
 
-#: dashboard/dashboard.slint:119 widgets/widgets.slint:147
+#: dashboard/dashboard.slint:120 widgets/widgets.slint:148
 msgid "Good evening"
 msgstr ""
 
-#: dashboard/dashboard.slint:150 settings/settings.slint:1662
+#: dashboard/dashboard.slint:151 settings/settings.slint:1662
 #, c-format
 msgid "Up {}"
 msgstr ""
 
-#: dashboard/dashboard.slint:208 panel/calendar-popup.slint:32 widgets/widgets.slint:84
+#: dashboard/dashboard.slint:209 panel/calendar-popup.slint:32 widgets/widgets.slint:85
 msgid "%B %Y"
 msgstr ""
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Mon"
 msgstr ""
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Tue"
 msgstr ""
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Wed"
 msgstr ""
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Thu"
 msgstr ""
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Fri"
 msgstr ""
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Sat"
 msgstr ""
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Sun"
 msgstr ""
 
-#: dashboard/dashboard.slint:340 settings/settings.slint:497 settings/settings.slint:1839
+#: dashboard/dashboard.slint:341 settings/settings.slint:497 settings/settings.slint:1839
 msgid "Style profiles"
 msgstr ""
 
-#: dashboard/dashboard.slint:342
+#: dashboard/dashboard.slint:343
 #, c-format
 msgid "{} saved"
 msgstr ""
 
-#: dashboard/dashboard.slint:354 settings/settings.slint:527
+#: dashboard/dashboard.slint:355 settings/settings.slint:527
 msgid "No profiles yet"
 msgstr ""
 
-#: dashboard/dashboard.slint:356
+#: dashboard/dashboard.slint:357
 msgid "Save the look of your desktop in Settings → Style profiles to switch here."
 msgstr ""
 
-#: dashboard/dashboard.slint:381 panel/network-popup.slint:55
+#: dashboard/dashboard.slint:382 panel/network-popup.slint:55
 msgid "Wi-Fi"
 msgstr ""
 
-#: dashboard/dashboard.slint:382 dashboard/dashboard.slint:384 panel/network-popup.slint:56
+#: dashboard/dashboard.slint:383 dashboard/dashboard.slint:385 panel/network-popup.slint:56
 msgid "On"
 msgstr ""
 
-#: dashboard/dashboard.slint:382 dashboard/dashboard.slint:384 panel/network-popup.slint:56
+#: dashboard/dashboard.slint:383 dashboard/dashboard.slint:385 panel/network-popup.slint:56
 msgid "Off"
 msgstr ""
 
-#: dashboard/dashboard.slint:384 panel/network-popup.slint:130
+#: dashboard/dashboard.slint:385 panel/network-popup.slint:130
 msgid "Bluetooth"
 msgstr ""
 
-#: dashboard/dashboard.slint:386 dashboard/dashboard.slint:800 settings/settings.slint:1488
+#: dashboard/dashboard.slint:387 dashboard/dashboard.slint:814 settings/settings.slint:1488
 msgid "Do not disturb"
 msgstr ""
 
-#: dashboard/dashboard.slint:388
+#: dashboard/dashboard.slint:389
 msgid "Keep awake"
 msgstr ""
 
-#: dashboard/dashboard.slint:389 settings/settings.slint:204
+#: dashboard/dashboard.slint:390 settings/settings.slint:204
 msgid "Dark"
 msgstr ""
 
-#: dashboard/dashboard.slint:389 settings/settings.slint:204
+#: dashboard/dashboard.slint:390 settings/settings.slint:204
 msgid "Light"
 msgstr ""
 
-#: dashboard/dashboard.slint:389 settings/settings.slint:195 settings/settings.slint:1838
+#: dashboard/dashboard.slint:390 settings/settings.slint:195 settings/settings.slint:1838
 msgid "Appearance"
 msgstr ""
 
-#: dashboard/dashboard.slint:391 settings/settings.slint:328 settings/settings.slint:1840
+#: dashboard/dashboard.slint:392 settings/settings.slint:328 settings/settings.slint:1840
 msgid "Wallpaper"
 msgstr ""
 
-#: dashboard/dashboard.slint:477
+#: dashboard/dashboard.slint:484
 msgid "Nothing is playing"
 msgstr ""
 
-#: dashboard/dashboard.slint:513
+#: dashboard/dashboard.slint:520
 msgid "PLAYERS"
 msgstr ""
 
-#: dashboard/dashboard.slint:692
+#: dashboard/dashboard.slint:706
 msgid "Tasks"
 msgstr ""
 
-#: dashboard/dashboard.slint:693
+#: dashboard/dashboard.slint:707
 #, c-format
 msgid "{} · {} thr · {} running"
 msgstr ""
 
-#: dashboard/dashboard.slint:696 widgets/widgets.slint:309
+#: dashboard/dashboard.slint:710 widgets/widgets.slint:310
 msgid "Load"
 msgstr ""
 
-#: dashboard/dashboard.slint:700
+#: dashboard/dashboard.slint:714
 msgid "Uptime"
 msgstr ""
 
-#: dashboard/dashboard.slint:702
+#: dashboard/dashboard.slint:716
 msgid "Heat"
 msgstr ""
 
-#: dashboard/dashboard.slint:710
+#: dashboard/dashboard.slint:724
 msgid "Network"
 msgstr ""
 
-#: dashboard/dashboard.slint:711 widgets/widgets.slint:206
+#: dashboard/dashboard.slint:725 widgets/widgets.slint:207
 msgid "Disk"
 msgstr ""
 
-#: dashboard/dashboard.slint:729
+#: dashboard/dashboard.slint:743
 msgid "USER"
 msgstr ""
 
-#: dashboard/dashboard.slint:746 settings/settings.slint:840 settings/settings.slint:986
+#: dashboard/dashboard.slint:760 settings/settings.slint:840 settings/settings.slint:986
 msgid "Command"
 msgstr ""
 
-#: dashboard/dashboard.slint:796
+#: dashboard/dashboard.slint:810
 #, c-format
 msgid "{} notifications"
 msgstr ""
 
-#: dashboard/dashboard.slint:800
+#: dashboard/dashboard.slint:814
 msgid "Do not disturb is on"
 msgstr ""
 
-#: dashboard/dashboard.slint:803
+#: dashboard/dashboard.slint:817
 msgid "Clear all"
 msgstr ""
 
-#: dashboard/dashboard.slint:805
+#: dashboard/dashboard.slint:819
 msgid "Another notification daemon is running; LunaDash shows no history."
 msgstr ""
 
-#: dashboard/dashboard.slint:811
+#: dashboard/dashboard.slint:825
 msgid "You're all caught up"
 msgstr ""
 
-#: dashboard/dashboard.slint:869 state/desktop-menu.slint:53 welcome/welcome.slint:180
+#: dashboard/dashboard.slint:883 state/desktop-menu.slint:53 welcome/welcome.slint:180
 msgid "Dashboard"
 msgstr ""
 
-#: dashboard/dashboard.slint:870 state/panel-layout.slint:88
+#: dashboard/dashboard.slint:884 state/panel-layout.slint:88
 msgid "Media"
 msgstr ""
 
-#: dashboard/dashboard.slint:871
+#: dashboard/dashboard.slint:885
 msgid "Performance"
 msgstr ""
 
-#: dashboard/dashboard.slint:872 settings/settings.slint:1479 settings/settings.slint:1849
+#: dashboard/dashboard.slint:886 settings/settings.slint:1479 settings/settings.slint:1849
 msgid "Notifications"
 msgstr ""
 
@@ -508,7 +508,7 @@ msgstr ""
 msgid "Change picture"
 msgstr ""
 
-#: settings/settings.slint:179 widgets/editor.slint:371
+#: settings/settings.slint:179 widgets/editor.slint:372
 msgid "Choose a picture"
 msgstr ""
 
@@ -787,7 +787,7 @@ msgstr ""
 msgid "Move them, change their size and shape, add and remove them; nothing changes until you save."
 msgstr ""
 
-#: settings/settings.slint:475 widgets/editor.slint:299
+#: settings/settings.slint:475 widgets/editor.slint:300
 msgid "Arrange widgets"
 msgstr ""
 
@@ -1515,7 +1515,7 @@ msgstr ""
 msgid "HARDWARE"
 msgstr ""
 
-#: settings/settings.slint:1690 widgets/widgets.slint:204
+#: settings/settings.slint:1690 widgets/widgets.slint:205
 msgid "Processor"
 msgstr ""
 
@@ -1529,7 +1529,7 @@ msgstr ""
 msgid "Video memory {}"
 msgstr ""
 
-#: settings/settings.slint:1724 widgets/widgets.slint:205
+#: settings/settings.slint:1724 widgets/widgets.slint:206
 msgid "Memory"
 msgstr ""
 
@@ -1750,7 +1750,7 @@ msgstr ""
 msgid "Download and upload speed over the last minute."
 msgstr ""
 
-#: state/widgets.slint:29 widgets/widgets.slint:296
+#: state/widgets.slint:29 widgets/widgets.slint:297
 msgid "Graphics card"
 msgstr ""
 
@@ -1767,18 +1767,26 @@ msgid "Cover, title and playback buttons."
 msgstr ""
 
 #: state/widgets.slint:31
-msgid "Picture frame"
+msgid "Audio wave"
 msgstr ""
 
 #: state/widgets.slint:31
+msgid "What is playing, as a wave of its frequencies."
+msgstr ""
+
+#: state/widgets.slint:32
+msgid "Picture frame"
+msgstr ""
+
+#: state/widgets.slint:32
 msgid "A picture of your choice in any shape."
 msgstr ""
 
-#: state/widgets.slint:32
+#: state/widgets.slint:33
 msgid "Note"
 msgstr ""
 
-#: state/widgets.slint:32
+#: state/widgets.slint:33
 msgid "A few words of your own."
 msgstr ""
 
@@ -1928,74 +1936,78 @@ msgstr ""
 msgid "Get started"
 msgstr ""
 
-#: widgets/editor.slint:302
+#: widgets/editor.slint:303
 msgid "Add widget"
 msgstr ""
 
-#: widgets/editor.slint:314
+#: widgets/editor.slint:315
 msgid "Drag a widget to move it, its corner to resize it · Delete removes it · Esc cancels"
 msgstr ""
 
-#: widgets/editor.slint:324
+#: widgets/editor.slint:325
 msgid "Add a widget"
 msgstr ""
 
-#: widgets/editor.slint:415
+#: widgets/editor.slint:416
 msgid "No pictures in this folder"
 msgstr ""
 
-#: widgets/editor.slint:426
+#: widgets/editor.slint:427
 msgid "Write a note"
 msgstr ""
 
-#: widgets/widgets.slint:139
+#: widgets/widgets.slint:140
 #, c-format
 msgid "Hi, {}!"
 msgstr ""
 
-#: widgets/widgets.slint:152
+#: widgets/widgets.slint:153
 #, c-format
 msgid "Today · {}"
 msgstr ""
 
-#: widgets/widgets.slint:207
+#: widgets/widgets.slint:208
 msgid "Battery"
 msgstr ""
 
-#: widgets/widgets.slint:208
+#: widgets/widgets.slint:209
 msgid "Temperature"
 msgstr ""
 
-#: widgets/widgets.slint:266
+#: widgets/widgets.slint:267
 #, c-format
 msgid "Peak {} in the last minute"
 msgstr ""
 
-#: widgets/widgets.slint:300
+#: widgets/widgets.slint:301
 msgid "This card does not report its load, or it is asleep."
 msgstr ""
 
-#: widgets/widgets.slint:315
+#: widgets/widgets.slint:316
 #, c-format
 msgid "Video memory · {}"
 msgstr ""
 
-#: widgets/widgets.slint:366
+#: widgets/widgets.slint:367
 msgid "Nothing playing"
 msgstr ""
 
-#: widgets/widgets.slint:373
+#: widgets/widgets.slint:374
 msgid "Music and videos show up here."
 msgstr ""
 
-#: widgets/widgets.slint:403
+#: widgets/widgets.slint:404
 msgid "Choose a picture while arranging widgets"
 msgstr ""
 
-#: widgets/widgets.slint:414
+#: widgets/widgets.slint:415
 msgid "Write something while arranging widgets"
 msgstr ""
 
-#: widgets/widgets.slint:470
+#: widgets/widgets.slint:440
+msgid "Play something to see its wave"
+msgstr ""
+
+#: widgets/widgets.slint:496
 msgid "This widget is no longer available"
 msgstr ""

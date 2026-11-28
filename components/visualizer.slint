@@ -1,0 +1,64 @@
+// A wave of what is playing, drawn from its frequencies (SlintLu's Audio.spectrum-wave: a
+// Fourier transform of the output, bass on the left), with its reflection beneath. It only
+// listens while `active`, renewing its watch every couple of seconds as SlintLu asks.
+
+import { Audio } from "@slintlu";
+import { Style } from "../style/style.slint";
+
+export component Visualizer inherits Rectangle {
+    // Tells the watchers apart: unique per visualiser on screen.
+    in property <string> owner;
+    in property <bool> active;
+    in property <color> tint: Style.accent;
+    // Share of the height the wave takes; its reflection takes the rest.
+    in property <float> wave-share: 0.72;
+    clip: true;
+
+    changed active => { Audio.watch-spectrum(root.owner, self.active); }
+    init => {
+        if root.active {
+            Audio.watch-spectrum(root.owner, true);
+        }
+    }
+    Timer {
+        interval: 2s;
+        running: root.active;
+        triggered => { Audio.watch-spectrum(root.owner, true); }
+    }
+
+    // Paths keep their viewbox's shape (10:1), so each is drawn at that shape and stretched
+    // from the baseline to its height.
+    property <length> base: root.height * root.wave-share;
+    property <length> natural: root.width / 10;
+    // The reflection, fainter, fading away from the wave.
+    Path {
+        y: root.base;
+        width: parent.width;
+        height: root.natural;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: Audio.spectrum-reflection;
+        transform-origin: { x: 0, y: 0 };
+        transform-scale-y: (root.height - root.base) / max(1px, root.natural);
+        fill: @linear-gradient(180deg, root.tint.with-alpha(0.38) 0%, root.tint.with-alpha(0) 100%);
+    }
+    // The wave.
+    Path {
+        y: root.base - root.natural;
+        width: parent.width;
+        height: root.natural;
+        viewbox-width: 1000;
+        viewbox-height: 100;
+        commands: Audio.spectrum-wave;
+        transform-origin: { x: 0, y: self.height };
+        transform-scale-y: root.base / max(1px, root.natural);
+        fill: @linear-gradient(180deg, root.tint.mix(#ffffff, 0.75) 0%, root.tint.with-alpha(0.85) 35%, root.tint.with-alpha(0.2) 100%);
+    }
+    // The baseline between them.
+    Rectangle {
+        y: root.base - 1px;
+        height: 2px;
+        border-radius: 1px;
+        background: root.tint.with-alpha(0.5);
+    }
+}

@@ -6,195 +6,195 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: dashboard/dashboard.slint:118 widgets/widgets.slint:146
+#: dashboard/dashboard.slint:119 widgets/widgets.slint:147
 msgid "Good night"
 msgstr "晚安"
 
-#: dashboard/dashboard.slint:118 widgets/widgets.slint:146
+#: dashboard/dashboard.slint:119 widgets/widgets.slint:147
 msgid "Good morning"
 msgstr "早安"
 
-#: dashboard/dashboard.slint:119 widgets/widgets.slint:147
+#: dashboard/dashboard.slint:120 widgets/widgets.slint:148
 msgid "Good afternoon"
 msgstr "午安"
 
-#: dashboard/dashboard.slint:119 widgets/widgets.slint:147
+#: dashboard/dashboard.slint:120 widgets/widgets.slint:148
 msgid "Good evening"
 msgstr "晚上好"
 
-#: dashboard/dashboard.slint:150 settings/settings.slint:1662
+#: dashboard/dashboard.slint:151 settings/settings.slint:1662
 #, c-format
 msgid "Up {}"
 msgstr "已運作 {}"
 
-#: dashboard/dashboard.slint:208 panel/calendar-popup.slint:32 widgets/widgets.slint:84
+#: dashboard/dashboard.slint:209 panel/calendar-popup.slint:32 widgets/widgets.slint:85
 msgid "%B %Y"
 msgstr "%Y年%-m月"
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Mon"
 msgstr "一"
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Tue"
 msgstr "二"
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Wed"
 msgstr "三"
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Thu"
 msgstr "四"
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Fri"
 msgstr "五"
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Sat"
 msgstr "六"
 
-#: dashboard/dashboard.slint:220 dashboard/dashboard.slint:221 panel/calendar-popup.slint:42
+#: dashboard/dashboard.slint:221 dashboard/dashboard.slint:222 panel/calendar-popup.slint:42
 msgid "Sun"
 msgstr "日"
 
-#: dashboard/dashboard.slint:340 settings/settings.slint:497 settings/settings.slint:1839
+#: dashboard/dashboard.slint:341 settings/settings.slint:497 settings/settings.slint:1839
 msgid "Style profiles"
 msgstr "風格設定檔"
 
-#: dashboard/dashboard.slint:342
+#: dashboard/dashboard.slint:343
 #, c-format
 msgid "{} saved"
 msgstr "已儲存 {} 個"
 
-#: dashboard/dashboard.slint:354 settings/settings.slint:527
+#: dashboard/dashboard.slint:355 settings/settings.slint:527
 msgid "No profiles yet"
 msgstr "還沒有設定檔"
 
-#: dashboard/dashboard.slint:356
+#: dashboard/dashboard.slint:357
 msgid "Save the look of your desktop in Settings → Style profiles to switch here."
 msgstr "在「設定 → 風格設定檔」儲存桌面樣貌後，就能在這裡切換。"
 
-#: dashboard/dashboard.slint:381 panel/network-popup.slint:55
+#: dashboard/dashboard.slint:382 panel/network-popup.slint:55
 msgid "Wi-Fi"
 msgstr "Wi-Fi"
 
-#: dashboard/dashboard.slint:382 dashboard/dashboard.slint:384 panel/network-popup.slint:56
+#: dashboard/dashboard.slint:383 dashboard/dashboard.slint:385 panel/network-popup.slint:56
 msgid "On"
 msgstr "開啟"
 
-#: dashboard/dashboard.slint:382 dashboard/dashboard.slint:384 panel/network-popup.slint:56
+#: dashboard/dashboard.slint:383 dashboard/dashboard.slint:385 panel/network-popup.slint:56
 msgid "Off"
 msgstr "關閉"
 
-#: dashboard/dashboard.slint:384 panel/network-popup.slint:130
+#: dashboard/dashboard.slint:385 panel/network-popup.slint:130
 msgid "Bluetooth"
 msgstr "藍牙"
 
-#: dashboard/dashboard.slint:386 dashboard/dashboard.slint:800 settings/settings.slint:1488
+#: dashboard/dashboard.slint:387 dashboard/dashboard.slint:814 settings/settings.slint:1488
 msgid "Do not disturb"
 msgstr "勿擾模式"
 
-#: dashboard/dashboard.slint:388
+#: dashboard/dashboard.slint:389
 msgid "Keep awake"
 msgstr "保持喚醒"
 
-#: dashboard/dashboard.slint:389 settings/settings.slint:204
+#: dashboard/dashboard.slint:390 settings/settings.slint:204
 msgid "Dark"
 msgstr "深色"
 
-#: dashboard/dashboard.slint:389 settings/settings.slint:204
+#: dashboard/dashboard.slint:390 settings/settings.slint:204
 msgid "Light"
 msgstr "淺色"
 
-#: dashboard/dashboard.slint:389 settings/settings.slint:195 settings/settings.slint:1838
+#: dashboard/dashboard.slint:390 settings/settings.slint:195 settings/settings.slint:1838
 msgid "Appearance"
 msgstr "外觀"
 
-#: dashboard/dashboard.slint:391 settings/settings.slint:328 settings/settings.slint:1840
+#: dashboard/dashboard.slint:392 settings/settings.slint:328 settings/settings.slint:1840
 msgid "Wallpaper"
 msgstr "桌布"
 
-#: dashboard/dashboard.slint:477
+#: dashboard/dashboard.slint:484
 msgid "Nothing is playing"
 msgstr "目前沒有播放"
 
-#: dashboard/dashboard.slint:513
+#: dashboard/dashboard.slint:520
 msgid "PLAYERS"
 msgstr "播放器"
 
-#: dashboard/dashboard.slint:692
+#: dashboard/dashboard.slint:706
 msgid "Tasks"
 msgstr "工作"
 
-#: dashboard/dashboard.slint:693
+#: dashboard/dashboard.slint:707
 #, c-format
 msgid "{} · {} thr · {} running"
 msgstr "{} · {} 執行緒 · {} 執行中"
 
-#: dashboard/dashboard.slint:696 widgets/widgets.slint:309
+#: dashboard/dashboard.slint:710 widgets/widgets.slint:310
 msgid "Load"
 msgstr "負載"
 
-#: dashboard/dashboard.slint:700
+#: dashboard/dashboard.slint:714
 msgid "Uptime"
 msgstr "運作時間"
 
-#: dashboard/dashboard.slint:702
+#: dashboard/dashboard.slint:716
 msgid "Heat"
 msgstr "溫度"
 
-#: dashboard/dashboard.slint:710
+#: dashboard/dashboard.slint:724
 msgid "Network"
 msgstr "網路"
 
-#: dashboard/dashboard.slint:711 widgets/widgets.slint:206
+#: dashboard/dashboard.slint:725 widgets/widgets.slint:207
 msgid "Disk"
 msgstr "磁碟"
 
-#: dashboard/dashboard.slint:729
+#: dashboard/dashboard.slint:743
 msgid "USER"
 msgstr "使用者"
 
-#: dashboard/dashboard.slint:746 settings/settings.slint:840 settings/settings.slint:986
+#: dashboard/dashboard.slint:760 settings/settings.slint:840 settings/settings.slint:986
 msgid "Command"
 msgstr "指令"
 
-#: dashboard/dashboard.slint:796
+#: dashboard/dashboard.slint:810
 #, c-format
 msgid "{} notifications"
 msgstr "{} 則通知"
 
-#: dashboard/dashboard.slint:800
+#: dashboard/dashboard.slint:814
 msgid "Do not disturb is on"
 msgstr "勿擾模式已開啟"
 
-#: dashboard/dashboard.slint:803
+#: dashboard/dashboard.slint:817
 msgid "Clear all"
 msgstr "全部清除"
 
-#: dashboard/dashboard.slint:805
+#: dashboard/dashboard.slint:819
 msgid "Another notification daemon is running; LunaDash shows no history."
 msgstr "另一個通知服務正在執行，LunaDash 無法顯示通知紀錄。"
 
-#: dashboard/dashboard.slint:811
+#: dashboard/dashboard.slint:825
 msgid "You're all caught up"
 msgstr "沒有新通知"
 
-#: dashboard/dashboard.slint:869 state/desktop-menu.slint:53 welcome/welcome.slint:180
+#: dashboard/dashboard.slint:883 state/desktop-menu.slint:53 welcome/welcome.slint:180
 msgid "Dashboard"
 msgstr "儀表板"
 
-#: dashboard/dashboard.slint:870 state/panel-layout.slint:88
+#: dashboard/dashboard.slint:884 state/panel-layout.slint:88
 msgid "Media"
 msgstr "媒體"
 
-#: dashboard/dashboard.slint:871
+#: dashboard/dashboard.slint:885
 msgid "Performance"
 msgstr "效能"
 
-#: dashboard/dashboard.slint:872 settings/settings.slint:1479 settings/settings.slint:1849
+#: dashboard/dashboard.slint:886 settings/settings.slint:1479 settings/settings.slint:1849
 msgid "Notifications"
 msgstr "通知"
 
@@ -508,7 +508,7 @@ msgstr "個人資料"
 msgid "Change picture"
 msgstr "更換頭像"
 
-#: settings/settings.slint:179 widgets/editor.slint:371
+#: settings/settings.slint:179 widgets/editor.slint:372
 msgid "Choose a picture"
 msgstr "選擇圖片"
 
@@ -787,7 +787,7 @@ msgstr "桌面上有 {} 個小工具"
 msgid "Move them, change their size and shape, add and remove them; nothing changes until you save."
 msgstr "移動、調整大小與形狀、新增或移除；儲存之前不會有任何改變。"
 
-#: settings/settings.slint:475 widgets/editor.slint:299
+#: settings/settings.slint:475 widgets/editor.slint:300
 msgid "Arrange widgets"
 msgstr "排列小工具"
 
@@ -1515,7 +1515,7 @@ msgstr "以 Slint 撰寫的桌面殼層，執行於 SlintLu {}"
 msgid "HARDWARE"
 msgstr "硬體"
 
-#: settings/settings.slint:1690 widgets/widgets.slint:204
+#: settings/settings.slint:1690 widgets/widgets.slint:205
 msgid "Processor"
 msgstr "處理器"
 
@@ -1529,7 +1529,7 @@ msgstr "{} 核心 · {} 執行緒"
 msgid "Video memory {}"
 msgstr "顯示記憶體 {}"
 
-#: settings/settings.slint:1724 widgets/widgets.slint:205
+#: settings/settings.slint:1724 widgets/widgets.slint:206
 msgid "Memory"
 msgstr "記憶體"
 
@@ -1750,7 +1750,7 @@ msgstr "網路流量"
 msgid "Download and upload speed over the last minute."
 msgstr "最近一分鐘的下載與上傳速度。"
 
-#: state/widgets.slint:29 widgets/widgets.slint:296
+#: state/widgets.slint:29 widgets/widgets.slint:297
 msgid "Graphics card"
 msgstr "顯示卡"
 
@@ -1767,18 +1767,26 @@ msgid "Cover, title and playback buttons."
 msgstr "封面、標題與播放按鈕。"
 
 #: state/widgets.slint:31
+msgid "Audio wave"
+msgstr "音訊波浪"
+
+#: state/widgets.slint:31
+msgid "What is playing, as a wave of its frequencies."
+msgstr "正在播放的聲音，化為頻率的波浪。"
+
+#: state/widgets.slint:32
 msgid "Picture frame"
 msgstr "相框"
 
-#: state/widgets.slint:31
+#: state/widgets.slint:32
 msgid "A picture of your choice in any shape."
 msgstr "以任意形狀展示你選的圖片。"
 
-#: state/widgets.slint:32
+#: state/widgets.slint:33
 msgid "Note"
 msgstr "便條"
 
-#: state/widgets.slint:32
+#: state/widgets.slint:33
 msgid "A few words of your own."
 msgstr "寫下自己的幾句話。"
 
@@ -1928,74 +1936,78 @@ msgstr "開啟設定"
 msgid "Get started"
 msgstr "開始使用"
 
-#: widgets/editor.slint:302
+#: widgets/editor.slint:303
 msgid "Add widget"
 msgstr "新增小工具"
 
-#: widgets/editor.slint:314
+#: widgets/editor.slint:315
 msgid "Drag a widget to move it, its corner to resize it · Delete removes it · Esc cancels"
 msgstr "拖曳小工具可移動，拖曳角落可調整大小 · Delete 移除 · Esc 取消"
 
-#: widgets/editor.slint:324
+#: widgets/editor.slint:325
 msgid "Add a widget"
 msgstr "新增小工具"
 
-#: widgets/editor.slint:415
+#: widgets/editor.slint:416
 msgid "No pictures in this folder"
 msgstr "這個資料夾裡沒有圖片"
 
-#: widgets/editor.slint:426
+#: widgets/editor.slint:427
 msgid "Write a note"
 msgstr "撰寫便條"
 
-#: widgets/widgets.slint:139
+#: widgets/widgets.slint:140
 #, c-format
 msgid "Hi, {}!"
 msgstr "嗨，{}！"
 
-#: widgets/widgets.slint:152
+#: widgets/widgets.slint:153
 #, c-format
 msgid "Today · {}"
 msgstr "今天 · {}"
 
-#: widgets/widgets.slint:207
+#: widgets/widgets.slint:208
 msgid "Battery"
 msgstr "電池"
 
-#: widgets/widgets.slint:208
+#: widgets/widgets.slint:209
 msgid "Temperature"
 msgstr "溫度"
 
-#: widgets/widgets.slint:266
+#: widgets/widgets.slint:267
 #, c-format
 msgid "Peak {} in the last minute"
 msgstr "最近一分鐘峰值 {}"
 
-#: widgets/widgets.slint:300
+#: widgets/widgets.slint:301
 msgid "This card does not report its load, or it is asleep."
 msgstr "這張顯示卡不回報負載，或正在休眠。"
 
-#: widgets/widgets.slint:315
+#: widgets/widgets.slint:316
 #, c-format
 msgid "Video memory · {}"
 msgstr "顯示記憶體 · {}"
 
-#: widgets/widgets.slint:366
+#: widgets/widgets.slint:367
 msgid "Nothing playing"
 msgstr "沒有正在播放的內容"
 
-#: widgets/widgets.slint:373
+#: widgets/widgets.slint:374
 msgid "Music and videos show up here."
 msgstr "音樂與影片會顯示在這裡。"
 
-#: widgets/widgets.slint:403
+#: widgets/widgets.slint:404
 msgid "Choose a picture while arranging widgets"
 msgstr "排列小工具時選擇圖片"
 
-#: widgets/widgets.slint:414
+#: widgets/widgets.slint:415
 msgid "Write something while arranging widgets"
 msgstr "排列小工具時寫點什麼"
 
-#: widgets/widgets.slint:470
+#: widgets/widgets.slint:440
+msgid "Play something to see its wave"
+msgstr "播放點什麼就能看見波浪"
+
+#: widgets/widgets.slint:496
 msgid "This widget is no longer available"
 msgstr "這個小工具已不再提供"

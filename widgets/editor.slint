@@ -46,6 +46,7 @@ component Arranged inherits Rectangle {
 
     face := DesktopWidget {
         kind: root.kind;
+        owner: "widget-editor-" + root.id;
         shape: Widgets.text(true, "widget-shape", root.id, Widgets.default-shape(root.kind));
         picture: Widgets.text(true, "widget-image", root.id, "");
         note: Widgets.text(true, "widget-text", root.id, "");

@@ -10,6 +10,7 @@ import { Widgets } from "../state/widgets.slint";
 import { Icon } from "../components/icon.slint";
 import { IconButton } from "../components/controls.slint";
 import { Picture } from "../components/picture.slint";
+import { Visualizer } from "../components/visualizer.slint";
 
 // The time, large and bold, and when there is room a bar and the month, day and weekday
 // stacked beside it.
@@ -422,8 +423,32 @@ component NoteFace inherits Rectangle {
 }
 
 // One widget: its shape's surface with the face of its kind.
+// What is playing as a wave of its frequencies, listening only while something plays.
+component WaveFace inherits Rectangle {
+    in property <color> ink;
+    in property <string> owner;
+    in property <bool> active;
+    Visualizer {
+        x: 14px;
+        y: 14px;
+        width: parent.width - 28px;
+        height: parent.height - 28px;
+        owner: root.owner;
+        active: root.active && Media.player.playing;
+    }
+    if !Media.player.playing: Text {
+        text: @tr("Play something to see its wave");
+        color: root.ink.with-alpha(0.6);
+        font-size: Style.font-small;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
 export component DesktopWidget inherits Rectangle {
     in property <string> kind;
+    // Unique per widget on screen (the audio wave's watch).
+    in property <string> owner;
     in property <string> shape: "rounded";
     // A picture frame's file and a note's text.
     in property <string> picture;
@@ -456,6 +481,7 @@ export component DesktopWidget inherits Rectangle {
     if root.kind == "network": NetworkFace { ink: root.ink; }
     if root.kind == "gpu": GpuFace { ink: root.ink; }
     if root.kind == "media": MediaFace { ink: root.ink; }
+    if root.kind == "wave": WaveFace { ink: root.ink; owner: root.owner; active: root.visible; }
     if root.kind == "picture": PictureFace {
         path: root.picture;
         ink: root.ink;
