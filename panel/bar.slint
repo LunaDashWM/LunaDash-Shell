@@ -181,7 +181,7 @@ component StatusIcon inherits Rectangle {
     in property <bool> highlighted;
     in property <bool> badge;
     in property <color> tint: Style.text;
-    out property <length> anchor: Style.bar-horizontal ? self.absolute-position.x + self.width / 2 : self.absolute-position.y + self.height / 2;
+    out property <length> anchor: Style.bar-horizontal ? Style.bar-offset + self.absolute-position.x + self.width / 2 : Style.bar-offset + self.absolute-position.y + self.height / 2;
     callback clicked();
     callback right-clicked();
     callback scrolled(delta: length);
@@ -299,7 +299,7 @@ component NotificationStatus inherits StatusIcon {
 // The system status icons side by side.
 component StatusPill inherits Rectangle {
     in property <bool> vertical;
-    out property <length> anchor: root.vertical ? self.absolute-position.y + self.height / 2 : self.absolute-position.x + self.width / 2;
+    out property <length> anchor: root.vertical ? Style.bar-offset + self.absolute-position.y + self.height / 2 : Style.bar-offset + self.absolute-position.x + self.width / 2;
     width: root.vertical ? 36px : row.preferred-width;
     height: root.vertical ? column.preferred-height : 36px;
     column := VerticalLayout {
@@ -554,7 +554,7 @@ component TrayIcon inherits Rectangle {
     height: 30px;
     border-radius: 15px;
     background: touch.has-hover ? Style.hover : transparent;
-    property <length> anchor: Style.bar-horizontal ? self.absolute-position.x + self.width / 2 : self.absolute-position.y + self.height / 2;
+    property <length> anchor: Style.bar-horizontal ? Style.bar-offset + self.absolute-position.x + self.width / 2 : Style.bar-offset + self.absolute-position.y + self.height / 2;
     Image { source: root.icon; width: 18px; height: 18px; image-fit: contain; }
     touch := TouchArea {
         clicked => {
@@ -583,7 +583,7 @@ component ClockItem inherits Rectangle {
     in property <bool> vertical;
     property <bool> open: UI.popup == "calendar";
     property <length> time-size: Style.font-size + 1px;
-    property <length> anchor: root.vertical ? self.absolute-position.y + self.height / 2 : self.absolute-position.x + self.width / 2;
+    property <length> anchor: root.vertical ? Style.bar-offset + self.absolute-position.y + self.height / 2 : Style.bar-offset + self.absolute-position.x + self.width / 2;
     width: root.vertical ? 36px : line.preferred-width;
     height: root.vertical ? stack.preferred-height + 12px : 36px;
     border-radius: 18px;
@@ -724,13 +724,34 @@ component CommandButton inherits Rectangle {
 // One item of the bar (see PanelLayout), centred across it, with half the bar's spacing on
 // either side. Items with nothing to show (no windows for the taskbar, no tray icons …) take no
 // room; the window title and spacers take the free space.
-component BarItem inherits Rectangle {
+export component BarItem inherits Rectangle {
     in property <string> id;
     // Its place in PanelLayout.entries.
     in property <int> index;
     in property <bool> vertical;
     // The status pill moved: where the clipboard popout lines up when a shortcut opens it.
     callback status-moved(anchor: length);
+    // Arranging (panel/editor.slint): the editor's copy of the bar shows every item, the empty
+    // ones and the spacers too, and lets them be dragged along it and taken out. `dragged` is
+    // the item in hand (-1: none) and `pointer` where it is along the bar; `target` is where it
+    // would land, which the editor works out from `counted`: each other item reports when the
+    // pointer passes its middle.
+    in property <bool> editing;
+    in property <int> dragged: -1;
+    in property <length> pointer;
+    in property <int> target;
+    callback grabbed(centre: length);
+    callback dragged-by(delta: length);
+    callback dropped();
+    callback counted(change: int);
+    property <length> centre: root.vertical ? self.y + self.height / 2 : self.x + self.width / 2;
+    property <bool> passed: root.editing && root.dragged >= 0 && root.dragged != root.index && root.centre < root.pointer;
+    changed passed => { root.counted(self.passed ? 1 : -1); }
+    // Its place among the items other than the one in hand.
+    property <int> rank: root.dragged >= 0 && root.index > root.dragged ? root.index - 1 : root.index;
+    property <bool> in-hand: root.editing && root.dragged == root.index;
+    property <length> placeholder: root.editing && root.extent == 0 ? 40px : 0px;
+    z: root.in-hand ? 1 : 0;
     property <bool> grows: PanelLayout.stretches(root.id);
     property <length> extent: root.vertical ? box.preferred-height : box.preferred-width;
     // Its piece of an island: joined to the neighbours that share it, rounded where the island
@@ -740,10 +761,12 @@ component BarItem inherits Rectangle {
     property <bool> joins-after: PanelLayout.joins(root.index, 1, root.vertical);
     property <length> start-room: root.island && !root.joins-before ? Style.island-end : 0px;
     property <length> end-room: root.island && !root.joins-after ? Style.island-end : 0px;
-    property <length> length: root.extent > 0 ? root.extent + PanelLayout.spacing + root.start-room + root.end-room : 0px;
-    min-width: root.vertical ? Style.bar-width : root.grows ? 0px : root.length;
+    property <length> length: root.extent > 0 ? root.extent + PanelLayout.spacing + root.start-room + root.end-room
+        : root.placeholder > 0 ? root.placeholder + PanelLayout.spacing : 0px;
+    property <length> least: root.grows ? root.placeholder + (root.placeholder > 0 ? PanelLayout.spacing : 0px) : root.length;
+    min-width: root.vertical ? Style.bar-width : root.least;
     max-width: root.vertical ? Style.bar-width : root.grows ? 100000px : root.length;
-    min-height: !root.vertical ? Style.bar-width : root.grows ? 0px : root.length;
+    min-height: !root.vertical ? Style.bar-width : root.least;
     max-height: !root.vertical ? Style.bar-width : root.grows ? 100000px : root.length;
     horizontal-stretch: !root.vertical && root.grows ? 1 : 0;
     vertical-stretch: root.vertical && root.grows ? 1 : 0;
@@ -751,60 +774,127 @@ component BarItem inherits Rectangle {
     // Half the spacing on an island's open ends is the gap to the next island.
     property <length> before: root.joins-before ? 0px : PanelLayout.spacing / 2;
     property <length> after: root.joins-after ? 0px : PanelLayout.spacing / 2;
-    if root.island: Rectangle {
-        x: root.vertical ? (parent.width - Style.island) / 2 : root.before;
-        y: root.vertical ? root.before : (parent.height - Style.island) / 2;
-        width: root.vertical ? Style.island : parent.width - root.before - root.after;
-        height: root.vertical ? parent.height - root.before - root.after : Style.island;
-        background: Style.panel;
-        border-top-left-radius: root.joins-before ? 0px : Style.island / 2;
-        border-top-right-radius: (root.vertical ? root.joins-before : root.joins-after) ? 0px : Style.island / 2;
-        border-bottom-left-radius: (root.vertical ? root.joins-after : root.joins-before) ? 0px : Style.island / 2;
-        border-bottom-right-radius: root.joins-after ? 0px : Style.island / 2;
-    }
-    if root.id == "title": WindowTitle {
-        x: root.vertical ? 0px : PanelLayout.spacing / 2;
-        y: root.vertical ? PanelLayout.spacing / 2 : 0px;
-        width: parent.width - (root.vertical ? 0px : PanelLayout.spacing);
-        height: parent.height - (root.vertical ? PanelLayout.spacing : 0px);
-        vertical: root.vertical;
-    }
-    box := HorizontalLayout {
-        x: (parent.width - self.width) / 2 + (root.vertical ? 0px : (root.start-room - root.end-room) / 2);
-        y: (parent.height - self.height) / 2 + (root.vertical ? (root.start-room - root.end-room) / 2 : 0px);
-        width: self.preferred-width;
-        height: self.preferred-height;
-        if root.id == "launcher": LunaButton { }
-        if root.id == "workspaces" && PanelLayout.shows(root.id, root.vertical): Workspaces-Strip { vertical: root.vertical; }
-        if root.id == "taskbar" && PanelLayout.shows(root.id, root.vertical): Taskbar { vertical: root.vertical; }
-        if root.id == "media" && PanelLayout.shows(root.id, root.vertical): MediaChip { }
-        if root.id == "usage" && PanelLayout.shows(root.id, root.vertical): UsageChip { }
-        if root.id == "tray" && !root.vertical: HorizontalLayout {
-            spacing: 2px;
-            for item in Tray.items: TrayIcon { visible: item.status != "passive"; id: item.id; icon: item.icon; is-menu: item.item-is-menu; }
+    face := Rectangle {
+        x: root.in-hand && !root.vertical ? root.pointer - root.centre : 0px;
+        y: root.in-hand && root.vertical ? root.pointer - root.centre : 0px;
+        width: parent.width;
+        height: parent.height;
+        if root.island: Rectangle {
+            x: root.vertical ? (parent.width - Style.island) / 2 : root.before;
+            y: root.vertical ? root.before : (parent.height - Style.island) / 2;
+            width: root.vertical ? Style.island : parent.width - root.before - root.after;
+            height: root.vertical ? parent.height - root.before - root.after : Style.island;
+            background: Style.panel;
+            border-top-left-radius: root.joins-before ? 0px : Style.island / 2;
+            border-top-right-radius: (root.vertical ? root.joins-before : root.joins-after) ? 0px : Style.island / 2;
+            border-bottom-left-radius: (root.vertical ? root.joins-after : root.joins-before) ? 0px : Style.island / 2;
+            border-bottom-right-radius: root.joins-after ? 0px : Style.island / 2;
         }
-        if root.id == "tray" && root.vertical: VerticalLayout {
-            spacing: 2px;
-            for item in Tray.items: TrayIcon { visible: item.status != "passive"; id: item.id; icon: item.icon; is-menu: item.item-is-menu; }
-        }
-        if root.id == "clock": ClockItem { vertical: root.vertical; }
-        if root.id == "status": StatusPill {
+        if root.id == "title": WindowTitle {
+            x: root.vertical ? 0px : PanelLayout.spacing / 2;
+            y: root.vertical ? PanelLayout.spacing / 2 : 0px;
+            width: parent.width - (root.vertical ? 0px : PanelLayout.spacing);
+            height: parent.height - (root.vertical ? PanelLayout.spacing : 0px);
             vertical: root.vertical;
-            changed anchor => { root.status-moved(self.anchor); }
         }
-        if root.id == "widgets": WidgetsButton { }
-        if root.id == "settings": SettingsButton { }
-        if root.id == "power": PowerButton { }
-        // A gap between islands.
-        if root.id == "separator": Rectangle {
-            width: 4px;
-            height: 4px;
+        box := HorizontalLayout {
+            x: (parent.width - self.width) / 2 + (root.vertical ? 0px : (root.start-room - root.end-room) / 2);
+            y: (parent.height - self.height) / 2 + (root.vertical ? (root.start-room - root.end-room) / 2 : 0px);
+            width: self.preferred-width;
+            height: self.preferred-height;
+            if root.id == "launcher": LunaButton { }
+            if root.id == "workspaces" && PanelLayout.shows(root.id, root.vertical): Workspaces-Strip { vertical: root.vertical; }
+            if root.id == "taskbar" && PanelLayout.shows(root.id, root.vertical): Taskbar { vertical: root.vertical; }
+            if root.id == "media" && PanelLayout.shows(root.id, root.vertical): MediaChip { }
+            if root.id == "usage" && PanelLayout.shows(root.id, root.vertical): UsageChip { }
+            if root.id == "tray" && !root.vertical: HorizontalLayout {
+                spacing: 2px;
+                for item in Tray.items: TrayIcon { visible: item.status != "passive"; id: item.id; icon: item.icon; is-menu: item.item-is-menu; }
+            }
+            if root.id == "tray" && root.vertical: VerticalLayout {
+                spacing: 2px;
+                for item in Tray.items: TrayIcon { visible: item.status != "passive"; id: item.id; icon: item.icon; is-menu: item.item-is-menu; }
+            }
+            if root.id == "clock": ClockItem { vertical: root.vertical; }
+            if root.id == "status": StatusPill {
+                vertical: root.vertical;
+                changed anchor => { root.status-moved(self.anchor); }
+            }
+            if root.id == "widgets": WidgetsButton { }
+            if root.id == "settings": SettingsButton { }
+            if root.id == "power": PowerButton { }
+            // A gap between islands.
+            if root.id == "separator": Rectangle {
+                width: 4px;
+                height: 4px;
+            }
+            if PanelLayout.is-app(root.id): AppButton { app: PanelLayout.app-id(root.id); }
+            if PanelLayout.is-command(root.id): CommandButton { item: root.id; vertical: root.vertical; }
         }
-        if PanelLayout.is-app(root.id): AppButton { app: PanelLayout.app-id(root.id); }
-        if PanelLayout.is-command(root.id): CommandButton { item: root.id; vertical: root.vertical; }
+        // An empty item or a spacer while arranging.
+        if root.placeholder > 0 || (root.editing && root.grows && root.extent == 0): Rectangle {
+            x: root.vertical ? (parent.width - self.width) / 2 : PanelLayout.spacing / 2;
+            y: root.vertical ? PanelLayout.spacing / 2 : (parent.height - self.height) / 2;
+            width: root.vertical ? Style.island : parent.width - PanelLayout.spacing;
+            height: root.vertical ? parent.height - PanelLayout.spacing : Style.island;
+            border-radius: Style.island / 2;
+            border-width: 1px;
+            border-color: Style.text.with-alpha(0.35);
+            background: Style.panel.with-alpha(0.5);
+            Icon { name: PanelLayout.icon(root.id); width: 16px; height: 16px; color: Style.muted; }
+        }
+    }
+    // Where the item in hand would land: a bar before this one (after the last).
+    property <bool> lands-before: root.dragged >= 0 && !root.in-hand && root.rank == root.target;
+    property <bool> lands-after: root.dragged >= 0 && !root.in-hand && root.target == PanelLayout.entries.length - 1
+        && root.rank == PanelLayout.entries.length - 2;
+    if root.editing: Rectangle {
+        x: face.x;
+        y: face.y;
+        if root.lands-before || root.lands-after: Rectangle {
+            x: root.vertical ? (parent.width - self.width) / 2 : root.lands-before ? -2px : parent.width - 2px;
+            y: !root.vertical ? (parent.height - self.height) / 2 : root.lands-before ? -2px : parent.height - 2px;
+            width: root.vertical ? Style.island : 4px;
+            height: root.vertical ? 4px : Style.island;
+            border-radius: 2px;
+            background: Style.accent;
+        }
+        if root.in-hand || hold.has-hover: Rectangle {
+            x: root.vertical ? (parent.width - self.width) / 2 : PanelLayout.spacing / 2 - 2px;
+            y: root.vertical ? PanelLayout.spacing / 2 - 2px : (parent.height - self.height) / 2;
+            width: root.vertical ? Style.island + 4px : parent.width - PanelLayout.spacing + 4px;
+            height: root.vertical ? parent.height - PanelLayout.spacing + 4px : Style.island + 4px;
+            border-radius: self.height / 2;
+            border-width: 2px;
+            border-color: Style.accent;
+        }
+        hold := TouchArea {
+            mouse-cursor: root.in-hand ? MouseCursor.grabbing : MouseCursor.grab;
+            pointer-event(event) => {
+                if event.button != PointerEventButton.left {
+                    return;
+                }
+                if event.kind == PointerEventKind.down {
+                    root.grabbed(root.centre);
+                } else if event.kind == PointerEventKind.up {
+                    root.dropped();
+                }
+            }
+            moved => { root.dragged-by(root.vertical ? self.mouse-y - self.pressed-y : self.mouse-x - self.pressed-x); }
+        }
+        Rectangle {
+            visible: !root.in-hand && (hold.has-hover || remove.has-hover);
+            x: parent.width - self.width - PanelLayout.spacing / 2;
+            y: root.vertical ? PanelLayout.spacing / 2 : (parent.height - Style.island) / 2 - 6px;
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            background: Style.danger;
+            Icon { name: "close"; width: 12px; height: 12px; color: Style.base; }
+            remove := TouchArea { clicked => { PanelLayout.remove(root.index); } }
+        }
     }
 }
-
 // What both bars share: a transparent strip along the edge carrying the islands, the shell-wide
 // startup work and the compositor's keyboard shortcuts. Only the bar in use (`active`) acts on
 // them.
@@ -817,7 +907,8 @@ component BarWindow inherits PanelWindow {
     out property <length> end-padding: max(0px, (Style.bar-width - Style.island) / 2 - PanelLayout.spacing / 2);
     namespace: "lunadash-bar";
     exclusive-mode: ExclusiveMode.ignore;
-    shown: root.active;
+    // The bar editor shows a copy of it to arrange.
+    shown: root.active && UI.overlay != "bar-editor";
     default-font-family: Style.font;
 
     property <int> request-serial: Compositor.request-serial;
@@ -864,6 +955,14 @@ component BarWindow inherits PanelWindow {
         }
     }
 
+    // Right-clicking the bar between its islands arranges it.
+    TouchArea {
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+                PanelLayout.arrange();
+            }
+        }
+    }
     @children
 }
 
@@ -874,6 +973,8 @@ export component Bar inherits BarWindow {
     anchor-bottom: Style.bar-edge == "bottom";
     anchor-left: true;
     anchor-right: true;
+    margin-left: Style.bar-offset;
+    margin-right: Style.bar-offset;
     preferred-height: Style.bar-width;
 
     HorizontalLayout {
@@ -897,6 +998,8 @@ export component SideBar inherits BarWindow {
     anchor-bottom: true;
     anchor-left: Style.bar-edge == "left";
     anchor-right: Style.bar-edge == "right";
+    margin-top: Style.bar-offset;
+    margin-bottom: Style.bar-offset;
     preferred-width: Style.bar-width;
 
     VerticalLayout {

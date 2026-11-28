@@ -646,18 +646,30 @@ component EntryRow inherits Rectangle {
 component PanelPage inherits Page {
     title: @tr("Panel");
     subtitle: @tr("The bar with your workspaces, clock and status.");
-    Group {
-        title: @tr("LAYOUT");
-        Setting {
-            title: @tr("Position");
-            Segmented {
-                property <[string]> values: ["top", "bottom", "left", "right"];
-                labels: [@tr("Top"), @tr("Bottom"), @tr("Left"), @tr("Right")];
-                selected: Style.bar-edge == "bottom" ? 1 : Style.bar-edge == "left" ? 2 : Style.bar-edge == "right" ? 3 : 0;
-                chosen(i) => { Store.set-string("bar-position", self.values[i]); }
+    Card {
+        clip: true;
+        Rectangle { background: @linear-gradient(120deg, Style.accent.with-alpha(0.18) 0%, transparent 70%); }
+        HorizontalLayout {
+            padding: Style.spacing-xl;
+            spacing: Style.spacing-lg;
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
+                spacing: 4px;
+                Text { text: @tr("Arrange the bar"); color: Style.text; font-size: Style.font-title; font-weight: 600; }
+                Text {
+                    text: @tr("Drag its items into place, drag its edges to change its thickness and length, or move it to another edge, on the bar itself. Right-click the bar to start too.");
+                    color: Style.muted;
+                    font-size: Style.font-small;
+                    wrap: word-wrap;
+                }
             }
+            TextButton { horizontal-stretch: 0; y: (parent.height - self.height) / 2; icon: "panel"; text: @tr("Arrange"); primary: true; clicked => { PanelLayout.arrange(); } }
         }
-        Divider { }
+    }
+    Rectangle { height: Style.spacing-lg; }
+    Group {
+        title: @tr("LOOK");
         Setting {
             title: @tr("Bar opacity");
             description: @tr("Also the panels and popouts that open from it.");
@@ -674,21 +686,9 @@ component PanelPage inherits Page {
         }
         Divider { }
         Setting {
-            title: @tr("Items");
-            description: @tr("What the bar shows, in which order, and buttons of your own.");
+            title: @tr("Applications and commands");
+            description: @tr("Buttons of your own on the bar.");
             TextButton { icon: "chevron-right"; text: @tr("Customize"); clicked => { UI.open-settings("panel-items"); } }
-        }
-    }
-    Group {
-        title: @tr("SIZE");
-        Setting {
-            title: @tr("Bar size");
-            RangeSlider { minimum: 40; maximum: 64; step: 2; unit: "px"; value: PanelLayout.thickness / 1px; committed(v) => { Store.set-number("bar-size", v); } }
-        }
-        Divider { }
-        Setting {
-            title: @tr("Spacing between items");
-            RangeSlider { minimum: 0; maximum: 24; step: 2; unit: "px"; value: PanelLayout.spacing / 1px; committed(v) => { Store.set-number("bar-spacing", v); } }
         }
     }
     Group {
@@ -729,6 +729,11 @@ component PanelItemsPage inherits Page {
         root.clear-form();
     }
 
+    HorizontalLayout {
+        padding-bottom: Style.spacing-lg;
+        alignment: start;
+        TextButton { icon: "panel"; text: @tr("Arrange the bar by dragging"); primary: true; clicked => { PanelLayout.arrange(); } }
+    }
     Group {
         title: @tr("ITEMS");
         if PanelLayout.entries.length == 0: Text {

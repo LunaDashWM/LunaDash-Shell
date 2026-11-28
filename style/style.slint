@@ -7,7 +7,7 @@
 // roles: background → surface, surface → surface-container, surface-alt →
 // surface-container-high, border → outline-variant, accent → primary.
 
-import { Theme, Compositor, Files } from "@slintlu";
+import { Theme, Compositor, Files, Shell } from "@slintlu";
 import { Prefs } from "../state/prefs.slint";
 import { PanelLayout } from "../state/panel-layout.slint";
 
@@ -98,6 +98,8 @@ export global Style {
     out property <string> bar-edge: Prefs.bar-position == "bottom" || Prefs.bar-position == "left" || Prefs.bar-position == "right" ? Prefs.bar-position : "top";
     out property <bool> bar-horizontal: root.bar-edge == "top" || root.bar-edge == "bottom";
     out property <length> bar-width: PanelLayout.thickness;
+    // Where a bar shorter than its edge starts, from either end of the edge.
+    out property <length> bar-offset: (root.bar-horizontal ? Shell.screen.width : Shell.screen.height) * 1px * (1 - PanelLayout.length) / 2;
     // The bar's islands: as thick as the bar less a margin on either side, and the room their
     // rounded ends leave around the first and last item.
     out property <length> island: max(28px, root.bar-width - 12px);

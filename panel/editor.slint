@@ -1,0 +1,320 @@
+// Arranging the bar, like arranging the desktop widgets: the bar itself, in its place, with
+// its items to drag along it and take out, its inner edge to drag for the thickness, its ends
+// for the length, and the other edges to click to move it there. Every change shows at once;
+// Cancel puts the bar back as it was (PanelLayout.arrange keeps a copy), Done keeps it.
+
+import { PanelWindow, Layer, KeyboardMode, ExclusiveMode, Store } from "@slintlu";
+import { Style } from "../style/style.slint";
+import { UI } from "../state/ui.slint";
+import { PanelLayout } from "../state/panel-layout.slint";
+import { Icon } from "../components/icon.slint";
+import { IconButton, TextButton } from "../components/controls.slint";
+import { BarItem } from "bar.slint";
+
+// A handle to drag: a pill that lights up under the pointer.
+component Grip inherits Rectangle {
+    in property <bool> across;
+    callback moved(delta: length);
+    callback released();
+    width: root.across ? 10px : 56px;
+    height: root.across ? 56px : 10px;
+    border-radius: 5px;
+    background: touch.pressed || touch.has-hover ? Style.accent : Style.text.with-alpha(0.7);
+    drop-shadow-blur: 6px;
+    drop-shadow-color: Style.shadow;
+    animate background { duration: Style.motion-fast; }
+    touch := TouchArea {
+        // Grow the target beyond the thin pill.
+        x: -10px;
+        y: -10px;
+        width: parent.width + 20px;
+        height: parent.height + 20px;
+        mouse-cursor: root.across ? MouseCursor.ew-resize : MouseCursor.ns-resize;
+        moved => { root.moved(root.across ? self.mouse-x - self.pressed-x : self.mouse-y - self.pressed-y); }
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.up {
+                root.released();
+            }
+        }
+    }
+}
+
+// Another edge, to click to move the bar there.
+component EdgeSlot inherits Rectangle {
+    in property <string> edge;
+    in property <string> label;
+    border-radius: 14px;
+    background: Style.panel.with-alpha(touch.has-hover ? 0.9 : 0.55);
+    border-width: 2px;
+    border-color: touch.has-hover ? Style.accent : Style.text.with-alpha(0.25);
+    animate background, border-color { duration: Style.motion-fast; }
+    HorizontalLayout {
+        alignment: center;
+        spacing: 8px;
+        Icon {
+            y: (parent.height - self.height) / 2;
+            name: root.edge == "top" ? "arrow-up" : root.edge == "bottom" ? "arrow-down" : root.edge == "left" ? "arrow-left" : "arrow-right";
+            width: 16px;
+            height: 16px;
+            color: touch.has-hover ? Style.accent : Style.muted;
+        }
+        if root.edge == "top" || root.edge == "bottom": Text {
+            text: root.label;
+            color: touch.has-hover ? Style.text : Style.muted;
+            font-size: Style.font-small;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { Store.set-string("bar-position", root.edge); }
+    }
+}
+
+export component BarEditor inherits PanelWindow {
+    namespace: "lunadash-bar-editor";
+    layer: Layer.overlay;
+    keyboard-mode: KeyboardMode.exclusive;
+    exclusive-mode: ExclusiveMode.ignore;
+    anchor-top: true;
+    anchor-bottom: true;
+    anchor-left: true;
+    anchor-right: true;
+    shown: UI.overlay == "bar-editor" && UI.on-active-screen;
+    default-font-family: Style.font;
+
+    property <bool> horizontal: Style.bar-horizontal;
+    property <string> edge: Style.bar-edge;
+    // The item in hand, where it is along the bar, and how many others lie before it.
+    property <int> dragged: -1;
+    property <length> pointer;
+    property <int> before;
+    // Dragging the thickness and length grips.
+    property <length> thickness-drag;
+    property <length> length-drag;
+    property <bool> adding;
+    property <float> entrance: root.shown ? 1 : 0;
+    animate entrance { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
+    changed shown => {
+        if self.shown {
+            root.adding = false;
+            root.dragged = -1;
+            scope.focus();
+        }
+    }
+
+    // The bar's box on the screen, following the grips live.
+    property <length> along: root.horizontal ? root.width : root.height;
+    property <length> span: clamp(root.along * PanelLayout.length + 2 * root.length-drag, root.along * 0.4, root.along);
+    property <length> thick: clamp(Style.bar-width + root.thickness-drag, 40px, 64px);
+    property <length> bar-x: root.edge == "right" ? root.width - root.thick : root.horizontal ? (root.width - root.span) / 2 : 0px;
+    property <length> bar-y: root.edge == "bottom" ? root.height - root.thick : root.horizontal ? 0px : (root.height - root.span) / 2;
+    property <length> bar-w: root.horizontal ? root.span : root.thick;
+    property <length> bar-h: root.horizontal ? root.thick : root.span;
+
+    function drop() {
+        if root.dragged >= 0 && root.before != root.dragged {
+            PanelLayout.move(root.dragged, root.before - root.dragged);
+        }
+        root.dragged = -1;
+    }
+    function commit-size() {
+        Store.set-number("bar-size", Math.round(root.thick / 2px) * 2);
+        Store.set-number("bar-length", Math.round(root.span / root.along * 20) * 5);
+        root.thickness-drag = 0;
+        root.length-drag = 0;
+    }
+
+    Rectangle { background: Style.scrim.with-alpha(0.45 * root.entrance); }
+    TouchArea { }
+    scope := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape {
+                PanelLayout.cancel-arranging();
+                return accept;
+            }
+            reject
+        }
+
+        // The other edges.
+        for slot in [{ edge: "top", label: @tr("Move the bar here") }, { edge: "bottom", label: @tr("Move the bar here") },
+                { edge: "left", label: "" }, { edge: "right", label: "" }]: EdgeSlot {
+            visible: slot.edge != root.edge;
+            edge: slot.edge;
+            label: slot.label;
+            opacity: root.entrance;
+            x: slot.edge == "right" ? root.width - self.width - 8px : slot.edge == "left" ? 8px : (root.width - self.width) / 2;
+            y: slot.edge == "bottom" ? root.height - self.height - 8px : slot.edge == "top" ? 8px : (root.height - self.height) / 2;
+            width: slot.edge == "top" || slot.edge == "bottom" ? min(root.width * 0.5, 420px) : 44px;
+            height: slot.edge == "top" || slot.edge == "bottom" ? 44px : min(root.height * 0.5, 320px);
+        }
+
+        // The bar.
+        Rectangle {
+            x: root.bar-x;
+            y: root.bar-y;
+            width: root.bar-w;
+            height: root.bar-h;
+            border-radius: 14px;
+            border-width: 2px;
+            border-color: Style.accent.with-alpha(0.6);
+            background: Style.text.with-alpha(0.04);
+            if root.horizontal: HorizontalLayout {
+                padding-left: max(0px, (root.thick - Style.island) / 2 - PanelLayout.spacing / 2);
+                padding-right: self.padding-left;
+                for id[i] in PanelLayout.entries: BarItem {
+                    id: id;
+                    index: i;
+                    vertical: false;
+                    editing: true;
+                    dragged: root.dragged;
+                    pointer: root.pointer;
+                    target: root.before;
+                    grabbed(centre) => {
+                        root.before = 0;
+                        root.pointer = centre;
+                        root.dragged = i;
+                    }
+                    dragged-by(delta) => { root.pointer += delta; }
+                    counted(change) => { root.before += change; }
+                    dropped => { root.drop(); }
+                }
+            }
+            if !root.horizontal: VerticalLayout {
+                padding-top: max(0px, (root.thick - Style.island) / 2 - PanelLayout.spacing / 2);
+                padding-bottom: self.padding-top;
+                for id[i] in PanelLayout.entries: BarItem {
+                    id: id;
+                    index: i;
+                    vertical: true;
+                    editing: true;
+                    dragged: root.dragged;
+                    pointer: root.pointer;
+                    target: root.before;
+                    grabbed(centre) => {
+                        root.before = 0;
+                        root.pointer = centre;
+                        root.dragged = i;
+                    }
+                    dragged-by(delta) => { root.pointer += delta; }
+                    counted(change) => { root.before += change; }
+                    dropped => { root.drop(); }
+                }
+            }
+        }
+        // Thickness: the edge towards the desktop.
+        Grip {
+            across: !root.horizontal;
+            x: root.edge == "left" ? root.bar-x + root.bar-w + 6px : root.edge == "right" ? root.bar-x - self.width - 6px : root.bar-x + (root.bar-w - self.width) / 2;
+            y: root.edge == "top" ? root.bar-y + root.bar-h + 6px : root.edge == "bottom" ? root.bar-y - self.height - 6px : root.bar-y + (root.bar-h - self.height) / 2;
+            moved(delta) => { root.thickness-drag += root.edge == "bottom" || root.edge == "right" ? -delta : delta; }
+            released => { root.commit-size(); }
+        }
+        // Length: both ends, pulled apart or together.
+        for end in [-1, 1]: Grip {
+            across: root.horizontal;
+            x: !root.horizontal ? root.bar-x + (root.bar-w - self.width) / 2
+                : end < 0 ? root.bar-x - self.width - 6px : root.bar-x + root.bar-w + 6px;
+            y: root.horizontal ? root.bar-y + (root.bar-h - self.height) / 2
+                : end < 0 ? root.bar-y - self.height - 6px : root.bar-y + root.bar-h + 6px;
+            moved(delta) => { root.length-drag += delta * end; }
+            released => { root.commit-size(); }
+        }
+
+        // The toolbar, in the middle of the desktop.
+        toolbar := Rectangle {
+            width: min(root.width - 40px, row.preferred-width);
+            height: 56px;
+            x: (root.width - self.width) / 2;
+            y: (root.height - self.height) / 2 - 60px + (1 - root.entrance) * 24px;
+            opacity: root.entrance;
+            border-radius: self.height / 2;
+            background: Style.sheet;
+            drop-shadow-blur: 20px;
+            drop-shadow-color: Style.shadow;
+            drop-shadow-offset-y: 4px;
+            row := HorizontalLayout {
+                padding-left: 14px;
+                padding-right: 8px;
+                spacing: 6px;
+                Icon { y: (parent.height - self.height) / 2; name: "panel"; width: 20px; height: 20px; color: Style.accent; }
+                Text { text: @tr("Arrange the bar"); color: Style.text; font-weight: 700; vertical-alignment: center; }
+                Rectangle { width: 6px; }
+                TextButton { y: (parent.height - self.height) / 2; icon: root.adding ? "close" : "plus"; text: @tr("Add item"); clicked => { root.adding = !root.adding; } }
+                // The space between items.
+                Rectangle {
+                    y: (parent.height - self.height) / 2;
+                    height: 40px;
+                    width: gap-row.preferred-width;
+                    border-radius: 20px;
+                    background: Style.tonal;
+                    gap-row := HorizontalLayout {
+                        padding-left: 4px;
+                        padding-right: 4px;
+                        spacing: 4px;
+                        IconButton { y: (parent.height - self.height) / 2; icon: "minus"; size: 32px; tint: Style.on-tonal; clicked => { Store.set-number("bar-spacing", max(0, PanelLayout.spacing / 1px - 2)); } }
+                        Text { text: @tr("Gap {}", PanelLayout.spacing / 1px); color: Style.on-tonal; font-size: Style.font-small; font-weight: 600; vertical-alignment: center; }
+                        IconButton { y: (parent.height - self.height) / 2; icon: "plus"; size: 32px; tint: Style.on-tonal; clicked => { Store.set-number("bar-spacing", min(24, PanelLayout.spacing / 1px + 2)); } }
+                    }
+                }
+                IconButton { y: (parent.height - self.height) / 2; icon: "reboot"; size: 40px; clicked => { PanelLayout.reset(); } }
+                TextButton { y: (parent.height - self.height) / 2; text: @tr("Cancel"); outlined: true; clicked => { PanelLayout.cancel-arranging(); } }
+                TextButton { y: (parent.height - self.height) / 2; icon: "check"; text: @tr("Done"); primary: true; clicked => { UI.close-all(); } }
+            }
+        }
+        Rectangle {
+            x: (root.width - self.width) / 2;
+            y: toolbar.y + toolbar.height + 12px;
+            width: hint.preferred-width + 24px;
+            height: 28px;
+            border-radius: 14px;
+            background: #000000.with-alpha(0.45 * root.entrance);
+            hint := Text {
+                text: @tr("Drag items along the bar · drag its inner edge or its ends to resize · click another edge to move it");
+                color: #ffffff.with-alpha(0.9 * root.entrance);
+                font-size: Style.font-small;
+            }
+        }
+        // What can still go on the bar; a click puts it at the end.
+        if root.adding: Rectangle {
+            x: (root.width - self.width) / 2;
+            y: toolbar.y + toolbar.height + 52px;
+            width: min(root.width - 40px, 720px);
+            height: addable.preferred-height;
+            border-radius: Style.radius-medium + 8px;
+            background: Style.sheet;
+            drop-shadow-blur: 20px;
+            drop-shadow-color: Style.shadow;
+            TouchArea { }
+            addable := VerticalLayout {
+                padding: Style.spacing-md;
+                spacing: Style.spacing-sm;
+                Text { text: @tr("Click to add at the end, then drag it into place."); color: Style.muted; font-size: Style.font-small; }
+                HorizontalLayout {
+                    spacing: Style.spacing-xs;
+                    alignment: start;
+                    for id in ["spacer", "separator"]: TextButton { horizontal-stretch: 0; icon: PanelLayout.icon(id); text: PanelLayout.label(id); clicked => { PanelLayout.add(id); } }
+                    for id in PanelLayout.builtins: TextButton {
+                        visible: PanelLayout.hidden(id);
+                        width: self.visible ? self.preferred-width : 0px;
+                        horizontal-stretch: 0;
+                        icon: PanelLayout.icon(id);
+                        text: PanelLayout.label(id);
+                        clicked => { PanelLayout.add(id); }
+                    }
+                }
+                HorizontalLayout {
+                    alignment: start;
+                    TextButton {
+                        horizontal-stretch: 0;
+                        outlined: true;
+                        icon: "apps";
+                        text: @tr("Applications and commands…");
+                        clicked => { UI.open-settings("panel-items"); }
+                    }
+                }
+            }
+        }
+    }
+}

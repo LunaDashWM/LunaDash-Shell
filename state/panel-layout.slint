@@ -7,7 +7,8 @@
 // bar shows `builtins`. Commands run through Shell.run, which starts the program with its
 // arguments and never hands the line to a shell.
 
-import { Store, Shell, Apps, Workspaces, Media, Tray } from "@slintlu";
+import { Store, Shared, Shell, Apps, Workspaces, Media, Tray } from "@slintlu";
+import { UI } from "ui.slint";
 
 export global PanelLayout {
     // Every built-in item, in their default order: the bar until it is first edited.
@@ -19,6 +20,8 @@ export global PanelLayout {
     // The bar's thickness and the space between its items.
     out property <length> thickness: clamp(Store.get-number("bar-size", 48, Store.revision), 40, 64) * 1px;
     out property <length> spacing: clamp(Store.get-number("bar-spacing", 8, Store.revision), 0, 24) * 1px;
+    // How much of its screen edge the bar spans, centred: 40–100 %.
+    out property <float> length: clamp(Store.get-number("bar-length", 100, Store.revision), 40, 100) / 100;
 
     public pure function is-command(id: string) -> bool {
         id.starts-with("command-")
@@ -142,6 +145,18 @@ export global PanelLayout {
         }
     }
 
+    // The bar editor (panel/editor.slint) changes the bar live; Cancel puts back what it was,
+    // kept in Shared when the editor opened.
+    out property <[string]> prefixes: ["panel-", "bar-"];
+    public function arrange() {
+        Shared.copy-from-store(root.prefixes);
+        UI.open-overlay("bar-editor");
+    }
+    public function cancel-arranging() {
+        Shared.copy-to-store(root.prefixes);
+        UI.close-all();
+    }
+
     // Editing (Settings → Panel). The first change stores the default arrangement, so it
     // applies to what the bar showed.
     function begin-edit() {
@@ -197,6 +212,7 @@ export global PanelLayout {
     }
     // Back to the default items and sizes.
     public function reset() {
+        Store.remove("bar-length");
         Store.remove("panel-items");
         Store.remove("panel-items-edited");
         Store.remove("bar-size");
