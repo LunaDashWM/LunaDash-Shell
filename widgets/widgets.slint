@@ -6,6 +6,7 @@ import { Clock, System, Session, Media, Files, Battery, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { Time } from "../state/time.slint";
+import { Widgets } from "../state/widgets.slint";
 import { Icon } from "../components/icon.slint";
 import { IconButton } from "../components/controls.slint";
 
@@ -54,67 +55,6 @@ component ClockFace inherits Rectangle {
             }
             Text { text: Time.two(Clock.day); color: root.ink.with-alpha(0.85); font-size: 28px * root.s; font-weight: 500; }
             Text { text: Clock.format-date(Clock.year, Clock.month, Clock.day, "%A"); color: root.ink.with-alpha(0.85); font-size: 28px * root.s; }
-        }
-    }
-}
-
-// A hand from the centre of a 100 × 100 dial, `turn` of a full circle round from twelve.
-component Hand inherits Path {
-    in property <float> turn;
-    in property <float> reach;
-    viewbox-width: 100;
-    viewbox-height: 100;
-    stroke-line-cap: round;
-    commands: "M 50 50 L " + (50 + root.reach * sin(root.turn * 360deg)) + " " + (50 - root.reach * cos(root.turn * 360deg));
-}
-
-// Hands on a scalloped dial, the quarter hours as large faint numbers and the day in a badge.
-component AnalogFace inherits Rectangle {
-    in property <color> ink;
-    property <length> size: min(root.width, root.height);
-    Rectangle {
-        width: root.size;
-        height: root.size;
-        Path {
-            viewbox-width: 100;
-            viewbox-height: 100;
-            fill: Style.primary-container;
-            commands: "M 50.0 7.0 A 16.5 16.5 0 0 1 77.6 17.1 A 16.5 16.5 0 0 1 92.3 42.5 A 16.5 16.5 0 0 1 87.2 71.5 A 16.5 16.5 0 0 1 64.7 90.4 A 16.5 16.5 0 0 1 35.3 90.4 A 16.5 16.5 0 0 1 12.8 71.5 A 16.5 16.5 0 0 1 7.7 42.5 A 16.5 16.5 0 0 1 22.4 17.1 A 16.5 16.5 0 0 1 50.0 7.0 Z";
-        }
-        for mark in [{ t: "12", x: 0.5, y: 0.22 }, { t: "3", x: 0.78, y: 0.5 }, { t: "6", x: 0.5, y: 0.78 }, { t: "9", x: 0.22, y: 0.5 }]: Text {
-            x: parent.width * mark.x - self.width / 2;
-            y: parent.height * mark.y - self.height / 2;
-            text: mark.t;
-            color: Style.on-primary-container.with-alpha(0.32);
-            font-size: root.size * 0.17;
-            font-weight: 800;
-        }
-        Hand {
-            turn: (Math.mod(Clock.hour, 12) + Clock.minute / 60) / 12;
-            reach: 21;
-            stroke: Style.on-primary-container;
-            stroke-width: root.size * 0.055;
-        }
-        Hand {
-            turn: Clock.minute / 60;
-            reach: 31;
-            stroke: Style.accent;
-            stroke-width: root.size * 0.04;
-        }
-        Rectangle {
-            width: root.size * 0.07;
-            height: self.width;
-            border-radius: self.width / 2;
-            background: Style.on-primary-container;
-        }
-        Rectangle {
-            x: parent.width * 0.68;
-            y: parent.height * 0.74;
-            width: root.size * 0.22;
-            height: self.width;
-            border-radius: self.width / 2;
-            background: Style.accent;
-            Text { text: Time.two(Clock.day); color: Style.accent-ink; font-size: root.size * 0.09; font-weight: 700; }
         }
     }
 }
@@ -506,7 +446,6 @@ export component DesktopWidget inherits Rectangle {
         duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0);
     }
     if root.kind == "clock": ClockFace { ink: root.bare ? Style.accent.mix(#ffffff, 0.55) : Style.text; }
-    if root.kind == "analog": AnalogFace { ink: root.ink; }
     if root.kind == "calendar": CalendarFace { ink: root.ink; }
     if root.kind == "greeting": GreetingFace { ink: root.ink; }
     if root.kind == "resources": ResourcesFace { ink: root.ink; }
@@ -521,4 +460,13 @@ export component DesktopWidget inherits Rectangle {
         radii: [root.top-left, root.top-right, root.bottom-right, root.bottom-left];
     }
     if root.kind == "note": NoteFace { note: root.note; ink: root.ink; }
+    // One an earlier shell had (the desktop leaves it out; the editor offers to remove it).
+    if !Widgets.known(root.kind): Text {
+        width: parent.width - 24px;
+        text: @tr("This widget is no longer available");
+        color: root.ink.with-alpha(0.7);
+        font-size: Style.font-small;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
 }

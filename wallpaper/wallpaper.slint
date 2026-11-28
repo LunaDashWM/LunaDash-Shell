@@ -180,7 +180,7 @@ export component Wallpaper inherits PanelWindow {
         }
     }
     for id in Widgets.ids(false): DesktopWidget {
-        visible: Widgets.on-screen(false, id, Shell.screen.name);
+        visible: Widgets.on-screen(false, id, Shell.screen.name) && Widgets.known(Widgets.kind(false, id));
         x: Widgets.x(false, id, root.width);
         y: Widgets.y(false, id, root.height);
         width: Widgets.width(false, id);

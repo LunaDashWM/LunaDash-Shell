@@ -22,7 +22,6 @@ export global Widgets {
     out property <[string]> prefixes: ["widget"];
     out property <[WidgetKind]> kinds: [
         { id: "clock", label: @tr("Clock"), description: @tr("The time, large, with the date beside it."), icon: "clock" },
-        { id: "analog", label: @tr("Analogue clock"), description: @tr("Hands on a scalloped dial."), icon: "clock" },
         { id: "calendar", label: @tr("Calendar"), description: @tr("This week, or the whole month when tall."), icon: "calendar" },
         { id: "greeting", label: @tr("Greeting"), description: @tr("Your picture, a greeting and today's date."), icon: "user" },
         { id: "resources", label: @tr("Resources"), description: @tr("Processor, memory, disk and temperature."), icon: "cpu" },
@@ -46,6 +45,11 @@ export global Widgets {
     }
     public pure function number(draft: bool, key: string, id: string, fallback: float) -> float {
         draft ? Shared.get-number(key + ":" + id, fallback, Shared.revision) : Store.get-number(key + ":" + id, fallback, Store.revision)
+    }
+    // Kinds this shell draws; others (an earlier shell's) stay off the desktop.
+    public pure function known(kind: string) -> bool {
+        kind == "clock" || kind == "calendar" || kind == "greeting" || kind == "resources" || kind == "network"
+            || kind == "gpu" || kind == "media" || kind == "picture" || kind == "note"
     }
     public pure function kind(draft: bool, id: string) -> string {
         root.text(draft, "widget-kind", id, "clock")
@@ -82,23 +86,23 @@ export global Widgets {
 
     // Size a new widget starts with, and the smallest it can be.
     public pure function default-width(kind: string) -> length {
-        kind == "clock" ? 520px : kind == "analog" ? 220px : kind == "calendar" ? 330px : kind == "greeting" ? 340px
+        kind == "clock" ? 520px : kind == "calendar" ? 330px : kind == "greeting" ? 340px
             : kind == "resources" ? 440px : kind == "network" ? 330px : kind == "gpu" ? 340px : kind == "media" ? 380px
             : kind == "picture" ? 260px : 340px
     }
     public pure function default-height(kind: string) -> length {
-        kind == "clock" ? 150px : kind == "analog" ? 220px : kind == "calendar" ? 150px : kind == "greeting" ? 120px
+        kind == "clock" ? 150px : kind == "calendar" ? 150px : kind == "greeting" ? 120px
             : kind == "resources" ? 130px : kind == "network" ? 180px : kind == "gpu" ? 200px : kind == "media" ? 130px
             : kind == "picture" ? 260px : 120px
     }
     public pure function min-width(kind: string) -> length {
-        kind == "clock" ? 160px : kind == "analog" || kind == "picture" ? 100px : kind == "resources" ? 200px : 180px
+        kind == "clock" ? 160px : kind == "picture" ? 100px : kind == "resources" ? 200px : 180px
     }
     public pure function min-height(kind: string) -> length {
-        kind == "analog" || kind == "picture" ? 100px : kind == "calendar" ? 120px : kind == "network" || kind == "gpu" ? 130px : 80px
+        kind == "picture" ? 100px : kind == "calendar" ? 120px : kind == "network" || kind == "gpu" ? 130px : 80px
     }
     public pure function default-shape(kind: string) -> string {
-        kind == "clock" ? "none" : kind == "analog" ? "round" : "rounded"
+        kind == "clock" ? "none" : "rounded"
     }
 
     // Editing. `edit` copies the layout into Shared; the changes stay there until `save`.
