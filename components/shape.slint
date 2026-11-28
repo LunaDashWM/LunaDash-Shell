@@ -1,13 +1,13 @@
-// The floating shape the bar's islands, drawers and popouts share.
+// The floating card drawers and popouts share.
 
 import { Style } from "../style/style.slint";
 
-// A card in the panel colour, rounded all round and lifted by a shadow; drawers slide it in
+// A card in the sheet colour, rounded all round and lifted by a shadow; drawers slide it in
 // from a screen edge.
 export component Drawer {
     in property <length> body-width: 300px;
     in property <length> body-height: 200px;
-    in property <color> color: Style.panel;
+    in property <color> color: Style.sheet;
     width: root.body-width;
     height: root.body-height;
     Rectangle {

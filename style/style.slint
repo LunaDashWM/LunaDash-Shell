@@ -36,10 +36,11 @@ export global Style {
 
     // Surfaces
     out property <float> glass-alpha: Prefs.transparency ? clamp(Prefs.glass-opacity, 50, 100) / 100 : 1.0;
-    // The bar's islands and every drawer and popout share this colour. Its opacity is the
-    // bar's (Settings → Panel).
+    // The colour of the bar's islands, at the bar's opacity (Settings → Panel).
     out property <float> panel-alpha: clamp(Prefs.bar-opacity, 30, 100) / 100;
     out property <color> panel: Theme.background.with-alpha(root.panel-alpha);
+    // Drawers and popouts hold more to read: nearly opaque whatever the bar's opacity.
+    out property <color> sheet: Theme.background.with-alpha(max(root.panel-alpha, 0.94));
     out property <color> base: Theme.background;
     // Free-floating surfaces (dialogs, notifications) follow the transparency preference.
     out property <color> glass: Theme.background.with-alpha(root.glass-alpha);
