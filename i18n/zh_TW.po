@@ -22,7 +22,7 @@ msgstr "午安"
 msgid "Good evening"
 msgstr "晚上好"
 
-#: dashboard/dashboard.slint:150 dashboard/dashboard.slint:569 settings/settings.slint:1662
+#: dashboard/dashboard.slint:150 settings/settings.slint:1662
 #, c-format
 msgid "Up {}"
 msgstr "已運作 {}"
@@ -92,7 +92,7 @@ msgstr "關閉"
 msgid "Bluetooth"
 msgstr "藍牙"
 
-#: dashboard/dashboard.slint:386 dashboard/dashboard.slint:584 settings/settings.slint:1488
+#: dashboard/dashboard.slint:386 dashboard/dashboard.slint:800 settings/settings.slint:1488
 msgid "Do not disturb"
 msgstr "勿擾模式"
 
@@ -124,70 +124,77 @@ msgstr "目前沒有播放"
 msgid "PLAYERS"
 msgstr "播放器"
 
-#: dashboard/dashboard.slint:530
+#: dashboard/dashboard.slint:692
+msgid "Tasks"
+msgstr "工作"
+
+#: dashboard/dashboard.slint:693
 #, c-format
-msgid "PROCESSOR · {}%"
-msgstr "處理器 · {}%"
+msgid "{} · {} thr · {} running"
+msgstr "{} · {} 執行緒 · {} 執行中"
 
-#: dashboard/dashboard.slint:551
-msgid "MEMORY"
-msgstr "記憶體"
+#: dashboard/dashboard.slint:696 widgets/widgets.slint:309
+msgid "Load"
+msgstr "負載"
 
-#: dashboard/dashboard.slint:554
-msgid "SWAP"
-msgstr "交換空間"
+#: dashboard/dashboard.slint:700
+msgid "Uptime"
+msgstr "運作時間"
 
-#: dashboard/dashboard.slint:556
-msgid "DISK"
-msgstr "磁碟"
+#: dashboard/dashboard.slint:702
+msgid "Heat"
+msgstr "溫度"
 
-#: dashboard/dashboard.slint:565 panel/network-popup.slint:43
-msgid "NETWORK"
+#: dashboard/dashboard.slint:710
+msgid "Network"
 msgstr "網路"
 
-#: dashboard/dashboard.slint:567
-msgid "SYSTEM"
-msgstr "系統"
+#: dashboard/dashboard.slint:711 widgets/widgets.slint:206
+msgid "Disk"
+msgstr "磁碟"
 
-#: dashboard/dashboard.slint:570
-#, c-format
-msgid "Hottest sensor {}°C"
-msgstr "最高溫感測器 {}°C"
+#: dashboard/dashboard.slint:729
+msgid "USER"
+msgstr "使用者"
 
-#: dashboard/dashboard.slint:580
+#: dashboard/dashboard.slint:746 settings/settings.slint:840 settings/settings.slint:986
+msgid "Command"
+msgstr "指令"
+
+#: dashboard/dashboard.slint:796
 #, c-format
 msgid "{} notifications"
 msgstr "{} 則通知"
 
-#: dashboard/dashboard.slint:584
+#: dashboard/dashboard.slint:800
 msgid "Do not disturb is on"
 msgstr "勿擾模式已開啟"
 
-#: dashboard/dashboard.slint:587
+#: dashboard/dashboard.slint:803
 msgid "Clear all"
 msgstr "全部清除"
 
-#: dashboard/dashboard.slint:589
+#: dashboard/dashboard.slint:805
 msgid "Another notification daemon is running; LunaDash shows no history."
 msgstr "另一個通知服務正在執行，LunaDash 無法顯示通知紀錄。"
 
-#: dashboard/dashboard.slint:595
+#: dashboard/dashboard.slint:811
 msgid "You're all caught up"
 msgstr "沒有新通知"
 
-#: dashboard/dashboard.slint:648 state/desktop-menu.slint:53 welcome/welcome.slint:180
+#: dashboard/dashboard.slint:869 state/desktop-menu.slint:53 welcome/welcome.slint:180
 msgid "Dashboard"
 msgstr "儀表板"
 
-#: dashboard/dashboard.slint:649 state/panel-layout.slint:88
+#: dashboard/dashboard.slint:870 state/panel-layout.slint:88
 msgid "Media"
 msgstr "媒體"
 
-#: dashboard/dashboard.slint:650
+#: dashboard/dashboard.slint:871
 msgid "Performance"
 msgstr "效能"
 
-#: dashboard/dashboard.slint:651 settings/settings.slint:1479 settings/settings.slint:1849
+#: dashboard/dashboard.slint:872 settings/settings.slint:1479 settings/settings.slint:1849
 msgid "Notifications"
 msgstr "通知"
 
@@ -345,6 +352,10 @@ msgstr "點一下加到最後，再拖曳到想要的位置。"
 #: panel/editor.slint:313
 msgid "Applications and commands…"
 msgstr "應用程式與指令…"
+
+#: panel/network-popup.slint:43
+msgid "NETWORK"
+msgstr "網路"
 
 #: panel/network-popup.slint:44
 msgid "NetworkManager is not running."
@@ -975,10 +986,6 @@ msgstr "在上方或下方工作列顯示於圖示旁。留空則只顯示圖示
 #: settings/settings.slint:836 settings/settings.slint:982
 msgid "System monitor"
 msgstr "系統監視器"
-
-#: settings/settings.slint:840 settings/settings.slint:986
-msgid "Command"
-msgstr "指令"
 
 #: settings/settings.slint:841 settings/settings.slint:987
 msgid "A program and its arguments. It starts without a shell: quotes group words, but pipes, variables and ; reach the program as text."
@@ -1951,10 +1958,6 @@ msgstr "嗨，{}！"
 msgid "Today · {}"
 msgstr "今天 · {}"
 
-#: widgets/widgets.slint:206
-msgid "Disk"
-msgstr "磁碟"
-
 #: widgets/widgets.slint:207
 msgid "Battery"
 msgstr "電池"
@@ -1971,10 +1974,6 @@ msgstr "最近一分鐘峰值 {}"
 #: widgets/widgets.slint:300
 msgid "This card does not report its load, or it is asleep."
 msgstr "這張顯示卡不回報負載，或正在休眠。"
-
-#: widgets/widgets.slint:309
-msgid "Load"
-msgstr "負載"
 
 #: widgets/widgets.slint:315
 #, c-format

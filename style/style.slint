@@ -73,6 +73,8 @@ export global Style {
     // Latin interface font) come from the system's fallback fonts.
     out property <float> text-scale: clamp(Prefs.text-scale, 80, 140) / 100;
     out property <string> font: Theme.font-family;
+    // Numbers in columns (the task manager): the desktop's monospace family.
+    out property <string> font-mono: Theme.monospace-font;
     out property <length> font-size: Theme.font-size * root.text-scale;
     out property <length> font-small: (Theme.font-size - 1.5px) * root.text-scale;
     out property <length> font-title: (Theme.font-size + 5px) * root.text-scale;

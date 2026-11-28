@@ -520,54 +520,270 @@ component MediaTab inherits HorizontalLayout {
     }
 }
 
-component PerformanceTab inherits HorizontalLayout {
+// A task manager in the manner of htop: meters for every core, memory and swap, a summary
+// with the processor's last minute, and the processes using the most, sorted by processor or
+// memory. The processes are only read while this tab is on screen (see Dashboard).
+
+// A load in 0..1 in htop's colours: green, yellow when busy, red when nearly full.
+component Meter inherits Rectangle {
+    in property <string> label;
+    in property <float> ratio;
+    in property <string> value;
+    in property <length> label-width: 22px;
+    in property <length> value-width: 44px;
+    height: 16px;
+    HorizontalLayout {
+        spacing: 6px;
+        Text {
+            width: root.label-width;
+            text: root.label;
+            color: Style.accent;
+            font-family: Style.font-mono;
+            font-size: Style.font-small;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+        Rectangle {
+            border-radius: 3px;
+            background: Style.elevated;
+            Rectangle {
+                x: 0;
+                width: parent.width * clamp(root.ratio, 0, 1);
+                border-radius: 3px;
+                background: root.ratio > 0.8 ? Style.danger : root.ratio > 0.5 ? Style.warning : Style.success;
+                animate width { duration: Style.motion; easing: ease-out; }
+                animate background { duration: Style.motion-fast; }
+            }
+        }
+        Text {
+            width: root.value-width;
+            text: root.value;
+            color: Style.muted;
+            font-family: Style.font-mono;
+            font-size: Style.font-small;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// One line of the summary: a name in the accent and its value.
+component Summary inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <color> value-color: Style.text;
+    spacing: 8px;
+    Text { width: 64px; text: root.label; color: Style.accent; font-size: Style.font-small; vertical-alignment: center; }
+    Text { text: root.value; color: root.value-color; font-family: Style.font-mono; font-size: Style.font-small; overflow: elide; vertical-alignment: center; }
+}
+
+// The processor's last minute as columns.
+component History inherits Rectangle {
+    in property <[float]> values;
+    border-radius: 8px;
+    background: Style.elevated;
+    clip: true;
+    for value[i] in root.values: Rectangle {
+        x: i * parent.width / max(1, root.values.length);
+        y: parent.height - self.height;
+        width: parent.width / max(1, root.values.length) - 1px;
+        height: parent.height * clamp(value, 0, 1);
+        background: Style.accent.with-alpha(0.35 + 0.65 * clamp(value, 0, 1));
+        animate height { duration: Style.motion; easing: ease-out; }
+    }
+}
+
+// A column heading of the process list; the sortable ones say which order is in use.
+component Heading inherits Rectangle {
+    in property <string> text;
+    in property <bool> sorted;
+    in property <bool> sortable;
+    in property <TextHorizontalAlignment> alignment: right;
+    callback clicked();
+    border-radius: 6px;
+    background: root.sorted ? Style.accent-ink.with-alpha(0.22) : touch.has-hover && root.sortable ? Style.accent-ink.with-alpha(0.12) : transparent;
+    Text {
+        x: 6px;
+        width: parent.width - 12px;
+        text: root.text + (root.sorted ? " ▾" : "");
+        color: Style.accent-ink;
+        font-size: Style.font-small;
+        font-weight: 700;
+        horizontal-alignment: root.alignment;
+        vertical-alignment: center;
+    }
+    touch := TouchArea {
+        enabled: root.sortable;
+        mouse-cursor: root.sortable ? MouseCursor.pointer : MouseCursor.default;
+        clicked => { root.clicked(); }
+    }
+}
+
+component ProcessCell inherits Text {
+    color: Style.text;
+    font-family: Style.font-mono;
+    font-size: Style.font-small;
+    horizontal-alignment: right;
+    vertical-alignment: center;
+    overflow: elide;
+}
+
+component PerformanceTab inherits VerticalLayout {
+    // "cpu" or "memory": what the processes are sorted by.
+    in-out property <string> order;
+    // Columns: PID, user, resident memory, processor, memory, processor time; the command fills
+    // the rest.
+    property <[length]> columns: [62px, 86px, 58px, 58px, 58px, 76px];
+    property <int> core-columns: System.cpu-cores.length > 32 ? 4 : 2;
+    property <int> core-rows: Math.ceil(System.cpu-cores.length / root.core-columns);
     spacing: Style.spacing-md;
+
     Card {
-        horizontal-stretch: 1;
-        VerticalLayout {
+        HorizontalLayout {
             padding: Style.spacing-lg;
-            spacing: Style.spacing-sm;
-            SectionTitle { text: @tr("PROCESSOR · {}%", Math.round(System.cpu * 100)); }
-            Flickable {
-                content-height: cores.preferred-height;
-                cores := VerticalLayout {
-                    spacing: 6px;
-                    for usage[i] in System.cpu-cores: HorizontalLayout {
-                        spacing: 8px;
-                        Text { width: 34px; text: "#" + i; color: Style.muted; font-size: Style.font-small; }
-                        Bar { ratio: usage; y: (parent.height - self.height) / 2; }
+            spacing: Style.spacing-xl;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 6px;
+                // htop's order: the first half of the cores down the left, the rest beside them.
+                cores := Rectangle {
+                    height: root.core-rows * 18px - 2px;
+                    for usage[i] in System.cpu-cores: Meter {
+                        x: Math.floor(i / root.core-rows) * (cores.width + 12px) / root.core-columns;
+                        y: Math.mod(i, root.core-rows) * 18px;
+                        width: (cores.width + 12px) / root.core-columns - 12px;
+                        label: i;
+                        ratio: usage;
+                        value: Math.round(usage * 1000) / 10 + "%";
                     }
                 }
+                Rectangle { height: 4px; }
+                Meter {
+                    label: "Mem";
+                    label-width: 30px;
+                    value-width: 150px;
+                    ratio: System.memory;
+                    value: System.memory-text;
+                }
+                Meter {
+                    label: "Swp";
+                    label-width: 30px;
+                    value-width: 150px;
+                    ratio: System.swap;
+                    value: Math.round(System.swap * 1000) / 10 + "%";
+                }
+            }
+            VerticalLayout {
+                width: 236px;
+                spacing: 5px;
+                alignment: start;
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: Math.round(System.cpu * 100) + "%";
+                        color: Style.text;
+                        font-size: Style.font-title + 6px;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
+                    History { height: 44px; horizontal-stretch: 1; values: System.cpu-history; }
+                }
+                Summary {
+                    label: @tr("Tasks");
+                    value: @tr("{} · {} thr · {} running", System.tasks, System.threads, System.running);
+                }
+                Summary {
+                    label: @tr("Load");
+                    value: System.load-average.length < 3 ? "" : (Math.round(System.load-average[0] * 100) / 100) + "  " + (Math.round(System.load-average[1] * 100) / 100) + "  " + (Math.round(System.load-average[2] * 100) / 100);
+                    value-color: System.load-average.length > 0 && System.load-average[0] > System.cpu-cores.length ? Style.danger : Style.text;
+                }
+                Summary { label: @tr("Uptime"); value: System.uptime; }
+                if System.temperature > 0: Summary {
+                    label: @tr("Heat");
+                    value: Math.round(System.temperature) + "°C";
+                    value-color: System.temperature > 85 ? Style.danger : System.temperature > 70 ? Style.warning : Style.text;
+                }
+                if System.gpu-available: Summary {
+                    label: "GPU";
+                    value: Math.round(System.gpu * 100) + "%" + (System.gpu-temperature > 0 ? " · " + Math.round(System.gpu-temperature) + "°C" : "");
+                }
+                Summary { label: @tr("Network"); value: "↓ " + System.download-text + "  ↑ " + System.upload-text; }
+                Summary { label: @tr("Disk"); value: System.disk-text; }
             }
         }
     }
-    VerticalLayout {
-        horizontal-stretch: 1;
-        spacing: Style.spacing-md;
-        Card {
-            VerticalLayout {
-                padding: Style.spacing-lg;
-                spacing: Style.spacing-sm;
-                SectionTitle { text: @tr("MEMORY"); }
-                Text { text: System.memory-text; color: Style.text; }
-                Bar { ratio: System.memory; }
-                SectionTitle { text: @tr("SWAP"); }
-                Bar { ratio: System.swap; }
-                SectionTitle { text: @tr("DISK"); }
-                Text { text: System.disk-text; color: Style.text; }
-                Bar { ratio: System.disk; }
+    Card {
+        vertical-stretch: 1;
+        VerticalLayout {
+            padding: Style.spacing-sm;
+            spacing: 4px;
+            // htop's heading bar, in the accent.
+            Rectangle {
+                height: 28px;
+                border-radius: 9px;
+                background: Style.accent;
+                HorizontalLayout {
+                    padding-left: 4px;
+                    padding-right: 4px;
+                    Heading { width: root.columns[0]; text: "PID"; }
+                    Heading { width: root.columns[1]; text: @tr("USER"); alignment: left; }
+                    Heading { width: root.columns[2]; text: "RES"; }
+                    Heading {
+                        width: root.columns[3];
+                        text: "CPU%";
+                        sortable: true;
+                        sorted: root.order == "cpu";
+                        clicked => { root.order = "cpu"; }
+                    }
+                    Heading {
+                        width: root.columns[4];
+                        text: "MEM%";
+                        sortable: true;
+                        sorted: root.order == "memory";
+                        clicked => { root.order = "memory"; }
+                    }
+                    Heading { width: root.columns[5]; text: "TIME+"; }
+                    Heading { horizontal-stretch: 1; text: @tr("Command"); alignment: left; }
+                }
             }
-        }
-        Card {
-            VerticalLayout {
-                padding: Style.spacing-lg;
-                spacing: Style.spacing-sm;
-                SectionTitle { text: @tr("NETWORK"); }
-                Text { text: "↓ " + System.download-text + "    ↑ " + System.upload-text; color: Style.text; }
-                SectionTitle { text: @tr("SYSTEM"); }
-                Text { text: System.hostname + " · " + System.kernel; color: Style.text; overflow: elide; }
-                Text { text: @tr("Up {}", System.uptime); color: Style.muted; }
-                if System.temperature > 0: Text { text: @tr("Hottest sensor {}°C", Math.round(System.temperature)); color: System.temperature > 85 ? Style.danger : Style.muted; }
+            Flickable {
+                vertical-stretch: 1;
+                content-height: rows.preferred-height;
+                rows := VerticalLayout {
+                    for process[i] in System.processes: Rectangle {
+                        height: 24px;
+                        border-radius: 7px;
+                        background: row.has-hover ? Style.tonal : Math.mod(i, 2) == 1 ? Style.elevated.with-alpha(0.45) : transparent;
+                        HorizontalLayout {
+                            padding-left: 4px;
+                            padding-right: 4px;
+                            ProcessCell { width: root.columns[0]; text: process.pid; color: Style.muted; }
+                            Rectangle { width: 6px; }
+                            ProcessCell { width: root.columns[1] - 6px; text: process.user; horizontal-alignment: left; }
+                            ProcessCell { width: root.columns[2]; text: process.memory-text; }
+                            ProcessCell {
+                                width: root.columns[3];
+                                text: Math.round(process.cpu * 1000) / 10;
+                                color: process.cpu > 0.8 ? Style.danger : process.cpu > 0.3 ? Style.warning : Style.text;
+                                font-weight: root.order == "cpu" ? 600 : 400;
+                            }
+                            ProcessCell {
+                                width: root.columns[4];
+                                text: Math.round(process.memory * 1000) / 10;
+                                font-weight: root.order == "memory" ? 600 : 400;
+                            }
+                            ProcessCell { width: root.columns[5]; text: process.time; color: Style.muted; }
+                            Rectangle { width: 12px; }
+                            ProcessCell {
+                                horizontal-stretch: 1;
+                                text: process.command;
+                                color: process.state == "R" ? Style.success : Style.text;
+                                horizontal-alignment: left;
+                            }
+                        }
+                        row := TouchArea { }
+                    }
+                }
             }
         }
     }
@@ -639,6 +855,11 @@ export component Dashboard inherits Overlay {
     content-width: 1080px;
     content-height: 620px;
 
+    // Processes are read only while the performance tab is on screen.
+    property <string> process-order: "cpu";
+    property <string> watched-processes: UI.overlay == "dashboard" && UI.on-active-screen && UI.dashboard-tab == 2 ? root.process-order : "";
+    changed watched-processes => { System.watch-processes(self.watched-processes); }
+
     VerticalLayout {
         padding: Style.spacing-lg;
         spacing: Style.spacing-md;
@@ -664,7 +885,7 @@ export component Dashboard inherits Overlay {
             vertical-stretch: 1;
             spacing: Style.spacing-lg;
             if UI.dashboard-tab == 1: Reveal { horizontal-stretch: 3; MediaTab { } }
-            if UI.dashboard-tab == 2: Reveal { horizontal-stretch: 3; PerformanceTab { } }
+            if UI.dashboard-tab == 2: Reveal { horizontal-stretch: 3; PerformanceTab { order <=> root.process-order; } }
             if UI.dashboard-tab == 3: Reveal { horizontal-stretch: 3; NotificationsTab { } }
             ControlsColumn { width: 300px; }
         }

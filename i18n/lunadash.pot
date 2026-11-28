@@ -22,7 +22,7 @@ msgstr ""
 msgid "Good evening"
 msgstr ""
 
-#: dashboard/dashboard.slint:150 dashboard/dashboard.slint:569 settings/settings.slint:1662
+#: dashboard/dashboard.slint:150 settings/settings.slint:1662
 #, c-format
 msgid "Up {}"
 msgstr ""
@@ -92,7 +92,7 @@ msgstr ""
 msgid "Bluetooth"
 msgstr ""
 
-#: dashboard/dashboard.slint:386 dashboard/dashboard.slint:584 settings/settings.slint:1488
+#: dashboard/dashboard.slint:386 dashboard/dashboard.slint:800 settings/settings.slint:1488
 msgid "Do not disturb"
 msgstr ""
 
@@ -124,70 +124,77 @@ msgstr ""
 msgid "PLAYERS"
 msgstr ""
 
-#: dashboard/dashboard.slint:530
+#: dashboard/dashboard.slint:692
+msgid "Tasks"
+msgstr ""
+
+#: dashboard/dashboard.slint:693
 #, c-format
-msgid "PROCESSOR · {}%"
+msgid "{} · {} thr · {} running"
 msgstr ""
 
-#: dashboard/dashboard.slint:551
-msgid "MEMORY"
+#: dashboard/dashboard.slint:696 widgets/widgets.slint:309
+msgid "Load"
 msgstr ""
 
-#: dashboard/dashboard.slint:554
-msgid "SWAP"
+#: dashboard/dashboard.slint:700
+msgid "Uptime"
 msgstr ""
 
-#: dashboard/dashboard.slint:556
-msgid "DISK"
+#: dashboard/dashboard.slint:702
+msgid "Heat"
 msgstr ""
 
-#: dashboard/dashboard.slint:565 panel/network-popup.slint:43
-msgid "NETWORK"
+#: dashboard/dashboard.slint:710
+msgid "Network"
 msgstr ""
 
-#: dashboard/dashboard.slint:567
-msgid "SYSTEM"
+#: dashboard/dashboard.slint:711 widgets/widgets.slint:206
+msgid "Disk"
 msgstr ""
 
-#: dashboard/dashboard.slint:570
-#, c-format
-msgid "Hottest sensor {}°C"
+#: dashboard/dashboard.slint:729
+msgid "USER"
 msgstr ""
 
-#: dashboard/dashboard.slint:580
+#: dashboard/dashboard.slint:746 settings/settings.slint:840 settings/settings.slint:986
+msgid "Command"
+msgstr ""
+
+#: dashboard/dashboard.slint:796
 #, c-format
 msgid "{} notifications"
 msgstr ""
 
-#: dashboard/dashboard.slint:584
+#: dashboard/dashboard.slint:800
 msgid "Do not disturb is on"
 msgstr ""
 
-#: dashboard/dashboard.slint:587
+#: dashboard/dashboard.slint:803
 msgid "Clear all"
 msgstr ""
 
-#: dashboard/dashboard.slint:589
+#: dashboard/dashboard.slint:805
 msgid "Another notification daemon is running; LunaDash shows no history."
 msgstr ""
 
-#: dashboard/dashboard.slint:595
+#: dashboard/dashboard.slint:811
 msgid "You're all caught up"
 msgstr ""
 
-#: dashboard/dashboard.slint:648 state/desktop-menu.slint:53 welcome/welcome.slint:180
+#: dashboard/dashboard.slint:869 state/desktop-menu.slint:53 welcome/welcome.slint:180
 msgid "Dashboard"
 msgstr ""
 
-#: dashboard/dashboard.slint:649 state/panel-layout.slint:88
+#: dashboard/dashboard.slint:870 state/panel-layout.slint:88
 msgid "Media"
 msgstr ""
 
-#: dashboard/dashboard.slint:650
+#: dashboard/dashboard.slint:871
 msgid "Performance"
 msgstr ""
 
-#: dashboard/dashboard.slint:651 settings/settings.slint:1479 settings/settings.slint:1849
+#: dashboard/dashboard.slint:872 settings/settings.slint:1479 settings/settings.slint:1849
 msgid "Notifications"
 msgstr ""
 
@@ -344,6 +351,10 @@ msgstr ""
 
 #: panel/editor.slint:313
 msgid "Applications and commands…"
+msgstr ""
+
+#: panel/network-popup.slint:43
+msgid "NETWORK"
 msgstr ""
 
 #: panel/network-popup.slint:44
@@ -974,10 +985,6 @@ msgstr ""
 
 #: settings/settings.slint:836 settings/settings.slint:982
 msgid "System monitor"
-msgstr ""
-
-#: settings/settings.slint:840 settings/settings.slint:986
-msgid "Command"
 msgstr ""
 
 #: settings/settings.slint:841 settings/settings.slint:987
@@ -1951,10 +1958,6 @@ msgstr ""
 msgid "Today · {}"
 msgstr ""
 
-#: widgets/widgets.slint:206
-msgid "Disk"
-msgstr ""
-
 #: widgets/widgets.slint:207
 msgid "Battery"
 msgstr ""
@@ -1970,10 +1973,6 @@ msgstr ""
 
 #: widgets/widgets.slint:300
 msgid "This card does not report its load, or it is asleep."
-msgstr ""
-
-#: widgets/widgets.slint:309
-msgid "Load"
 msgstr ""
 
 #: widgets/widgets.slint:315
