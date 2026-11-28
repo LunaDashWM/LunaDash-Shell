@@ -2,7 +2,7 @@
 // header to switch between the library, the bundled wallpapers and favourites, chips for the
 // categories, a grid of rounded previews and a search field floating at the bottom.
 
-import { Files, Compositor, WallpaperInfo, Shell } from "@slintlu";
+import { Compositor, WallpaperInfo } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { UI } from "../state/ui.slint";
@@ -10,6 +10,7 @@ import { Apply } from "../state/apply.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
 import { TextButton, IconButton } from "../components/controls.slint";
+import { Picture } from "../components/picture.slint";
 import { Wallpapers } from "wallpaper.slint";
 
 // A pill with an icon and a label; the selected one is filled.
@@ -79,7 +80,7 @@ component Chip inherits Rectangle {
     touch := TouchArea { clicked => { root.clicked(); } }
 }
 
-// A wallpaper: its picture with rounded corners (cut by SlintLu, which `clip` cannot do); the
+// A wallpaper: its picture with rounded corners; the
 // name and the favourite star appear on hover, the current one wears a ring and a check.
 component Tile inherits Rectangle {
     in property <WallpaperInfo> entry;
@@ -87,16 +88,11 @@ component Tile inherits Rectangle {
     callback clicked();
     callback favorite();
     property <length> round: Style.radius-medium + 4px;
-    property <float> scale: max(1, Shell.screen.scale);
-    property <float> corner: root.round / 1px * root.scale;
-    property <image> preview: root.entry.preview == "" ? Files.thumbnail("", 0, 0)
-        : Files.shaped(root.entry.preview, root.width / 1px * root.scale, root.height / 1px * root.scale,
-            [root.corner, root.corner, root.corner, root.corner], Files.revision);
     property <bool> hovered: touch.has-hover || star.has-hover;
     border-radius: root.round;
     background: Style.surface;
-    Image { width: 100%; height: 100%; source: root.preview; image-fit: fill; }
-    if root.preview.width == 0: Icon { name: root.entry.video ? "video" : "image"; width: 26px; height: 26px; color: Style.muted; }
+    preview := Picture { path: root.entry.preview; radii: [root.round, root.round, root.round, root.round]; }
+    if !preview.loaded: Icon { name: root.entry.video ? "video" : "image"; width: 26px; height: 26px; color: Style.muted; }
     // The name on a shade along the bottom.
     Rectangle {
         y: parent.height - self.height;

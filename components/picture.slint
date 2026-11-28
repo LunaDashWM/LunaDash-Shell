@@ -1,0 +1,21 @@
+// A picture file with rounded corners. Slint's software renderer ignores the corner radius when
+// it clips, so SlintLu cuts the picture to the shape (Files.shaped) instead.
+
+import { Files, Shell } from "@slintlu";
+
+export component Picture inherits Rectangle {
+    in property <string> path;
+    // Top left, top right, bottom right, bottom left.
+    in property <[length]> radii: [0px, 0px, 0px, 0px];
+    // The size it is cut for; while it changes (a widget being resized) the last cut stretches.
+    in property <length> cut-width: self.width;
+    in property <length> cut-height: self.height;
+    out property <bool> loaded: root.picture.width > 0;
+    property <float> scale: max(1, Shell.screen.scale);
+    property <image> picture: root.path == "" ? @image-url("") : Files.shaped(root.path, root.cut-width / 1px * root.scale,
+        root.cut-height / 1px * root.scale,
+        [root.radii[0] / 1px * root.scale, root.radii[1] / 1px * root.scale, root.radii[2] / 1px * root.scale, root.radii[3] / 1px * root.scale],
+        Files.revision);
+    // Its size comes from the layout; the cut depends on it, so it must not ask for one.
+    Image { width: 100%; height: 100%; preferred-width: 0px; preferred-height: 0px; source: root.picture; image-fit: fill; }
+}

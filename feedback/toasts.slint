@@ -67,8 +67,8 @@ export component Toasts inherits PanelWindow {
                 Rectangle {
                     width: 42px;
                     height: 42px;
-                    border-radius: 21px;
-                    clip: true;
+                    // An attached picture keeps (nearly) square corners: `clip` cannot round it.
+                    border-radius: n.image.width > 0 ? 6px : 21px;
                     background: Style.tonal;
                     Image {
                         width: n.image.width > 0 ? parent.width : 26px;

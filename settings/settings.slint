@@ -110,14 +110,13 @@ component Avatar inherits Rectangle {
     height: root.size;
     border-radius: root.size / 2;
     background: Style.primary-container;
-    clip: true;
-    if Session.avatar.width > 0: Image {
+    if Session.avatar-round.width > 0: Image {
         width: 100%;
         height: 100%;
-        source: Session.avatar;
+        source: Session.avatar-round;
         image-fit: cover;
     }
-    if Session.avatar.width == 0: Icon {
+    if Session.avatar-round.width == 0: Icon {
         name: "user";
         width: root.size * 0.5;
         height: root.size * 0.5;

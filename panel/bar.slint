@@ -14,6 +14,7 @@ import { Apply } from "../state/apply.slint";
 import { Widgets } from "../state/widgets.slint";
 import { Icon } from "../components/icon.slint";
 import { IconButton } from "../components/controls.slint";
+import { Picture } from "../components/picture.slint";
 
 // The workspaces as a pill of buttons, like waybar's: occupied ones on a tonal track, the
 // active one a primary-coloured capsule. The windows themselves are in the taskbar after it.
@@ -377,11 +378,9 @@ component MediaChip inherits Rectangle {
             width: 28px;
             height: 28px;
             border-radius: 14px;
-            clip: true;
             background: Style.tonal;
-            if root.player.art.width > 0: Image { width: 100%; height: 100%; source: root.player.art; image-fit: cover; }
-            if root.player.art.width == 0: Icon { name: "music"; width: 15px; height: 15px; color: Style.on-tonal; }
-            // A ring that turns while playing would be nicer; a dot marks it for now.
+            cover := Picture { path: root.player.art-url; radii: [14px, 14px, 14px, 14px]; }
+            if !cover.loaded: Icon { name: "music"; width: 15px; height: 15px; color: Style.on-tonal; }
         }
         VerticalLayout {
             alignment: center;

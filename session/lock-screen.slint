@@ -71,9 +71,8 @@ export component LockScreen inherits LockWindow {
             background: #ffffff22;
             border-width: 2px;
             border-color: #ffffff55;
-            clip: true;
-            if Session.avatar.width > 0: Image { width: 100%; height: 100%; source: Session.avatar; image-fit: cover; }
-            if Session.avatar.width == 0: Icon { name: "user"; width: 40px; height: 40px; color: #ffffff; }
+            if Session.avatar-round.width > 0: Image { width: 100%; height: 100%; source: Session.avatar-round; image-fit: cover; }
+            if Session.avatar-round.width == 0: Icon { name: "user"; width: 40px; height: 40px; color: #ffffff; }
         }
         Text { text: Session.real-name != "" ? Session.real-name : Session.user; color: #ffffff; font-size: 18px; font-weight: 600; horizontal-alignment: center; }
         Rectangle {

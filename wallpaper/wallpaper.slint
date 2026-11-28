@@ -23,6 +23,11 @@ export global Wallpapers {
     // Files the gallery offers: videos only where they can play.
     out property <string> extensions: root.managed ? "png,jpg,jpeg,webp,bmp,gif,mp4,webm,mkv,mov,m4v" : "png,jpg,jpeg,webp,bmp,gif";
 
+    // The file of the picture shown: the wallpaper, or a video's still frame ("" for the bundled
+    // default).
+    out property <string> still: root.video ? Compositor.wallpaper-poster
+        : root.path != "" && Files.exists(root.path) ? root.path : "";
+
     public pure function current() -> image {
         if root.video {
             return Compositor.wallpaper-poster != "" ? Files.image(Compositor.wallpaper-poster) : root.default;

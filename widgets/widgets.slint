@@ -2,13 +2,14 @@
 // space it is given and scales its type with it. They follow the System and Clock services,
 // which change every two seconds and every minute at most.
 
-import { Clock, System, Session, Media, Files, Battery, Shell } from "@slintlu";
+import { Clock, System, Session, Media, Battery } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { Time } from "../state/time.slint";
 import { Widgets } from "../state/widgets.slint";
 import { Icon } from "../components/icon.slint";
 import { IconButton } from "../components/controls.slint";
+import { Picture } from "../components/picture.slint";
 
 // The time, large and bold, and when there is room a bar and the month, day and weekday
 // stacked beside it.
@@ -126,11 +127,10 @@ component GreetingFace inherits Rectangle {
             width: root.picture;
             height: root.picture;
             y: (parent.height - self.height) / 2;
-            border-radius: 22px * Style.corner-scale;
+            border-radius: self.width / 2;
             background: Style.primary-container;
-            clip: true;
-            if Session.avatar.width > 0: Image { width: 100%; height: 100%; source: Session.avatar; image-fit: cover; }
-            if Session.avatar.width == 0: Icon { name: "user"; width: 45%; height: 45%; color: Style.on-primary-container; }
+            if Session.avatar-round.width > 0: Image { width: 100%; height: 100%; source: Session.avatar-round; image-fit: cover; }
+            if Session.avatar-round.width == 0: Icon { name: "user"; width: 45%; height: 45%; color: Style.on-primary-container; }
         }
         VerticalLayout {
             alignment: center;
@@ -163,14 +163,6 @@ component Gauge inherits Rectangle {
     in property <color> ink;
     border-radius: 20px * Style.corner-scale;
     background: Style.elevated.with-alpha(0.7);
-    clip: true;
-    // The level fills the tile from below.
-    Rectangle {
-        y: parent.height * (1 - clamp(root.level, 0, 1));
-        height: parent.height * clamp(root.level, 0, 1);
-        background: Style.accent.with-alpha(0.16);
-        animate y, height { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
-    }
     Rectangle {
         x: parent.width - self.width - 10px;
         y: 10px;
@@ -183,8 +175,22 @@ component Gauge inherits Rectangle {
     VerticalLayout {
         padding: 12px;
         alignment: end;
+        spacing: 2px;
         Text { text: root.value; color: root.ink; font-size: min(26px, root.height * 0.24); font-weight: 700; }
-        Text { text: root.label; color: root.ink.with-alpha(0.65); font-size: Style.font-small; }
+        Text { text: root.label; color: root.ink.with-alpha(0.65); font-size: Style.font-small; overflow: elide; }
+        // The level, as a slim meter under the label.
+        Rectangle {
+            height: 4px;
+            border-radius: 2px;
+            background: root.ink.with-alpha(0.12);
+            Rectangle {
+                x: 0;
+                width: max(self.height, parent.width * clamp(root.level, 0, 1));
+                border-radius: 2px;
+                background: root.level > 0.9 ? Style.danger : Style.accent;
+                animate width { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+            }
+        }
     }
 }
 
@@ -222,7 +228,8 @@ component History inherits Rectangle {
     for value[i] in root.values: Rectangle {
         x: i * root.step + root.step * (1 - root.thickness) / 2;
         width: root.step * root.thickness;
-        height: max(2px, root.height * clamp(value, 0, 1));
+        // Nothing at all for idle moments rather than a dashed baseline.
+        height: value > 0 ? max(2px, root.height * clamp(value, 0, 1)) : 0px;
         y: root.height - self.height;
         border-radius: min(self.width / 2, 3px);
         background: root.tint;
@@ -346,9 +353,11 @@ component MediaFace inherits Rectangle {
             width: parent.height - 20px;
             border-radius: 18px * Style.corner-scale;
             background: Style.primary-container;
-            clip: true;
-            if Media.player.art.width > 0: Image { width: 100%; height: 100%; source: Media.player.art; image-fit: cover; }
-            if Media.player.art.width == 0: Icon { name: "music"; width: 40%; height: 40%; color: Style.on-primary-container; }
+            cover := Picture {
+                path: Media.player.art-url;
+                radii: [parent.border-radius, parent.border-radius, parent.border-radius, parent.border-radius];
+            }
+            if !cover.loaded: Icon { name: "music"; width: 40%; height: 40%; color: Style.on-primary-container; }
         }
         VerticalLayout {
             alignment: center;
@@ -386,13 +395,8 @@ component PictureFace inherits Rectangle {
     in property <length> settled-width;
     in property <length> settled-height;
     in property <[length]> radii;
-    property <float> scale: max(1, Shell.screen.scale);
-    property <image> picture: root.path == "" ? Files.thumbnail("", 0, 0)
-        : Files.shaped(root.path, root.settled-width / 1px * root.scale, root.settled-height / 1px * root.scale,
-            [root.radii[0] / 1px * root.scale, root.radii[1] / 1px * root.scale, root.radii[2] / 1px * root.scale, root.radii[3] / 1px * root.scale],
-            Files.revision);
-    if root.picture.width > 0: Image { width: 100%; height: 100%; source: root.picture; image-fit: fill; }
-    if root.picture.width == 0: VerticalLayout {
+    picture := Picture { path: root.path; radii: root.radii; cut-width: root.settled-width; cut-height: root.settled-height; }
+    if !picture.loaded: VerticalLayout {
         alignment: center;
         spacing: 8px;
         Icon { name: "image"; width: 32px; height: 32px; x: (parent.width - self.width) / 2; color: Style.accent; }
@@ -433,10 +437,10 @@ export component DesktopWidget inherits Rectangle {
     property <bool> bare: root.shape == "none";
     // On bare wallpaper the text is light, like the clock it replaces.
     property <color> ink: root.bare ? Style.accent.mix(#ffffff, 0.2) : Style.text;
-    property <length> top-left: root.bare ? 0px : root.shape == "arch" ? min(root.width / 2, root.height) : root.shape == "leaf" ? root.short * 0.42 : root.round;
-    property <length> top-right: root.bare ? 0px : root.shape == "arch" ? min(root.width / 2, root.height) : root.shape == "leaf" ? root.short * 0.1 : root.round;
-    property <length> bottom-right: root.bare ? 0px : root.shape == "arch" ? 14px * Style.corner-scale : root.shape == "leaf" ? root.short * 0.42 : root.round;
-    property <length> bottom-left: root.bare ? 0px : root.shape == "arch" ? 14px * Style.corner-scale : root.shape == "leaf" ? root.short * 0.1 : root.round;
+    out property <length> top-left: root.bare ? 0px : root.shape == "arch" ? min(root.width / 2, root.height) : root.shape == "leaf" ? root.short * 0.42 : root.round;
+    out property <length> top-right: root.bare ? 0px : root.shape == "arch" ? min(root.width / 2, root.height) : root.shape == "leaf" ? root.short * 0.1 : root.round;
+    out property <length> bottom-right: root.bare ? 0px : root.shape == "arch" ? 14px * Style.corner-scale : root.shape == "leaf" ? root.short * 0.42 : root.round;
+    out property <length> bottom-left: root.bare ? 0px : root.shape == "arch" ? 14px * Style.corner-scale : root.shape == "leaf" ? root.short * 0.1 : root.round;
     border-top-left-radius: root.top-left;
     border-top-right-radius: root.top-right;
     border-bottom-right-radius: root.bottom-right;

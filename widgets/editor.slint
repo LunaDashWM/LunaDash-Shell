@@ -10,6 +10,7 @@ import { Widgets } from "../state/widgets.slint";
 import { Icon } from "../components/icon.slint";
 import { IconButton, TextButton } from "../components/controls.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
+import { Picture } from "../components/picture.slint";
 import { DesktopWidget } from "widgets.slint";
 
 // A widget being arranged: drag it to move it, drag its corner to resize it. The draft changes
@@ -43,7 +44,7 @@ component Arranged inherits Rectangle {
         root.dh = 0;
     }
 
-    DesktopWidget {
+    face := DesktopWidget {
         kind: root.kind;
         shape: Widgets.text(true, "widget-shape", root.id, Widgets.default-shape(root.kind));
         picture: Widgets.text(true, "widget-image", root.id, "");
@@ -56,7 +57,11 @@ component Arranged inherits Rectangle {
         y: -4px;
         width: parent.width + 8px;
         height: parent.height + 8px;
-        border-radius: Style.radius-medium + 4px;
+        // Around the widget's own shape (a bare clock gets a rounded box).
+        border-top-left-radius: (face.top-left > 0 ? face.top-left : Style.radius-medium) + 4px;
+        border-top-right-radius: (face.top-right > 0 ? face.top-right : Style.radius-medium) + 4px;
+        border-bottom-right-radius: (face.bottom-right > 0 ? face.bottom-right : Style.radius-medium) + 4px;
+        border-bottom-left-radius: (face.bottom-left > 0 ? face.bottom-left : Style.radius-medium) + 4px;
         border-width: root.selected ? 2px : 1px;
         border-color: root.selected ? Style.accent : #ffffff.with-alpha(move.has-hover ? 0.7 : 0.35);
         background: move.pressed ? #ffffff10 : transparent;
@@ -383,10 +388,11 @@ export component WidgetEditor inherits PanelWindow {
                     background: Style.elevated;
                     border-width: picked.has-hover ? 2px : 0px;
                     border-color: Style.accent;
-                    clip: true;
-                    property <image> thumb: entry.is-dir ? Files.thumbnail("", 0, 0) : Files.thumbnail(entry.path, 200, Files.revision);
-                    if self.thumb.width > 0: Image { width: 100%; height: 100%; source: parent.thumb; image-fit: cover; }
-                    if entry.is-dir || self.thumb.width == 0: VerticalLayout {
+                    thumb := Picture {
+                        path: entry.is-dir ? "" : entry.path;
+                        radii: [parent.border-radius, parent.border-radius, parent.border-radius, parent.border-radius];
+                    }
+                    if !thumb.loaded: VerticalLayout {
                         alignment: center;
                         spacing: 4px;
                         Icon { x: (parent.width - self.width) / 2; name: entry.is-dir ? "folder" : "image"; width: 24px; height: 24px; color: Style.accent; }

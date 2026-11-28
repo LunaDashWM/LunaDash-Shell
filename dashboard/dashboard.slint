@@ -8,6 +8,7 @@ import { Time } from "../state/time.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
 import { Card, QuickToggle, Slider, IconButton, TextButton, SectionTitle, Reveal } from "../components/controls.slint";
+import { Picture } from "../components/picture.slint";
 import { DefaultApps } from "../state/apps.slint";
 import { Wallpapers } from "../wallpaper/wallpaper.slint";
 
@@ -92,17 +93,22 @@ component OverviewTab inherits HorizontalLayout {
     Rectangle {
         horizontal-stretch: 5;
         border-radius: Style.radius-medium;
-        clip: true;
         background: Style.surface;
-        Image {
+        if Wallpapers.still == "": Image {
             width: parent.width;
             height: parent.height;
             source: Wallpapers.current();
             image-fit: cover;
         }
+        if Wallpapers.still != "": Picture {
+            path: Wallpapers.still;
+            radii: [parent.border-radius, parent.border-radius, parent.border-radius, parent.border-radius];
+        }
         Rectangle {
             y: parent.height * 0.55;
             height: parent.height * 0.45;
+            border-bottom-left-radius: parent.border-radius;
+            border-bottom-right-radius: parent.border-radius;
             background: @linear-gradient(180deg, transparent 0%, #000000aa 100%);
         }
         VerticalLayout {
@@ -266,9 +272,11 @@ component MediaTab inherits HorizontalLayout {
         width: 300px;
         border-radius: Style.radius-medium;
         background: Style.elevated;
-        clip: true;
-        Image { width: parent.width; height: parent.height; source: Media.player.art; image-fit: cover; }
-        if Media.player.art.width == 0: Icon { name: "music"; width: 72px; height: 72px; color: Style.muted; }
+        art := Picture {
+            path: Media.player.art-url;
+            radii: [parent.border-radius, parent.border-radius, parent.border-radius, parent.border-radius];
+        }
+        if !art.loaded: Icon { name: "music"; width: 72px; height: 72px; color: Style.muted; }
     }
     if Media.player.bus-name != "": VerticalLayout {
         alignment: center;

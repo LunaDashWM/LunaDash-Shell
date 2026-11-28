@@ -8,9 +8,12 @@ import { UI } from "../state/ui.slint";
 import { Overlay } from "../components/overlay.slint";
 import { Icon } from "../components/icon.slint";
 import { TextButton, IconButton, ListRow, SectionTitle } from "../components/controls.slint";
+import { Picture } from "../components/picture.slint";
 import { Wallpapers } from "wallpaper.slint";
 
 component Thumb inherits Rectangle {
+    // A file, cut with rounded corners; or a bundled `image`.
+    in property <string> path;
     in property <image> image;
     in property <string> label;
     in property <bool> selected;
@@ -21,8 +24,8 @@ component Thumb inherits Rectangle {
     background: Style.elevated;
     border-width: root.selected ? 3px : touch.has-hover ? 1px : 0;
     border-color: root.selected ? Style.accent : Style.border;
-    clip: true;
-    Image {
+    property <length> inner: root.border-radius - 3px;
+    if root.path == "": Image {
         x: 3px;
         y: 3px;
         width: parent.width - 6px;
@@ -30,8 +33,17 @@ component Thumb inherits Rectangle {
         source: root.image;
         image-fit: cover;
     }
-    if root.image.width == 0: Icon { name: root.folder ? "folder" : root.video ? "video" : "image"; width: 32px; height: 32px; color: Style.muted; }
-    if root.video && root.image.width > 0: Rectangle {
+    picture := Picture {
+        x: 3px;
+        y: 3px;
+        width: parent.width - 6px;
+        height: parent.height - 6px;
+        path: root.path;
+        radii: [root.inner, root.inner, root.inner, root.inner];
+    }
+    property <bool> shows: root.path == "" ? root.image.width > 0 : picture.loaded;
+    if !root.shows: Icon { name: root.folder ? "folder" : root.video ? "video" : "image"; width: 32px; height: 32px; color: Style.muted; }
+    if root.video && root.shows: Rectangle {
         x: 10px;
         y: 10px;
         width: 26px;
@@ -41,8 +53,12 @@ component Thumb inherits Rectangle {
         Icon { name: "play"; width: 12px; height: 12px; color: #ffffff; }
     }
     Rectangle {
-        y: parent.height - 28px;
+        x: 3px;
+        y: parent.height - 31px;
+        width: parent.width - 6px;
         height: 28px;
+        border-bottom-left-radius: root.inner;
+        border-bottom-right-radius: root.inner;
         background: #00000080;
         HorizontalLayout {
             padding-left: 10px;
@@ -192,7 +208,7 @@ export component Gallery inherits Overlay {
                     y: Math.floor((i + 1) / parent.columns) * parent.tile-height;
                     width: parent.tile-width - 10px;
                     height: parent.tile-height - 10px;
-                    image: entry.is-dir ? Files.thumbnail("", 0, 0) : Files.thumbnail(entry.path, 320, Files.revision);
+                    path: entry.is-dir ? "" : entry.path;
                     label: entry.name;
                     folder: entry.is-dir;
                     video: !entry.is-dir && Files.kind(entry.path) == "video";
