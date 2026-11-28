@@ -4,7 +4,7 @@
 // system status, settings and power. Its popouts slide out of it beside the item that opened
 // them.
 
-import { PanelWindow, ExclusiveMode, MediaPlayerInfo, Shell, Workspaces, WindowInfo, Switcher, Audio, Network, Bluetooth, Battery, Notifications, Tray, Compositor, ClipboardHistory, Clock, Apps, AppInfo, Media, System, Shared } from "@slintlu";
+import { PanelWindow, ExclusiveMode, MediaPlayerInfo, Shell, Workspaces, WindowInfo, Audio, Network, Bluetooth, Battery, Notifications, Tray, Compositor, ClipboardHistory, Clock, Apps, AppInfo, Media, System, Shared } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { Prefs } from "../state/prefs.slint";
 import { PanelLayout } from "../state/panel-layout.slint";
@@ -321,8 +321,8 @@ component StatusPill inherits Rectangle {
 }
 
 // The LunaDash logo: the launcher (right-click: the dashboard). The mark alone — the app
-// icon's tile would turn into a dark smudge at bar size — over a soft accent halo that
-// brightens on hover; a tonal disc while the launcher is open.
+// icon's tile would turn into a dark smudge at bar size — in the accent over a soft halo that
+// brightens on hover; on a tonal disc, in its ink, while the launcher is open.
 component LunaButton inherits Rectangle {
     property <bool> open: UI.overlay == "launcher";
     width: 36px;
@@ -343,7 +343,10 @@ component LunaButton inherits Rectangle {
         height: self.width;
         source: @image-url("../assets/luna-mark.svg");
         image-fit: contain;
+        // Tinted like the rest of the bar, so it follows the theme's colours.
+        colorize: root.open ? Style.on-tonal : Style.accent;
         animate width { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+        animate colorize { duration: Style.motion-fast; }
     }
     luna := TouchArea {
         clicked => { UI.toggle-overlay("launcher"); }
@@ -669,15 +672,6 @@ component PowerButton inherits IconButton {
     clicked => { UI.toggle-overlay("power"); }
 }
 
-component SwitcherButton inherits IconButton {
-    icon: "window";
-    size: 30px;
-    icon-size: 16px;
-    active: Switcher.active;
-    clicked => { Switcher.open(false); }
-    right-clicked => { Switcher.open(true); }
-}
-
 // An application's launcher: its icon; a click starts it.
 component AppButton inherits Rectangle {
     in property <string> app;
@@ -779,7 +773,6 @@ component BarItem inherits Rectangle {
         if root.id == "launcher": LunaButton { }
         if root.id == "workspaces" && PanelLayout.shows(root.id, root.vertical): Workspaces-Strip { vertical: root.vertical; }
         if root.id == "taskbar" && PanelLayout.shows(root.id, root.vertical): Taskbar { vertical: root.vertical; }
-        if root.id == "switcher" && PanelLayout.shows(root.id, root.vertical): SwitcherButton { }
         if root.id == "media" && PanelLayout.shows(root.id, root.vertical): MediaChip { }
         if root.id == "usage" && PanelLayout.shows(root.id, root.vertical): UsageChip { }
         if root.id == "tray" && !root.vertical: HorizontalLayout {

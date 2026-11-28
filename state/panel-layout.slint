@@ -7,11 +7,11 @@
 // bar shows `builtins`. Commands run through Shell.run, which starts the program with its
 // arguments and never hands the line to a shell.
 
-import { Store, Shell, Apps, Workspaces, Switcher, Media, Tray } from "@slintlu";
+import { Store, Shell, Apps, Workspaces, Media, Tray } from "@slintlu";
 
 export global PanelLayout {
     // Every built-in item, in their default order: the bar until it is first edited.
-    out property <[string]> builtins: ["launcher", "workspaces", "taskbar", "switcher", "title", "media",
+    out property <[string]> builtins: ["launcher", "workspaces", "taskbar", "title", "media",
         "usage", "tray", "clock", "status", "widgets", "settings", "power"];
     out property <bool> edited: Store.get-bool("panel-items-edited", false, Store.revision);
     out property <[string]> entries: root.edited ? Store.get-list("panel-items", Store.revision) : root.builtins;
@@ -45,16 +45,16 @@ export global PanelLayout {
     public pure function only-horizontal(id: string) -> bool {
         id == "media" || id == "usage"
     }
-    // Whether an item has something to show (the taskbar needs windows, media a player …).
+    // Whether an item has something to show (the taskbar needs windows, media a player …);
+    // ids an earlier shell knew (the window switcher button) show nothing.
     public pure function shows(id: string, vertical: bool) -> bool {
         id == "spacer" ? false
             : id == "workspaces" ? Workspaces.available
             : id == "taskbar" ? Workspaces.available && Workspaces.windows.length > 0
-            : id == "switcher" ? Switcher.available
             : id == "media" ? !vertical && Media.available && (Media.player.title != "" || Media.player.identity != "")
             : id == "usage" ? !vertical
             : id == "tray" ? Tray.items.length > 0
-            : true
+            : root.is-app(id) || root.is-command(id) || root.label(id) != ""
     }
 
     // The bar is a row of islands: neighbouring items share one. Gaps (separators), the free
@@ -81,7 +81,6 @@ export global PanelLayout {
         id == "launcher" ? @tr("Applications")
             : id == "workspaces" ? @tr("Workspaces")
             : id == "taskbar" ? @tr("Taskbar")
-            : id == "switcher" ? @tr("Window switcher")
             : id == "title" ? @tr("Window title")
             : id == "media" ? @tr("Media")
             : id == "usage" ? @tr("Processor and memory")
@@ -100,7 +99,6 @@ export global PanelLayout {
         id == "launcher" ? @tr("The LunaDash mark. Right-click opens the dashboard.")
             : id == "workspaces" ? @tr("A button for every workspace.")
             : id == "taskbar" ? @tr("Every window's icon.")
-            : id == "switcher" ? @tr("Opens the window switcher.")
             : id == "title" ? @tr("The focused window's icon and title. Takes the free space.")
             : id == "media" ? @tr("What is playing, with play and pause.")
             : id == "usage" ? @tr("Two small meters.")
@@ -117,7 +115,6 @@ export global PanelLayout {
         id == "launcher" ? "apps"
             : id == "workspaces" ? "workspace"
             : id == "taskbar" ? "window"
-            : id == "switcher" ? "window"
             : id == "title" ? "maximize"
             : id == "media" ? "music"
             : id == "usage" ? "cpu"
