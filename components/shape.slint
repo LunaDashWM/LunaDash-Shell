@@ -10,7 +10,9 @@ export component Drawer {
     in property <color> color: Style.sheet;
     width: root.body-width;
     height: root.body-height;
+    // Kept as a picture between changes, so sliding the card in and out redraws nothing inside.
     Rectangle {
+        cache-rendering-hint: true;
         background: root.color;
         border-radius: Style.panel-radius;
         drop-shadow-blur: 22px;
