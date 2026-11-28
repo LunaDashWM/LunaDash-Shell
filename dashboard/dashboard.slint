@@ -271,71 +271,11 @@ component GaugesCard inherits Card {
     }
 }
 
-// What is playing, its progress as a ring round the cover, and the sticker at the bottom.
-component MediaCard inherits Card {
-    property <bool> playing-something: Media.available && (Media.player.title != "" || Media.player.identity != "");
-    VerticalLayout {
-        padding: Style.spacing-lg;
-        spacing: Style.spacing-sm;
-        Rectangle {
-            height: 168px;
-            Ring {
-                width: 168px;
-                height: 168px;
-                thickness: 5px;
-                value: Media.player.length > 0 ? Media.player.position / Media.player.length : 0;
-            }
-            Rectangle {
-                width: 132px;
-                height: 132px;
-                border-radius: self.width / 2;
-                background: Style.elevated;
-                cover := Picture { path: Media.player.art-url; radii: [66px, 66px, 66px, 66px]; }
-                if !cover.loaded: Icon { name: "music"; width: 44px; height: 44px; color: Style.muted; }
-            }
-        }
-        Text {
-            text: root.playing-something ? (Media.player.title != "" ? Media.player.title : Media.player.identity) : @tr("Nothing playing");
-            color: Style.text;
-            font-size: Style.font-size + 2px;
-            font-weight: 700;
-            horizontal-alignment: center;
-            overflow: elide;
-        }
-        Text {
-            text: root.playing-something ? Media.player.artist : @tr("Music and videos show up here.");
-            color: Style.muted;
-            font-size: Style.font-small;
-            horizontal-alignment: center;
-            overflow: elide;
-        }
-        HorizontalLayout {
-            alignment: center;
-            spacing: Style.spacing-xs;
-            IconButton { y: (parent.height - self.height) / 2; icon: "previous"; size: 40px; tonal: true; clicked => { Media.previous(); } }
-            IconButton { icon: Media.player.playing ? "pause" : "play"; size: 48px; icon-size: 20px; active: true; clicked => { Media.play-pause(); } }
-            IconButton { y: (parent.height - self.height) / 2; icon: "next"; size: 40px; tonal: true; clicked => { Media.next(); } }
-        }
-        Rectangle {
-            vertical-stretch: 1;
-            min-height: 72px;
-            Image {
-                x: parent.width - self.width;
-                y: parent.height - self.height;
-                width: min(parent.height, 120px);
-                height: self.width;
-                source: @image-url("../assets/dashboard-sticker.png");
-                image-fit: contain;
-            }
-        }
-    }
-}
-
 // A saved look: its wallpaper above its name; the one in use wears a ring. A click switches to it.
 component ProfileTile inherits VerticalLayout {
     in property <string> name;
     property <bool> active: Profiles.active == root.name;
-    width: 176px;
+    height: 118px;
     spacing: 6px;
     preview := Rectangle {
         vertical-stretch: 1;
@@ -385,33 +325,49 @@ component ProfileTile inherits VerticalLayout {
     }
 }
 
-// Switching between the saved looks, under the overview.
-component ProfileStrip inherits VerticalLayout {
-    spacing: Style.spacing-sm;
-    HorizontalLayout {
-        SectionTitle { text: @tr("STYLE PROFILES"); vertical-alignment: center; horizontal-stretch: 1; }
-        TextButton { horizontal-stretch: 0; outlined: true; icon: "layers"; text: @tr("Manage"); clicked => { UI.open-settings("profiles"); } }
-    }
-    if Profiles.names.length == 0: Rectangle {
-        height: 116px;
-        border-radius: Style.radius-medium + 4px;
-        border-width: 1px;
-        border-color: Style.border;
-        VerticalLayout {
+// Switching between the saved looks, beside the overview: their wallpapers in a column, the
+// sticker by the title.
+component ProfilesCard inherits Card {
+    VerticalLayout {
+        padding: Style.spacing-md;
+        spacing: Style.spacing-sm;
+        HorizontalLayout {
+            spacing: Style.spacing-sm;
+            Image { source: @image-url("../assets/dashboard-sticker.png"); width: 44px; height: 44px; image-fit: contain; }
+            VerticalLayout {
+                alignment: center;
+                horizontal-stretch: 1;
+                Text { text: @tr("Style profiles"); color: Style.text; font-weight: 700; overflow: elide; }
+                Text {
+                    text: Profiles.active != "" ? Profiles.active : @tr("{} saved", Profiles.names.length);
+                    color: Style.muted;
+                    font-size: Style.font-small;
+                    overflow: elide;
+                }
+            }
+            IconButton { y: (parent.height - self.height) / 2; icon: "settings"; size: 34px; tonal: true; clicked => { UI.open-settings("profiles"); } }
+        }
+        if Profiles.names.length == 0: VerticalLayout {
+            vertical-stretch: 1;
             alignment: center;
             spacing: 4px;
             Text { text: @tr("No profiles yet"); color: Style.text; font-weight: 600; horizontal-alignment: center; }
-            Text { text: @tr("Save the look of your desktop in Settings → Style profiles to switch here."); color: Style.muted; font-size: Style.font-small; horizontal-alignment: center; }
+            Text {
+                text: @tr("Save the look of your desktop in Settings → Style profiles to switch here.");
+                color: Style.muted;
+                font-size: Style.font-small;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+            }
         }
-    }
-    if Profiles.names.length > 0: Flickable {
-        height: 120px;
-        content-width: tiles.preferred-width;
-        content-height: self.height;
-        tiles := HorizontalLayout {
-            spacing: Style.spacing-md;
-            alignment: start;
-            for name in Profiles.names: ProfileTile { name: name; }
+        if Profiles.names.length > 0: Flickable {
+            vertical-stretch: 1;
+            content-height: tiles.preferred-height;
+            tiles := VerticalLayout {
+                spacing: Style.spacing-sm;
+                alignment: start;
+                for name in Profiles.names: ProfileTile { name: name; }
+            }
         }
     }
 }
@@ -507,10 +463,9 @@ component OverviewTab inherits VerticalLayout {
                 GaugesCard { width: 104px; }
             }
         }
-        MediaCard { width: 280px; }
+        ProfilesCard { width: 280px; }
     }
     QuickToggles { columns: 6; }
-    ProfileStrip { }
 }
 
 component MediaTab inherits HorizontalLayout {
@@ -682,7 +637,7 @@ export component Dashboard inherits Overlay {
     // Slides in from the top of the desktop.
     edge: "top";
     content-width: 1080px;
-    content-height: 800px;
+    content-height: 620px;
 
     VerticalLayout {
         padding: Style.spacing-lg;
