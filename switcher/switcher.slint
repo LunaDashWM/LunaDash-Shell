@@ -1,119 +1,112 @@
 // The window switcher (Alt+Tab: every window in the taskbar, across workspaces) and the
-// workspace switcher (Super+Tab). The compositor handles the keys; this draws its state, and
-// clicking an entry switches to it.
+// workspace switcher (Super+Tab). The compositor handles the keys; this draws its state on a
+// floating card, large pictures with no words, and clicking an entry switches to it.
 
 import { PanelWindow, Layer, KeyboardMode, ExclusiveMode, Switcher, SwitcherEntry } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
 import { Icon } from "../components/icon.slint";
-import { Surface } from "../components/controls.slint";
+import { StateLayer } from "../components/controls.slint";
 
-// A window: its picture (the compositor's, once taken; its icon until then), then its icon
-// and title. The selection is drawn behind the tiles by the switcher.
+// A window: its picture (the compositor's, once taken; its icon until then) with its icon in a
+// badge on the corner, and nothing else. The selected one lifts a little and wears an accent
+// ring.
 component WindowTile inherits Rectangle {
     in property <SwitcherEntry> entry;
     in property <bool> selected;
     callback clicked();
-    border-radius: Style.radius-medium;
-    background: !root.selected && touch.has-hover ? Style.hover.with-alpha(0.5) : transparent;
-    animate background { duration: Style.motion-fast; }
-    VerticalLayout {
-        padding: 8px;
-        spacing: 8px;
-        Rectangle {
-            vertical-stretch: 1;
-            border-radius: Style.radius-small;
-            background: Style.elevated;
-            clip: true;
-            if root.entry.preview.width > 0: Image {
-                width: 100%;
-                height: 100%;
-                source: root.entry.preview;
-                image-fit: contain;
-                opacity: root.entry.minimized ? 0.5 : 1;
-            }
-            if root.entry.preview.width == 0 && root.entry.icon.width > 0: Image {
-                width: 56px;
-                height: 56px;
-                source: root.entry.icon;
-                image-fit: contain;
-                opacity: root.entry.minimized ? 0.5 : 1;
-            }
-            if root.entry.preview.width == 0 && root.entry.icon.width == 0: Icon {
-                name: "window";
-                width: 40px;
-                height: 40px;
-                color: Style.muted;
-            }
-        }
-        HorizontalLayout {
-            spacing: 8px;
-            height: 22px;
-            if root.entry.icon.width > 0: Image {
-                width: 20px;
-                height: 20px;
-                y: (parent.height - self.height) / 2;
-                source: root.entry.icon;
-                image-fit: contain;
-            }
-            Text {
-                horizontal-stretch: 1;
-                min-width: 0;
-                text: root.entry.title != "" ? root.entry.title : root.entry.app-id;
-                color: root.selected ? Style.text : Style.text.with-alpha(0.85);
-                font-size: Style.font-small;
-                font-weight: root.selected ? 600 : 400;
-                vertical-alignment: center;
-                overflow: elide;
-            }
-            // Its workspace, numbered as the bar numbers them.
-            Rectangle {
-                width: 22px;
-                height: 18px;
-                y: (parent.height - self.height) / 2;
-                border-radius: 9px;
-                background: Style.hover;
-                Text {
-                    text: root.entry.workspace + 1;
-                    color: Style.muted;
-                    font-size: Style.font-small - 2px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                }
-            }
-        }
+    property <length> lift: root.selected ? 6px : touch.has-hover ? 3px : 0px;
+    animate lift { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+    // The ring.
+    Rectangle {
+        x: -5px;
+        y: -root.lift - 5px;
+        width: parent.width + 10px;
+        height: parent.height + 10px;
+        border-radius: Style.radius-medium + 11px;
+        border-width: 3px;
+        border-color: root.selected ? Style.accent : transparent;
+        animate border-color { duration: Style.motion-fast; }
     }
-    touch := TouchArea { clicked => { root.clicked(); } }
+    // The picture, inset from the rounded corners it cannot be clipped to.
+    preview := Rectangle {
+        y: -root.lift;
+        border-radius: Style.radius-medium + 6px;
+        background: Style.surface;
+        opacity: root.entry.minimized ? 0.55 : 1;
+        if root.entry.preview.width > 0: Image {
+            x: 8px;
+            y: 8px;
+            width: parent.width - 16px;
+            height: parent.height - 16px;
+            source: root.entry.preview;
+            image-fit: contain;
+        }
+        if root.entry.preview.width == 0 && root.entry.icon.width > 0: Image {
+            width: 72px;
+            height: 72px;
+            source: root.entry.icon;
+            image-fit: contain;
+        }
+        if root.entry.preview.width == 0 && root.entry.icon.width == 0: Icon { name: "window"; width: 44px; height: 44px; color: Style.muted; }
+        StateLayer { border-radius: parent.border-radius; hovered: touch.has-hover && !root.selected; pressed: touch.pressed; }
+    }
+    // The application's icon on the picture's corner.
+    Rectangle {
+        x: 14px;
+        y: preview.y + preview.height - self.height - 14px;
+        width: 44px;
+        height: 44px;
+        border-radius: 15px;
+        background: Style.sheet;
+        drop-shadow-blur: 10px;
+        drop-shadow-color: Style.shadow;
+        if root.entry.icon.width > 0: Image { width: 28px; height: 28px; source: root.entry.icon; image-fit: contain; }
+        if root.entry.icon.width == 0: Icon { name: "window"; width: 22px; height: 22px; color: Style.accent; }
+    }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
 }
 
+// A workspace: its number large, and the icons of its applications.
 component WorkspaceTile inherits Rectangle {
     in property <SwitcherEntry> entry;
     in property <bool> selected;
     callback clicked();
-    border-radius: Style.radius-medium;
-    // The selection is drawn behind the tiles by the switcher.
-    background: root.selected ? transparent : touch.has-hover ? Style.hover.with-alpha(0.6) : Style.surface;
-    border-width: root.selected ? 0px : 1px;
-    border-color: Style.hairline;
+    border-radius: root.selected ? Style.radius-medium + 10px : Style.radius-medium + 4px;
+    background: root.selected ? Style.accent : Style.surface;
     animate background { duration: Style.motion-fast; }
-    VerticalLayout {
+    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+    StateLayer { border-radius: parent.border-radius; hovered: touch.has-hover; pressed: touch.pressed; ink: root.selected ? Style.accent-ink : Style.text; }
+    HorizontalLayout {
         padding: Style.spacing-md;
-        spacing: Style.spacing-sm;
-        Text { text: @tr("Workspace {}", root.entry.id); color: Style.text; font-weight: 600; overflow: elide; }
+        spacing: Style.spacing-md;
+        Text {
+            text: root.entry.id;
+            color: root.selected ? Style.accent-ink : Style.text;
+            font-size: 40px;
+            font-weight: 700;
+            vertical-alignment: center;
+        }
         HorizontalLayout {
-            spacing: 4px;
+            spacing: 6px;
             alignment: start;
             for icon[i] in root.entry.icons: Image {
-                visible: i < 6;
-                width: i < 6 ? 26px : 0px;
-                height: 26px;
+                visible: i < 4;
+                width: i < 4 ? 30px : 0px;
+                height: 30px;
+                y: (parent.height - self.height) / 2;
                 source: icon;
                 image-fit: contain;
             }
-            if root.entry.icons.length == 0: Text { text: @tr("Empty"); color: Style.muted; font-size: Style.font-small; }
         }
     }
-    touch := TouchArea { clicked => { root.clicked(); } }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+    }
 }
 
 export component WindowSwitcher inherits PanelWindow {
@@ -122,7 +115,6 @@ export component WindowSwitcher inherits PanelWindow {
     // The compositor keeps the keyboard: Tab, arrows, Enter and Escape reach it directly.
     keyboard-mode: KeyboardMode.none;
     exclusive-mode: ExclusiveMode.ignore;
-    background-blur: true;
     anchor-top: true;
     anchor-bottom: true;
     anchor-left: true;
@@ -130,84 +122,57 @@ export component WindowSwitcher inherits PanelWindow {
     shown: Switcher.available && Switcher.active && UI.on-active-screen;
     default-font-family: Style.font;
 
-    property <length> tile-width: Switcher.workspaces ? 200px : 236px;
-    property <length> tile-height: Switcher.workspaces ? 86px : 184px;
-    property <int> columns: max(1, min(Switcher.entries.length, Switcher.workspaces ? 5 : 5));
+    // Windows as large as four fit across most screens.
+    property <length> tile-width: Switcher.workspaces ? 220px : min(380px, (root.width - 200px) / 4);
+    property <length> tile-height: Switcher.workspaces ? 88px : root.tile-width * 0.62;
+    property <length> gap: Switcher.workspaces ? Style.spacing-md : Style.spacing-xl;
+    property <length> room: 12px;
+    // As many in a row as fit on the screen, at most six.
+    property <int> fit: max(1, Math.floor((root.width - 120px + root.gap) / (root.tile-width + root.gap)));
+    property <int> columns: max(1, min(Switcher.entries.length, min(root.fit, Switcher.workspaces ? 6 : 4)));
     property <int> rows: Math.ceil(Switcher.entries.length / root.columns);
-    property <length> gap: Style.spacing-sm;
-    // Grows in as the switcher appears.
+    // Rises in as the switcher appears.
     property <float> appear: Switcher.active ? 1 : 0;
-    animate appear { duration: Style.motion; easing: cubic-bezier(0.2, 0.9, 0.3, 1.0); }
+    animate appear { duration: Style.motion; easing: cubic-bezier(0.05, 0.7, 0.1, 1.0); }
 
-    Rectangle {
-        background: Style.scrim;
-        opacity: root.appear;
-        TouchArea { clicked => { Switcher.cancel(); } }
-    }
-    Surface {
-        // Wide enough for the header whatever the number of windows.
-        property <length> content-width: max(340px, root.columns * (root.tile-width + root.gap) - root.gap);
+    TouchArea { clicked => { Switcher.cancel(); } }
+    card := Rectangle {
+        property <length> grid-width: root.columns * (root.tile-width + root.gap) - root.gap;
         x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2 + (1 - root.appear) * 16px;
+        y: (parent.height - self.height) / 2 + (1 - root.appear) * 24px;
+        width: min(root.width - 40px, max(360px, self.grid-width) + 2 * Style.spacing-xl);
+        height: min(root.height - 80px, grid.content-height - 2 * root.room + 2 * Style.spacing-xl);
         opacity: root.appear;
-        width: min(root.width - 40px, self.content-width + 2 * Style.spacing-lg);
-        height: min(root.height - 80px, header.preferred-height + Style.spacing-md + grid.content-height + 2 * Style.spacing-lg);
+        border-radius: Style.panel-radius + 6px;
+        background: Style.sheet;
+        drop-shadow-blur: 30px;
+        drop-shadow-color: Style.shadow;
+        drop-shadow-offset-y: 8px;
         TouchArea { }
-        VerticalLayout {
-            padding: Style.spacing-lg;
-            spacing: Style.spacing-md;
-            header := HorizontalLayout {
-                spacing: 10px;
-                Icon { name: Switcher.workspaces ? "workspace" : "window"; width: 18px; height: 18px; y: (parent.height - self.height) / 2; color: Style.accent; }
-                Text {
-                    text: Switcher.workspaces ? @tr("Workspaces") : @tr("Windows");
-                    color: Style.text;
-                    font-weight: 600;
-                    vertical-alignment: center;
+        // With room inside for the selected tile's lift and ring.
+        grid := Flickable {
+            x: Style.spacing-xl - root.room;
+            y: Style.spacing-xl - root.room;
+            width: parent.width - 2 * Style.spacing-xl + 2 * root.room;
+            height: parent.height - 2 * Style.spacing-xl + 2 * root.room;
+            content-height: root.rows * (root.tile-height + root.gap) - root.gap + 2 * root.room;
+            // Keeps the selected row in view.
+            content-y: -clamp(Math.floor(Switcher.index / root.columns) * (root.tile-height + root.gap) - (self.height - root.tile-height) / 2,
+                0px, max(0px, self.content-height - self.height));
+            for entry[i] in Switcher.entries: Rectangle {
+                x: max(root.room, (grid.width - card.grid-width) / 2) + Math.mod(i, root.columns) * (root.tile-width + root.gap);
+                y: root.room + Math.floor(i / root.columns) * (root.tile-height + root.gap);
+                width: root.tile-width;
+                height: root.tile-height;
+                if !Switcher.workspaces: WindowTile {
+                    entry: entry;
+                    selected: i == Switcher.index;
+                    clicked => { Switcher.choose(entry.id); }
                 }
-                Text {
-                    horizontal-stretch: 1;
-                    min-width: 0;
-                    text: Switcher.workspaces ? @tr("Super+Tab to move · Esc to cancel") : @tr("Alt+Tab to move · Esc to cancel");
-                    color: Style.muted;
-                    font-size: Style.font-small;
-                    horizontal-alignment: right;
-                    vertical-alignment: center;
-                    overflow: elide;
-                }
-            }
-            grid := Flickable {
-                // The tiles are centred when they do not fill a row of the surface.
-                property <length> inset: max(0px, (self.width - (root.columns * (root.tile-width + root.gap) - root.gap)) / 2);
-                content-height: root.rows * (root.tile-height + root.gap) - root.gap;
-                // The selection slides from tile to tile.
-                Rectangle {
-                    x: grid.inset + Math.mod(Switcher.index, root.columns) * (root.tile-width + root.gap);
-                    y: Math.floor(Switcher.index / root.columns) * (root.tile-height + root.gap);
-                    width: root.tile-width;
-                    height: root.tile-height;
-                    visible: Switcher.entries.length > 0;
-                    border-radius: Style.radius-medium;
-                    background: Style.accent-soft;
-                    border-width: 2px;
-                    border-color: Style.accent;
-                    animate x, y { duration: Style.motion-fast; easing: cubic-bezier(0.2, 0.9, 0.3, 1.0); }
-                }
-                for entry[i] in Switcher.entries: Rectangle {
-                    x: grid.inset + Math.mod(i, root.columns) * (root.tile-width + root.gap);
-                    y: Math.floor(i / root.columns) * (root.tile-height + root.gap);
-                    width: root.tile-width;
-                    height: root.tile-height;
-                    if !Switcher.workspaces: WindowTile {
-                        entry: entry;
-                        selected: i == Switcher.index;
-                        clicked => { Switcher.choose(entry.id); }
-                    }
-                    if Switcher.workspaces: WorkspaceTile {
-                        entry: entry;
-                        selected: i == Switcher.index;
-                        clicked => { Switcher.choose(entry.id); }
-                    }
+                if Switcher.workspaces: WorkspaceTile {
+                    entry: entry;
+                    selected: i == Switcher.index;
+                    clicked => { Switcher.choose(entry.id); }
                 }
             }
         }
