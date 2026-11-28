@@ -57,6 +57,10 @@ export global UI {
                 || page == "language" || page == "about" ? page : "appearance");
         root.open-overlay("settings");
     }
+    // Clicking anything else on the bar closes its popout.
+    public function close-popup() {
+        Shared.set-string("popup", "");
+    }
     public function close-all() {
         Shared.set-string("popup", "");
         Shared.set-string("overlay", "");

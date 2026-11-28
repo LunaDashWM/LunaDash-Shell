@@ -72,7 +72,8 @@ export component PanelPopup inherits PanelWindow {
     }
 }
 
-// Covers the screen beside the bar while a popout is open; a click closes the popout.
+// Covers the screen beside the bar while a popout is open, on every screen (the popout's own
+// band covers its screen); a click closes the popout.
 export component PopupDismisser inherits PanelWindow {
     namespace: "lunadash-dismiss";
     layer: Layer.top;
@@ -85,6 +86,6 @@ export component PopupDismisser inherits PanelWindow {
     margin-bottom: Style.bar-edge == "bottom" ? Style.bar-width : 0px;
     margin-left: Style.bar-edge == "left" ? Style.bar-width : 0px;
     margin-right: Style.bar-edge == "right" ? Style.bar-width : 0px;
-    shown: UI.popup != "" && UI.on-active-screen;
+    shown: UI.popup != "";
     TouchArea { clicked => { UI.close-all(); } }
 }

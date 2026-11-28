@@ -83,7 +83,10 @@ component Workspaces-Strip inherits Rectangle {
                 urgent: ws.urgent;
                 occupied: ws.windows > 0;
                 id: ws.id;
-                clicked => { Workspaces.focus(ws.id); }
+                clicked => {
+                    UI.close-popup();
+                    Workspaces.focus(ws.id);
+                }
             }
         }
     }
@@ -101,7 +104,10 @@ component Workspaces-Strip inherits Rectangle {
                 urgent: ws.urgent;
                 occupied: ws.windows > 0;
                 id: ws.id;
-                clicked => { Workspaces.focus(ws.id); }
+                clicked => {
+                    UI.close-popup();
+                    Workspaces.focus(ws.id);
+                }
             }
         }
     }
@@ -143,9 +149,13 @@ component TaskIcon inherits Rectangle {
         background: Style.accent;
     }
     touch := TouchArea {
-        clicked => { Workspaces.focus-window(root.window.id); }
+        clicked => {
+            UI.close-popup();
+            Workspaces.focus-window(root.window.id);
+        }
         pointer-event(event) => {
             if event.button == PointerEventButton.middle && event.kind == PointerEventKind.up {
+                UI.close-popup();
                 Workspaces.close-window(root.window.id);
             }
         }
@@ -406,7 +416,10 @@ component MediaChip inherits Rectangle {
             size: 26px;
             icon-size: 14px;
             active: root.player.playing;
-            clicked => { Media.play-pause(); }
+            clicked => {
+                UI.close-popup();
+                Media.play-pause();
+            }
         }
     }
 }
@@ -562,6 +575,7 @@ component TrayIcon inherits Rectangle {
                 UI.toggle-popup-at("tray", root.anchor);
                 Tray.open-menu(root.id);
             } else {
+                UI.close-popup();
                 Tray.activate(root.id);
             }
         }
@@ -688,7 +702,12 @@ component AppButton inherits Rectangle {
     animate background { duration: Style.motion-fast; }
     if root.info.icon.width > 0: Image { width: 20px; height: 20px; source: root.info.icon; image-fit: contain; }
     if root.info.icon.width == 0: Icon { name: "apps"; width: 17px; height: 17px; color: Style.text; }
-    touch := TouchArea { clicked => { Apps.launch(root.app); } }
+    touch := TouchArea {
+        clicked => {
+            UI.close-popup();
+            Apps.launch(root.app);
+        }
+    }
 }
 
 // One of the user's commands: a terminal icon, and its name beside it in a top or bottom bar.
@@ -718,7 +737,12 @@ component CommandButton inherits Rectangle {
             overflow: elide;
         }
     }
-    touch := TouchArea { clicked => { PanelLayout.activate(root.item); } }
+    touch := TouchArea {
+        clicked => {
+            UI.close-popup();
+            PanelLayout.activate(root.item);
+        }
+    }
 }
 
 // One item of the bar (see PanelLayout), centred across it, with half the bar's spacing on
@@ -955,10 +979,12 @@ component BarWindow inherits PanelWindow {
         }
     }
 
-    // Right-clicking the bar between its islands arranges it.
+    // Clicking the bar between its islands closes a popout; right-clicking arranges the bar.
     TouchArea {
         pointer-event(event) => {
-            if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                UI.close-popup();
+            } else if event.kind == PointerEventKind.down && event.button == PointerEventButton.right {
                 PanelLayout.arrange();
             }
         }
