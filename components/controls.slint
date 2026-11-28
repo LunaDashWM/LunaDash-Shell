@@ -3,18 +3,22 @@
 import { Style } from "../style/style.slint";
 import { Icon } from "icon.slint";
 
-// A flat surface-container capsule grouping bar items.
-export component Pill inherits Rectangle {
-    height: Style.pill-height;
-    border-radius: min(self.height / 2, self.width / 2);
-    background: Style.surface;
+// The M3 state layer over a control: its content colour at 8 % on hover, 12 % while pressed.
+export component StateLayer inherits Rectangle {
+    in property <bool> hovered;
+    in property <bool> pressed;
+    in property <color> ink: Style.text;
+    background: root.ink.with-alpha(root.pressed ? 0.12 : root.hovered ? 0.08 : 0);
+    animate background { duration: Style.motion-fast; }
 }
 
-// A round button with an icon, optionally highlighted.
+// A round icon button. `active` fills it with the accent and squares it off (M3 Expressive's
+// shape morph, which a press previews); `tonal` gives it a tonal container at rest.
 export component IconButton inherits Rectangle {
     in property <string> icon;
     in property <bool> active;
-    in property <color> tint: root.active ? Style.accent-ink : Style.text;
+    in property <bool> tonal;
+    in property <color> tint: root.active ? Style.accent-ink : root.tonal ? Style.on-tonal : Style.text;
     in property <length> size: 28px;
     in property <length> icon-size: 17px;
     out property <bool> hovered: touch.has-hover;
@@ -24,14 +28,17 @@ export component IconButton inherits Rectangle {
 
     width: root.size;
     height: root.size;
-    border-radius: root.size / 2;
-    background: root.active ? Style.accent : touch.pressed ? Style.pressed : touch.has-hover ? Style.hover : transparent;
+    border-radius: root.active || touch.pressed ? root.size * 0.32 : root.size / 2;
+    background: root.active ? Style.accent : root.tonal ? Style.tonal : transparent;
     animate background { duration: Style.motion-fast; }
+    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+    StateLayer { border-radius: parent.border-radius; hovered: touch.has-hover; pressed: touch.pressed; ink: root.tint; }
     Icon {
         name: root.icon;
         color: root.tint;
-        width: root.icon-size;
-        height: root.icon-size;
+        width: touch.pressed ? root.icon-size - 1px : root.icon-size;
+        height: self.width;
+        animate width { duration: Style.motion-fast; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     }
     touch := TouchArea {
         clicked => { root.clicked(); }
@@ -47,51 +54,59 @@ export component IconButton inherits Rectangle {
     }
 }
 
-// A text button; `primary` uses the accent colour.
+// A text button: tonal by default, filled with the accent when `primary`, a red container when
+// `danger`, a plain outline when `outlined`. Pressed, the pill squares off (M3 Expressive).
 export component TextButton inherits Rectangle {
     in property <string> text;
     in property <string> icon;
     in property <bool> primary;
     in property <bool> danger;
+    in property <bool> outlined;
     in property <bool> enabled: true;
     callback clicked();
 
-    height: 36px;
-    preferred-width: content.preferred-width + 32px;
-    // Pressed buttons square off a little, as in M3 Expressive.
-    border-radius: touch.pressed ? Style.radius-medium : self.height / 2;
-    background: !root.enabled ? Style.surface.with-alpha(0.5)
-        : root.primary ? (touch.pressed ? Style.accent.mix(Style.accent-ink, 0.84) : touch.has-hover ? Style.accent.mix(Style.accent-ink, 0.92) : Style.accent)
-        : root.danger ? (touch.has-hover ? Style.danger-container.brighter(0.1) : Style.danger-container)
-        : touch.pressed ? Style.tonal.mix(Style.on-tonal, 0.84) : touch.has-hover ? Style.tonal.mix(Style.on-tonal, 0.92) : Style.tonal;
-    animate background, border-radius { duration: Style.motion-fast; }
+    height: 40px;
+    preferred-width: content.preferred-width;
+    property <color> ink: !root.enabled ? Style.text.with-alpha(0.38) : root.primary ? Style.accent-ink
+        : root.danger ? Style.danger : root.outlined ? Style.accent : Style.on-tonal;
+    border-radius: touch.pressed ? 12px : self.height / 2;
+    background: !root.enabled ? Style.text.with-alpha(0.08) : root.primary ? Style.accent
+        : root.danger ? Style.danger-container : root.outlined ? transparent : Style.tonal;
+    border-width: root.outlined ? 1px : 0px;
+    border-color: Style.border;
+    animate background { duration: Style.motion-fast; }
+    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+    StateLayer { border-radius: parent.border-radius; hovered: touch.has-hover; pressed: touch.pressed; ink: root.ink; }
     content := HorizontalLayout {
         alignment: center;
-        spacing: 6px;
-        padding-left: 14px;
-        padding-right: 14px;
+        spacing: 8px;
+        padding-left: root.icon != "" ? 16px : 24px;
+        padding-right: 24px;
         if root.icon != "": Icon {
             name: root.icon;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             y: (parent.height - self.height) / 2;
-            color: root.primary ? Style.accent-ink : root.danger ? Style.danger : Style.on-tonal;
+            color: root.ink;
         }
         Text {
             text: root.text;
-            color: root.primary ? Style.accent-ink : root.danger ? Style.danger : Style.on-tonal;
+            color: root.ink;
             font-size: Style.font-size;
-            font-weight: 500;
+            font-weight: 600;
+            letter-spacing: 0.1px;
             vertical-alignment: center;
         }
     }
     touch := TouchArea {
         enabled: root.enabled;
+        mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.default;
         clicked => { root.clicked(); }
     }
 }
 
-// An on / off switch.
+// An on / off switch (M3): the handle grows when on and carries a check, grows further while
+// pressed, and a halo marks it on hover.
 export component Switch inherits Rectangle {
     in property <bool> on;
     callback toggled();
@@ -103,16 +118,30 @@ export component Switch inherits Rectangle {
     border-width: root.on ? 0 : 2px;
     border-color: Style.muted.with-alpha(0.7);
     animate background { duration: Style.motion-fast; }
-    // The handle grows when on (and while pressed), like M3's.
+    property <length> handle: touch.pressed ? 28px : root.on ? 24px : 16px;
+    property <length> centre: root.on ? root.width - root.height / 2 : root.height / 2;
+    animate centre { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
     Rectangle {
-        width: touch.pressed ? 28px : root.on ? 24px : 16px;
+        x: root.centre - self.width / 2;
+        width: 40px;
+        height: 40px;
+        border-radius: 20px;
+        background: (root.on ? Style.accent : Style.text).with-alpha(touch.pressed ? 0.12 : touch.has-hover ? 0.08 : 0);
+        animate background { duration: Style.motion-fast; }
+    }
+    Rectangle {
+        x: root.centre - self.width / 2;
+        width: root.handle;
         height: self.width;
         border-radius: self.width / 2;
-        x: root.on ? parent.width - self.width - (parent.height - self.height) / 2 : (parent.height - self.height) / 2;
-        background: root.on ? Style.accent-ink : Style.muted;
-        animate x, width { duration: Style.motion-fast; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+        background: root.on ? Style.accent-ink : touch.has-hover ? Style.text.mix(Style.muted, 0.5) : Style.muted;
+        animate width { duration: Style.motion-fast; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+        if root.on: Icon { name: "check"; width: 15px; height: 15px; color: Style.accent; }
     }
-    touch := TouchArea { clicked => { root.toggled(); } }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => { root.toggled(); }
+    }
 }
 
 // A horizontal slider for values in 0..1 (or up to `maximum`).
@@ -154,14 +183,25 @@ export component Slider inherits Rectangle {
                 border-bottom-left-radius: 2px;
                 background: Style.elevated;
             }
+            // The stop at the end of the track.
             Rectangle {
-                x: track.handle-x;
+                x: parent.width - 10px;
                 width: 4px;
-                height: 32px;
+                height: 4px;
                 border-radius: 2px;
                 background: Style.accent;
+                visible: track.ratio < 0.97;
             }
-            TouchArea {
+            Rectangle {
+                x: track.handle-x + 2px - self.width / 2;
+                width: slide.pressed ? 2px : 4px;
+                height: slide.has-hover || slide.pressed ? 36px : 32px;
+                border-radius: 2px;
+                background: Style.accent;
+                animate width, height { duration: Style.motion-fast; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+            }
+            slide := TouchArea {
+                mouse-cursor: MouseCursor.pointer;
                 pointer-event(event) => {
                     if event.kind == PointerEventKind.down || (event.kind == PointerEventKind.move && self.pressed) {
                         root.changed(clamp(self.mouse-x / self.width, 0, 1) * root.maximum);
@@ -188,21 +228,29 @@ export component QuickToggle inherits Rectangle {
     height: 58px;
     // Off tiles are rounded rectangles, on tiles become pills (M3 Expressive shape morph).
     border-radius: root.on ? self.height / 2 : Style.radius-large * 0.6;
-    background: root.on ? (touch.has-hover ? Style.accent.mix(Style.accent-ink, 0.92) : Style.accent)
-        : touch.has-hover ? Style.hover : Style.elevated;
+    background: root.on ? Style.accent : Style.elevated;
     opacity: root.enabled ? 1 : 0.5;
     animate background { duration: Style.motion-fast; }
     animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+    StateLayer { border-radius: parent.border-radius; hovered: touch.has-hover; pressed: touch.pressed; ink: root.on ? Style.accent-ink : Style.text; }
     HorizontalLayout {
-        padding-left: 18px;
+        padding-left: 10px;
         padding-right: 14px;
-        spacing: 12px;
-        Icon {
-            name: root.icon;
-            width: 20px;
-            height: 20px;
+        spacing: 10px;
+        // The icon in a badge of its own.
+        Rectangle {
+            width: 38px;
+            height: 38px;
             y: (parent.height - self.height) / 2;
-            color: root.on ? Style.accent-ink : Style.text;
+            border-radius: root.on ? 19px : 12px;
+            background: root.on ? Style.accent-ink.with-alpha(0.14) : Style.surface;
+            animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+            Icon {
+                name: root.icon;
+                width: 19px;
+                height: 19px;
+                color: root.on ? Style.accent-ink : Style.text;
+            }
         }
         VerticalLayout {
             alignment: center;
@@ -295,14 +343,40 @@ export component RangeSlider inherits Rectangle {
                 background: Style.elevated;
             }
             Rectangle {
-                x: track.handle-x;
-                width: root.dragging ? 2px : 4px;
-                height: 28px;
+                x: parent.width - 8px;
+                width: 4px;
+                height: 4px;
                 border-radius: 2px;
                 background: Style.accent;
-                animate width { duration: Style.motion-fast; }
+                visible: root.ratio < 0.97;
+            }
+            Rectangle {
+                x: track.handle-x + 2px - self.width / 2;
+                width: root.dragging ? 2px : 4px;
+                height: touch.has-hover || root.dragging ? 32px : 28px;
+                border-radius: 2px;
+                background: Style.accent;
+                animate width, height { duration: Style.motion-fast; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+            }
+            // The value rides above the handle while it is dragged.
+            Rectangle {
+                x: track.handle-x + 2px - self.width / 2;
+                y: -self.height - 6px;
+                width: max(40px, bubble.preferred-width + 16px);
+                height: 28px;
+                border-radius: 14px;
+                background: Style.text;
+                opacity: root.dragging ? 1 : 0;
+                animate opacity { duration: Style.motion-fast; }
+                bubble := Text {
+                    text: Math.round(root.shown) + root.unit;
+                    color: Style.base;
+                    font-size: Style.font-small;
+                    font-weight: 600;
+                }
             }
             touch := TouchArea {
+                mouse-cursor: MouseCursor.pointer;
                 pointer-event(event) => {
                     if event.kind == PointerEventKind.down {
                         root.dragging = true;
@@ -371,10 +445,11 @@ export component ListRow inherits Rectangle {
     callback clicked();
 
     height: 52px;
-    border-radius: root.selected ? self.height / 2 : Style.radius-medium;
-    background: root.selected ? Style.tonal : touch.has-hover ? Style.hover.with-alpha(0.6) : transparent;
+    border-radius: root.selected ? self.height / 2 : touch.pressed ? Style.radius-small : Style.radius-medium;
+    background: root.selected ? Style.tonal : transparent;
     animate background { duration: Style.motion-fast; }
     animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+    StateLayer { border-radius: parent.border-radius; hovered: touch.has-hover; pressed: touch.pressed; ink: root.selected ? Style.on-tonal : Style.text; }
     HorizontalLayout {
         padding-left: 10px;
         padding-right: 10px;
@@ -412,19 +487,20 @@ export component TextField inherits Rectangle {
     in-out property <string> text;
     callback accepted();
 
-    height: 36px;
+    height: 44px;
     border-radius: self.height / 2;
     background: Style.elevated;
-    border-width: 1px;
-    border-color: input.has-focus ? Style.accent.with-alpha(0.6) : Style.border;
-    clip: true;
+    border-width: input.has-focus ? 2px : 1px;
+    border-color: input.has-focus ? Style.accent : field.has-hover ? Style.muted : Style.border;
+    animate border-color { duration: Style.motion-fast; }
+    field := TouchArea { mouse-cursor: MouseCursor.text; clicked => { input.focus(); } }
     HorizontalLayout {
-        padding-left: 14px;
-        padding-right: 14px;
-        spacing: 8px;
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 10px;
         if root.icon != "": VerticalLayout {
             alignment: center;
-            Icon { name: root.icon; width: 16px; height: 16px; color: Style.muted; }
+            Icon { name: root.icon; width: 18px; height: 18px; color: input.has-focus ? Style.accent : Style.muted; }
         }
         Rectangle {
             horizontal-stretch: 1;

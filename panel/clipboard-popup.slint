@@ -1,51 +1,135 @@
-// Clipboard history.
+// Clipboard history: the newest entry (what is on the clipboard now) first, each a card that
+// pastes on click, with copy and remove at hand.
 
-import { ClipboardHistory, Shell } from "@slintlu";
+import { ClipboardHistory, ClipboardEntry, Shell } from "@slintlu";
 import { Style } from "../style/style.slint";
 import { UI } from "../state/ui.slint";
 import { PanelPopup } from "popup.slint";
-import { SectionTitle, ListRow, IconButton, TextButton } from "../components/controls.slint";
+import { Icon } from "../components/icon.slint";
+import { IconButton, TextButton, StateLayer } from "../components/controls.slint";
+
+component Entry inherits Rectangle {
+    in property <ClipboardEntry> entry;
+    in property <bool> current;
+    property <bool> hovered: touch.has-hover || copy.hovered || remove.hovered;
+    height: 64px;
+    border-radius: touch.pressed ? Style.radius-small : Style.radius-medium + 4px;
+    background: root.current ? Style.tonal : Style.surface;
+    animate border-radius { duration: Style.motion; easing: cubic-bezier(0.38, 1.21, 0.22, 1.0); }
+    StateLayer { border-radius: parent.border-radius; hovered: touch.has-hover; pressed: touch.pressed; ink: root.current ? Style.on-tonal : Style.text; }
+    touch := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => {
+            ClipboardHistory.copy(root.entry.id);
+            UI.close-all();
+            // Let the previous window regain focus, then paste the entry.
+            Shell.exec("wtype -s 50 -M ctrl -k v");
+        }
+    }
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 8px;
+        spacing: 12px;
+        Rectangle {
+            width: 36px;
+            height: 36px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 12px;
+            background: root.current ? Style.accent : Style.elevated;
+            Icon { name: root.current ? "check" : "clipboard"; width: 18px; height: 18px; color: root.current ? Style.accent-ink : Style.muted; }
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            spacing: 2px;
+            Text {
+                text: root.entry.preview;
+                color: root.current ? Style.on-tonal : Style.text;
+                font-size: Style.font-size;
+                overflow: elide;
+            }
+            Text {
+                text: root.current ? @tr("On the clipboard") : @tr("Click to paste");
+                color: Style.muted;
+                font-size: Style.font-small;
+            }
+        }
+        // Copy and remove fade in on hover.
+        HorizontalLayout {
+            spacing: 2px;
+            opacity: root.hovered ? 1 : 0;
+            animate opacity { duration: Style.motion-fast; }
+            copy := IconButton {
+                y: (parent.height - self.height) / 2;
+                icon: "clipboard";
+                size: 34px;
+                icon-size: 16px;
+                tonal: true;
+                clicked => { ClipboardHistory.copy(root.entry.id); }
+            }
+            remove := IconButton {
+                y: (parent.height - self.height) / 2;
+                icon: "trash";
+                size: 34px;
+                icon-size: 16px;
+                tint: Style.danger;
+                clicked => { ClipboardHistory.remove(root.entry.id); }
+            }
+        }
+    }
+}
 
 export component ClipboardPopup inherits PanelPopup {
     name: "clipboard";
     namespace: "lunadash-clipboard";
-    preferred-width: 400px;
+    preferred-width: 420px;
 
     HorizontalLayout {
-        SectionTitle { text: @tr("CLIPBOARD"); vertical-alignment: center; horizontal-stretch: 1; }
+        spacing: Style.spacing-md;
+        Rectangle {
+            width: 40px;
+            height: 40px;
+            border-radius: 14px * Style.corner-scale;
+            background: Style.tonal;
+            Icon { name: "clipboard"; width: 20px; height: 20px; color: Style.on-tonal; }
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Text { text: @tr("Clipboard"); color: Style.text; font-size: Style.font-title; font-weight: 600; }
+            Text {
+                text: ClipboardHistory.entries.length == 1 ? @tr("1 entry") : @tr("{} entries", ClipboardHistory.entries.length);
+                color: Style.muted;
+                font-size: Style.font-small;
+            }
+        }
         if ClipboardHistory.entries.length > 0: TextButton {
+            horizontal-stretch: 0;
+            y: (parent.height - self.height) / 2;
             text: @tr("Clear");
             icon: "trash";
+            danger: true;
             clicked => { ClipboardHistory.clear(); }
         }
     }
-    if ClipboardHistory.entries.length == 0: Text {
-        text: ClipboardHistory.available ? @tr("Copied text appears here.") : @tr("This compositor does not allow a clipboard history.");
-        color: Style.muted;
-        wrap: word-wrap;
+    if ClipboardHistory.entries.length == 0: VerticalLayout {
+        padding-top: Style.spacing-lg;
+        padding-bottom: Style.spacing-lg;
+        spacing: Style.spacing-sm;
+        Icon { x: (parent.width - self.width) / 2; name: "clipboard"; width: 32px; height: 32px; color: Style.muted; }
+        Text {
+            text: ClipboardHistory.available ? @tr("Copied text appears here.") : @tr("This compositor does not allow a clipboard history.");
+            color: Style.muted;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
     }
     Flickable {
-        height: min(ClipboardHistory.entries.length * 50px, 420px);
+        height: min(ClipboardHistory.entries.length * 70px, 440px);
         content-height: list.preferred-height;
         list := VerticalLayout {
-            spacing: 2px;
-            for entry in ClipboardHistory.entries: ListRow {
-                icon: "clipboard";
-                title: entry.preview;
-                clicked => {
-                    ClipboardHistory.copy(entry.id);
-                    UI.close-all();
-                    // Let the previous window regain focus, then paste the selected entry.
-                    Shell.exec("wtype -s 50 -M ctrl -k v");
-                }
-                IconButton {
-                    icon: "close";
-                    size: 26px;
-                    icon-size: 13px;
-                    y: (parent.height - self.height) / 2;
-                    clicked => { ClipboardHistory.remove(entry.id); }
-                }
-            }
+            spacing: 6px;
+            for entry[i] in ClipboardHistory.entries: Entry { entry: entry; current: i == 0; }
         }
     }
 }
