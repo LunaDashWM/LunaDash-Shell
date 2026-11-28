@@ -7,7 +7,7 @@
 // roles: background → surface, surface → surface-container, surface-alt →
 // surface-container-high, border → outline-variant, accent → primary.
 
-import { Theme, Compositor } from "@slintlu";
+import { Theme, Compositor, Files } from "@slintlu";
 import { Prefs } from "../state/prefs.slint";
 import { PanelLayout } from "../state/panel-layout.slint";
 
@@ -16,13 +16,17 @@ export global Style {
     out property <[color]> accents: [#9ccbfb, #c4b5fd, #f5a9c8, #7dcccf, #a6e3a1, #efcd8c, #f4a77c, #e2e5ed];
     out property <[string]> accent-hex: ["#9ccbfb", "#c4b5fd", "#f5a9c8", "#7dcccf", "#a6e3a1", "#efcd8c", "#f4a77c", "#e2e5ed"];
 
-    // Primary and its tonal companions: the accent picked in Settings, else on LunaDash the
-    // one it takes from the wallpaper (Colours from the wallpaper), else the palette's own.
+    // Primary and its tonal companions: the accent picked in Settings, else on LunaDash one
+    // taken from the wallpaper (Colours from the wallpaper), else the palette's own. SlintLu
+    // takes the wallpaper's accent the way Material You does, as soon as the wallpaper
+    // changes; until it is known, LunaDash's own stands in.
     property <bool> wallpaper-colours: Compositor.has-commands
         && Compositor.preference-bool("wallpaperColors", true, Compositor.preferences-revision);
+    property <color> from-wallpaper: Files.accent(Compositor.wallpaper-poster != "" ? Compositor.wallpaper-poster : Compositor.wallpaper, Files.revision);
     property <color> picked: Prefs.accent >= 0 && Prefs.accent < root.accents.length ? root.accents[Prefs.accent]
-        : root.wallpaper-colours ? Compositor.preference-color("accent", Theme.accent, Compositor.preferences-revision)
-        : Theme.accent;
+        : !root.wallpaper-colours ? Theme.accent
+        : root.from-wallpaper != transparent ? root.from-wallpaper
+        : Compositor.preference-color("accent", Theme.accent, Compositor.preferences-revision);
     out property <color> accent: Prefs.accent < 0 && !root.wallpaper-colours ? Theme.accent
         : Theme.dark ? root.picked : root.picked.darker(0.45);
     // On top of the primary colour.
@@ -103,7 +107,6 @@ export global Style {
     out property <length> inner-top: root.bar-edge == "top" ? root.bar-width : 0px;
     out property <length> inner-right: root.bar-edge == "right" ? root.bar-width : 0px;
     out property <length> inner-bottom: root.bar-edge == "bottom" ? root.bar-width : 0px;
-    out property <length> pill-height: 32px;
     // The dock's icons and its full height.
     out property <length> dock-item: Prefs.dock-size == "small" ? 40px : Prefs.dock-size == "large" ? 60px : 50px;
     out property <length> dock-height: root.dock-item + 16px;
